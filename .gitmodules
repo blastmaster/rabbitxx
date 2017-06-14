@@ -1,0 +1,9 @@
+[submodule "external/otf2xx"]
+	path = external/otf2xx
+	url = https://github.com/blastmaster/otf2xx.git
+[submodule "external/nitro"]
+	path = external/nitro
+	url = https://github.com/tud-zih-energy/nitro.git
+[submodule "external/catch"]
+	path = external/catch
+	url = https://github.com/philsquared/Catch.git
