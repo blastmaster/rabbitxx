@@ -37,13 +37,23 @@ namespace rabbitxx {
 
             vertex_descriptor add_vertex()
             {
-                return add_vertex(*graph_);
+                return boost::add_vertex(*graph_.get());
             }
 
             edge_descriptor add_edge(const vertex_descriptor& vd_from,
                                      const vertex_descriptor& vd_to)
             {
-                return add_edge(vd_from, vd_to, *graph_);
+                return boost::add_edge(vd_from, vd_to, *graph_.get());
+            }
+
+            std::size_t num_vertices() const
+            {
+                return boost::num_vertices(*graph_.get());
+            }
+
+            std::size_t num_edges() const
+            {
+                return boost::num_edges(*graph_.get());
             }
 
         private:
