@@ -5,6 +5,8 @@ set(PROJECT_VERSION "0.0.1")
 
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
+option(BUILD_TESTS "build tests" OFF)
+
 set(RABBITXX_CXX_FLAGS "-Wall -pedantic -Wextra -std=c++14")
 set(RABBITXX_C_FLAGS "-Wall -pedantic -Wextra")
 
@@ -43,3 +45,7 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RABBITXX_CXX_FLAGS}")
 
 add_subdirectory(src)
+
+if (BUILD_TESTS)
+    add_subdirectory(test)
+endif()
