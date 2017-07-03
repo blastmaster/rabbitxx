@@ -6,7 +6,7 @@
 
 #include <boost/mpi.hpp>
 
-#include <iostream>
+#include <algorithm>
 
 using rabbitxx::logging;
 
@@ -16,7 +16,7 @@ int main(int argc, char** argv)
     boost::mpi::communicator world;
 
     if (argc < 2) {
-        std::cerr << "usage: ./" << argv[0] << " <input-trace>" << std::endl;
+        logging::fatal() << "usage: ./" << argv[0] << " <input-trace>";
         env.abort(1);
         return 1;
     }
@@ -42,6 +42,20 @@ int main(int argc, char** argv)
 
     auto n_vertices = g.num_vertices();
     logging::debug() << "Num vertices: " << n_vertices;
+
+    //auto g = graph_builder.graph().get();
+    using vd = typename boost::graph_traits<rabbitxx::graph_impl>::vertex_descriptor;
+
+    const auto vip = g.vertices();
+    std::for_each(vip.first, vip.second, [&g](const vd& d) {
+        if (g[d].type == rabbitxx::vertex_event::event_type::enter) {
+            logging::debug() << "MAIN enter event name: " << g[d].event.as<otf2::event::enter>().region().name();
+        }
+        else if (g[d].type == rabbitxx::vertex_event::event_type::leave) {
+            logging::debug() << "MAIN leave event name: " << g[d].event.as<otf2::event::leave>().region().name();
+
+        }
+    });
 
     return 0;
 }
