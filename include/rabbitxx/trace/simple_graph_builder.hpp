@@ -176,7 +176,23 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_seek event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            //graph_.add_vertex();
+            // check if we have a file name or a "non-file" handle
+            std::string name;
+            if (evt.handle().name().str().empty() && !evt.handle().file().name().str().empty()) {
+                name = evt.handle().file().name().str();
+            }
+            else {
+                name = evt.handle().name().str();
+            }
+
+            // NOTE: Mapping:
+            //       request_size = offset_request
+            //       offset = offset_result
+            //TODO: what with whence?????
+            auto vt = vertex_io_event_property(location.ref(), name, evt.offset_request(),
+                                               evt.offset_result(), evt.seek_option(), evt.timestamp());
+            logging::debug() << "Found seek event: " << vt;
+            graph_.add_vertex(vt);
         }
 
         virtual void event(const otf2::definition::location& location,
