@@ -23,9 +23,10 @@ namespace rabbitxx { namespace trace {
     public:
         using otf2::reader::callback::event;
         using otf2::reader::callback::definition;
+        using mapping_type = mapping<detail::round_robin_mapping>;
 
-        simple_graph_builder(boost::mpi::communicator& comm)
-        : base(comm), graph_(), io_ops_started_()
+        simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
+        : base(comm), graph_(), io_ops_started_(), mapping_(comm.size(), num_locations)
         {
         }
 
@@ -357,15 +358,16 @@ namespace rabbitxx { namespace trace {
         virtual void definitions_done(const otf2::reader::reader& rdr) override
         {
             for(auto location : rdr.locations()) {
-                //TODO: do rank mapping!
+                //do rank mapping!
+                mapping_.register_location(location);
                 rdr.register_location(location);
             }
         }
 
-
     private:
         Graph graph_;
         std::queue<otf2::event::io_operation_begin> io_ops_started_;
+        mapping_type mapping_;
     };
 
 }} // namespace rabbitxx::trace
