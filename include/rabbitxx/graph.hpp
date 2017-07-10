@@ -128,20 +128,22 @@ namespace rabbitxx {
 
         int proc_id;
         std::string filename;
+        std::string region_name;
         std::uint64_t request_size; // in bytes
         std::uint64_t offset;
         option_type option;
         otf2::chrono::time_point timestamp;
 
-        vertex_io_event_property() noexcept :  proc_id(-1), filename(""),
+        vertex_io_event_property() noexcept :  proc_id(-1), filename(""), region_name(""),
             request_size(0), offset(0), option(), timestamp()
         {
         }
 
-        vertex_io_event_property(int process_id, const std::string& fname, std::uint64_t req_size,
+        vertex_io_event_property(int process_id, const std::string& fname,
+                                 const std::string& reg_name, std::uint64_t req_size,
                                  std::uint64_t off, option_type mode,
                                  const otf2::chrono::time_point ts) noexcept
-        : proc_id(process_id), filename(fname), request_size(req_size),
+        : proc_id(process_id), filename(fname), region_name(reg_name), request_size(req_size),
             offset(off), option(mode), timestamp(ts)
         {
         }
@@ -156,6 +158,7 @@ namespace rabbitxx {
     {
         return os << "process id: " << vertex.proc_id
                  << " filename: " << vertex.filename
+                 << " region: " << vertex.region_name
                  << " request_size:  " << vertex.request_size
                  << " offset: " << vertex.offset
                  << " mode: " << boost::apply_visitor(option_type_printer(), vertex.option)

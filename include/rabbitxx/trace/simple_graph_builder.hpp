@@ -26,7 +26,8 @@ namespace rabbitxx { namespace trace {
         using mapping_type = mapping<detail::round_robin_mapping>;
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
-        : base(comm), graph_(), io_ops_started_(), mapping_(comm.size(), num_locations), edge_points_()
+        : base(comm), graph_(), io_ops_started_(), mapping_(comm.size(), num_locations),
+          edge_points_(), region_name_queue_()
         {
         }
 
@@ -38,10 +39,43 @@ namespace rabbitxx { namespace trace {
 
         // Events
         virtual void event(const otf2::definition::location& location,
-                            const otf2::event::io_operation_begin& evt) override
+                           const otf2::event::enter& evt) override
+        {
+            logging::trace() << "Found enter event to location #" << location.ref() << " @"
+                                << evt.timestamp();
+
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
+            // TODO: not sure if just save the name as string is that clever
+            region_name_queue_.push(evt.region().name().str());
+        }
+
+        virtual void event(const otf2::definition::location& location,
+                           const otf2::event::leave& evt) override
+        {
+            logging::trace() << "Found leave event to location #" << location.ref() << " @"
+                                << evt.timestamp();
+
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
+            // delete saved region name if leave event is reached
+            region_name_queue_.pop();
+        }
+
+        virtual void event(const otf2::definition::location& location,
+                           const otf2::event::io_operation_begin& evt) override
         {
             logging::trace() << "Found io_operation_begin event to location #" << location.ref() << " @"
                                 << evt.timestamp();
+
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
             // here we just save the event for later.
             // An I/O operation will be merged into one single vertex if the
             // corresponding end occurs.
@@ -72,9 +106,12 @@ namespace rabbitxx { namespace trace {
                 name = evt.handle().name().str();
             }
 
+            // get region name on top of our region name queue
+            const auto& region_name = region_name_queue_.front();
+
             //TODO: which timestamp should we use? start? or end?
             auto vt =
-                rabbitxx::vertex_io_event_property(location.ref(), name,
+                rabbitxx::vertex_io_event_property(location.ref(), name, region_name,
                                                    evt.bytes_request(), 0,
                                                    begin_evt.operation_mode(), evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
@@ -203,11 +240,14 @@ namespace rabbitxx { namespace trace {
                 name = evt.handle().name().str();
             }
 
+            // get region_name in front of our queue
+            const auto region_name = region_name_queue_.front();
+
             // NOTE: Mapping:
             //       request_size = offset_request
             //       offset = offset_result
             //TODO: what with whence?????
-            auto vt = vertex_io_event_property(location.ref(), name, evt.offset_request(),
+            auto vt = vertex_io_event_property(location.ref(), name, region_name, evt.offset_request(),
                                                evt.offset_result(), evt.seek_option(), evt.timestamp());
             logging::debug() << "Found seek event: " << vt;
             const auto& descriptor = graph_.add_vertex(vt);
@@ -404,6 +444,7 @@ namespace rabbitxx { namespace trace {
         std::queue<otf2::event::io_operation_begin> io_ops_started_;
         mapping_type mapping_;
         std::queue<typename Graph::vertex_descriptor> edge_points_;
+        std::queue<std::string> region_name_queue_;
     };
 
 }} // namespace rabbitxx::trace
