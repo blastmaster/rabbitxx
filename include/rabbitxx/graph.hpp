@@ -238,6 +238,8 @@ namespace rabbitxx {
             using vertex_type = typename boost::vertex_bundle_type<GraphImpl>::type;
             using edge_type = typename boost::vertex_bundle_type<GraphImpl>::type;
             using vertex_range = std::pair<vertex_iterator, vertex_iterator>;
+            using edge_add_t = std::pair<edge_descriptor, bool>;
+
 
             graph() noexcept : graph_(std::make_unique<GraphImpl>())
             {
@@ -259,8 +261,8 @@ namespace rabbitxx {
                 return vd;
             }
 
-            edge_descriptor add_edge(const vertex_descriptor& vd_from,
-                                     const vertex_descriptor& vd_to)
+            edge_add_t add_edge(const vertex_descriptor& vd_from,
+                                const vertex_descriptor& vd_to)
             {
                 return boost::add_edge(vd_from, vd_to, *graph_.get());
             }

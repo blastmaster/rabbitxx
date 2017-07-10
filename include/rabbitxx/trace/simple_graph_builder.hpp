@@ -26,7 +26,7 @@ namespace rabbitxx { namespace trace {
         using mapping_type = mapping<detail::round_robin_mapping>;
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
-        : base(comm), graph_(), io_ops_started_(), mapping_(comm.size(), num_locations)
+        : base(comm), graph_(), io_ops_started_(), mapping_(comm.size(), num_locations), edge_points_()
         {
         }
 
@@ -77,7 +77,24 @@ namespace rabbitxx { namespace trace {
                 rabbitxx::vertex_io_event_property(location.ref(), name,
                                                    evt.bytes_request(), 0,
                                                    begin_evt.operation_mode(), evt.timestamp());
-            graph_.add_vertex(vt);
+            const auto& descriptor = graph_.add_vertex(vt);
+            // now, try to add an edge from the vertex before of this process to this one.
+            if (edge_points_.empty()) {
+                logging::debug() << "No vertex in edge_points_ queue.";
+            }
+            else if (edge_points_.size() > 1) {
+                logging::warn() << "More than one vertex in the edge_points_ queue.";
+            }
+            else {
+                const auto& from_vertex = edge_points_.front();
+                const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
+                if (! edge_desc.second) {
+                    logging::fatal() << "Error could not add edge .. this should not happen.";
+                }
+                edge_points_.pop(); // remove old vertex after adding the edge.
+            }
+            // store descriptor in queue, for adding edges later
+            edge_points_.push(descriptor);
             io_ops_started_.pop();
         }
 
@@ -193,7 +210,25 @@ namespace rabbitxx { namespace trace {
             auto vt = vertex_io_event_property(location.ref(), name, evt.offset_request(),
                                                evt.offset_result(), evt.seek_option(), evt.timestamp());
             logging::debug() << "Found seek event: " << vt;
-            graph_.add_vertex(vt);
+            const auto& descriptor = graph_.add_vertex(vt);
+
+            // now, try to add an edge from the vertex before of this process to this one.
+            if (edge_points_.empty()) {
+                logging::debug() << "No vertex in edge_points_ queue.";
+            }
+            else if (edge_points_.size() > 1) {
+                logging::warn() << "More than one vertex in the edge_points_ queue.";
+            }
+            else {
+                const auto& from_vertex = edge_points_.front();
+                const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
+                if (! edge_desc.second) {
+                    logging::fatal() << "Error could not add edge .. this should not happen.";
+                }
+                edge_points_.pop(); // remove old vertex after adding the edge.
+            }
+            // store descriptor in queue, for adding edges later
+            edge_points_.push(descriptor);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -368,6 +403,7 @@ namespace rabbitxx { namespace trace {
         Graph graph_;
         std::queue<otf2::event::io_operation_begin> io_ops_started_;
         mapping_type mapping_;
+        std::queue<typename Graph::vertex_descriptor> edge_points_;
     };
 
 }} // namespace rabbitxx::trace
