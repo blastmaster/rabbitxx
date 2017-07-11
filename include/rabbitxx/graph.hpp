@@ -10,6 +10,8 @@
 
 #include <boost/graph/use_mpi.hpp>
 #include <boost/variant.hpp>
+#include <boost/optional.hpp>
+#include <boost/optional/optional_io.hpp>
 #include <boost/graph/distributed/adjacency_list.hpp>
 #include <boost/graph/distributed/mpi_process_group.hpp>
 
@@ -88,7 +90,22 @@ namespace rabbitxx {
             case otf2::common::io_operation_mode_type::flush:
                 return {"flush"};
             default:
-                return {"NONE"};
+                return {"UNDEFINED"};
+        }
+    }
+
+    std::string to_string(const otf2::common::io_operation_flag_type& flag)
+    {
+        switch (flag)
+        {
+            case otf2::common::io_operation_flag_type::none:
+                return {"none"};
+            case otf2::common::io_operation_flag_type::non_blocking:
+                return {"non blocking"};
+            case otf2::common::io_operation_flag_type::collective:
+                return {"collective"};
+            default:
+                return {"UNDEFINED"};
         }
     }
 
@@ -108,8 +125,149 @@ namespace rabbitxx {
             case otf2::common::io_seek_option_type::hole:
                 return {"hole"};
             default:
-                return {"NONE"};
+                return {"UNDEFINED"};
         }
+    }
+
+    std::string to_string(const otf2::common::io_access_mode_type& acc_mode)
+    {
+        switch (acc_mode)
+        {
+            case otf2::common::io_access_mode_type::read_only:
+                return {"read only"};
+            case otf2::common::io_access_mode_type::write_only:
+                return {"write only"};
+            case otf2::common::io_access_mode_type::read_write:
+                return {"read/write"};
+            case otf2::common::io_access_mode_type::execute_only:
+                return {"execute only"};
+            case otf2::common::io_access_mode_type::search_only:
+                return {"search only"};
+            default:
+                return {"UNDEFINED"};
+        }
+    }
+
+    std::string to_string(const otf2::common::io_creation_flag_type& creation_flag)
+    {
+        switch (creation_flag)
+        {
+            case otf2::common::io_creation_flag_type::none:
+                return {"none"};
+            case otf2::common::io_creation_flag_type::create:
+                return {"create"};
+            case otf2::common::io_creation_flag_type::truncate:
+                return {"truncate"};
+            case otf2::common::io_creation_flag_type::directory:
+                return {"directory"};
+            case otf2::common::io_creation_flag_type::exclusive:
+                return {"exclusive"};
+            case otf2::common::io_creation_flag_type::no_controlling_terminal:
+                return {"no controlling terminal"};
+            case otf2::common::io_creation_flag_type::no_follow:
+                return {"no follow"};
+            case otf2::common::io_creation_flag_type::path:
+                return {"path"};
+            case otf2::common::io_creation_flag_type::temporary_file:
+                return {"temporary file"};
+            case otf2::common::io_creation_flag_type::largefile:
+                return {"large file"};
+            case otf2::common::io_creation_flag_type::no_seek:
+                return {"no seek"};
+            case otf2::common::io_creation_flag_type::unique:
+                return {"unique"};
+            default:
+                return {"UNDEFINED"};
+        }
+    }
+
+    std::string to_string(const otf2::common::io_status_flag_type& status_flag)
+    {
+        switch (status_flag)
+        {
+            case otf2::common::io_status_flag_type::none:
+                return {"none"};
+            case otf2::common::io_status_flag_type::close_on_exec:
+                return {"close on exec"};
+            case otf2::common::io_status_flag_type::append:
+                return {"append"};
+            case otf2::common::io_status_flag_type::non_blocking:
+                return {"non blocking"};
+            case otf2::common::io_status_flag_type::async:
+                return {"async"};
+            case otf2::common::io_status_flag_type::sync:
+                return {"sync"};
+            case otf2::common::io_status_flag_type::data_sync:
+                return {"data sync"};
+            case otf2::common::io_status_flag_type::avoid_caching:
+                return {"avoid caching"};
+            case otf2::common::io_status_flag_type::no_access_time:
+                return {"no access time"};
+            case otf2::common::io_status_flag_type::delete_on_close:
+                return {"delete on close"};
+            default:
+                return {"UNDEFINED"};
+        }
+    }
+
+    struct io_creation_option_container
+    {
+        otf2::common::io_status_flag_type status_flag;
+        otf2::common::io_creation_flag_type creation_flag;
+        boost::optional<otf2::common::io_access_mode_type> access_mode;
+
+        io_creation_option_container(const otf2::common::io_status_flag_type& status,
+                                     const otf2::common::io_creation_flag_type& flag, 
+                                     const otf2::common::io_access_mode_type& mode) noexcept
+            : status_flag(status), creation_flag(flag), access_mode(mode)
+        {
+        }
+
+        io_creation_option_container(const otf2::common::io_status_flag_type& status) noexcept
+            : status_flag(status), creation_flag(otf2::common::io_creation_flag_type::none)
+        {
+        }
+    };
+
+    inline std::ostream& operator<<(std::ostream& os, const io_creation_option_container& option)
+    {
+        try {
+            return os << "status flag: " << to_string(option.status_flag)
+                    << " creation flag: " << to_string(option.creation_flag)
+                    << " access mode: " << to_string(option.access_mode.value());
+        }
+        catch (const boost::bad_optional_access& e)
+        {
+            logging::debug() << "BAD OPTIONAL ACCESS RAISED";
+        }
+
+        return os << "status flag: " << to_string(option.status_flag)
+                << " creation flag: " << to_string(option.creation_flag);
+    }
+
+    struct io_operation_option_container
+    {
+        otf2::common::io_operation_mode_type op_mode;
+        otf2::common::io_operation_flag_type op_flag;
+
+        io_operation_option_container() = default;
+
+        io_operation_option_container(const otf2::common::io_operation_mode_type& mode,
+                                      const otf2::common::io_operation_flag_type& flag) noexcept
+            : op_mode(mode), op_flag(flag)
+        {
+        }
+
+        io_operation_option_container(const otf2::common::io_operation_mode_type& mode) noexcept
+            : op_mode(mode), op_flag(otf2::common::io_operation_flag_type::none)
+        {
+        }
+    };
+
+    inline std::ostream& operator<<(std::ostream& os, const io_operation_option_container& option)
+    {
+        return os << "operation mode: " << to_string(option.op_mode)
+                << " operation flag: " << to_string(option.op_flag);
     }
 
     struct option_type_printer : boost::static_visitor<std::string>
@@ -117,34 +275,45 @@ namespace rabbitxx {
         template<typename OT>
         std::string operator()(const OT& option_type) const
         {
+            std::stringstream s;
+            s << option_type;
+            return s.str();
+        }
+
+        std::string operator()(const otf2::common::io_seek_option_type& option_type) const
+        {
             return to_string(option_type);
         }
+
     };
 
     struct vertex_io_event_property
     {
-        using option_type = boost::variant<otf2::common::io_operation_mode_type,
+        using option_type = boost::variant<io_operation_option_container,
+                                           io_creation_option_container,
                                            otf2::common::io_seek_option_type>;
 
         int proc_id;
         std::string filename;
         std::string region_name;
-        std::uint64_t request_size; // in bytes
+        std::uint64_t request_size; // bytes requested by an I/O operation
+        std::uint64_t response_size; // bytes actually touched by this I/O operation
         std::uint64_t offset;
         option_type option;
         otf2::chrono::time_point timestamp;
 
         vertex_io_event_property() noexcept :  proc_id(-1), filename(""), region_name(""),
-            request_size(0), offset(0), option(), timestamp()
+            request_size(0), response_size(0),  offset(0), option(), timestamp()
         {
         }
 
         vertex_io_event_property(int process_id, const std::string& fname,
                                  const std::string& reg_name, std::uint64_t req_size,
+                                 std::uint64_t resp_size,
                                  std::uint64_t off, option_type mode,
                                  const otf2::chrono::time_point ts) noexcept
         : proc_id(process_id), filename(fname), region_name(reg_name), request_size(req_size),
-            offset(off), option(mode), timestamp(ts)
+            response_size(resp_size), offset(off), option(mode), timestamp(ts)
         {
         }
 
@@ -160,6 +329,7 @@ namespace rabbitxx {
                  << " filename: " << vertex.filename
                  << " region: " << vertex.region_name
                  << " request_size:  " << vertex.request_size
+                 << " response size: " << vertex.response_size
                  << " offset: " << vertex.offset
                  << " mode: " << boost::apply_visitor(option_type_printer(), vertex.option)
                  << " timestamp: " << vertex.timestamp;
@@ -260,7 +430,6 @@ namespace rabbitxx {
             vertex_descriptor add_vertex(const vertex_type& v)
             {
                 const auto vd = boost::add_vertex(v, *graph_.get());
-                //(*graph_.get())[vd] = v;
                 return vd;
             }
 

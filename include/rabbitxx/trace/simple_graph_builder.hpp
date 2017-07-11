@@ -83,19 +83,18 @@ namespace rabbitxx { namespace trace {
         }
 
         virtual void event(const otf2::definition::location& location,
-                            const otf2::event::io_operation_complete& evt) override
+                           const otf2::event::io_operation_complete& evt) override
         {
             logging::trace() << "Found io_operation_complete event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
             auto& begin_evt = io_ops_started_.front();
             // matching id seems to be always the same, check for equality anyhow.
             assert(evt.matching_id() == begin_evt.matching_id());
-
-            // Are these things equal?????
-            //assert(evt.bytes_request() == it->second.bytes_request());
-            logging::debug() << "completion event bytes request:  " << evt.bytes_request()
-                            << " begin event byte request: " << begin_evt.bytes_request();
 
             // check if we have a file name or a "non-file" handle
             std::string name;
@@ -112,8 +111,12 @@ namespace rabbitxx { namespace trace {
             //TODO: which timestamp should we use? start? or end?
             auto vt =
                 rabbitxx::vertex_io_event_property(location.ref(), name, region_name,
+                                                   begin_evt.bytes_request(),
                                                    evt.bytes_request(), 0,
-                                                   begin_evt.operation_mode(), evt.timestamp());
+                                                   rabbitxx::io_operation_option_container(
+                                                       begin_evt.operation_mode(),
+                                                       begin_evt.operation_flag()),
+                                                   evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             // now, try to add an edge from the vertex before of this process to this one.
             if (edge_points_.empty()) {
@@ -245,13 +248,14 @@ namespace rabbitxx { namespace trace {
 
             // NOTE: Mapping:
             //       request_size = offset_request
+            //       response_size = offset_result
             //       offset = offset_result
-            //TODO: what with whence?????
-            auto vt = vertex_io_event_property(location.ref(), name, region_name, evt.offset_request(),
-                                               evt.offset_result(), evt.seek_option(), evt.timestamp());
-            logging::debug() << "Found seek event: " << vt;
-            const auto& descriptor = graph_.add_vertex(vt);
+            auto vt =
+                vertex_io_event_property(location.ref(), name, region_name, evt.offset_request(),
+                                         evt.offset_result(), evt.offset_result(), 
+                                         evt.seek_option(), evt.timestamp());
 
+            const auto& descriptor = graph_.add_vertex(vt);
             // now, try to add an edge from the vertex before of this process to this one.
             if (edge_points_.empty()) {
                 logging::debug() << "No vertex in edge_points_ queue.";
