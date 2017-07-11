@@ -162,7 +162,47 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_create_handle event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            //graph_.add_vertex();
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
+            // check if we have a file name or a "non-file" handle
+            std::string name;
+            if (evt.handle().name().str().empty() && !evt.handle().file().name().str().empty()) {
+                name = evt.handle().file().name().str();
+            }
+            else {
+                name = evt.handle().name().str();
+            }
+
+            const auto& region_name = region_name_queue_.front();
+            const auto vt =
+                rabbitxx::vertex_io_event_property(location.ref(), name,
+                                                   region_name, 0, 0, 0,
+                                                   rabbitxx::io_creation_option_container(
+                                                       evt.status_flags(),
+                                                       evt.creation_flags(),
+                                                       evt.access_mode()),
+                                                   evt.timestamp());
+
+            const auto& descriptor = graph_.add_vertex(vt);
+            // now, try to add an edge from the vertex before of this process to this one.
+            if (edge_points_.empty()) {
+                logging::debug() << "No vertex in edge_points_ queue.";
+            }
+            else if (edge_points_.size() > 1) {
+                logging::warn() << "More than one vertex in the edge_points_ queue.";
+            }
+            else {
+                const auto& from_vertex = edge_points_.front();
+                const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
+                if (! edge_desc.second) {
+                    logging::fatal() << "Error could not add edge .. this should not happen.";
+                }
+                edge_points_.pop(); // remove old vertex after adding the edge.
+            }
+            // store descriptor in queue, for adding edges later
+            edge_points_.push(descriptor);
         }
 
         virtual void event(const otf2::definition::location& location,
