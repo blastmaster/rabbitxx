@@ -18,6 +18,53 @@
 
 namespace rabbitxx { namespace trace {
 
+    template<typename QType>
+    class location_queue
+    {
+    public:
+        using value_type = QType;
+        using container = std::map<otf2::reference<otf2::definition::location>::ref_type,
+                                                   std::queue<value_type>>;
+
+        void enqueue(const otf2::definition::location& location, const value_type& value)
+        {
+            map_[location.ref()].push(value);
+        }
+
+        void dequeue(const otf2::definition::location& location)
+        {
+            map_[location.ref()].pop();
+        }
+
+        value_type& front(const otf2::definition::location& location)
+        {
+            return map_[location.ref()].front();
+        }
+
+        const value_type& front(const otf2::definition::location& location) const
+        {
+            return map_[location.ref()].front();
+        }
+
+        std::size_t size(const otf2::definition::location& location) //const noexcept
+        {
+            return map_[location.ref()].size();
+        }
+
+        bool empty(const otf2::definition::location& location) //const noexcept
+        {
+            return map_[location.ref()].empty();
+        }
+
+        std::size_t count(const otf2::definition::location& location) const
+        {
+            return map_.count(location.ref());
+        }
+
+    private:
+        container map_;
+    };
+
     template<typename Graph>
     class simple_graph_builder : public rabbitxx::trace::base
     {
@@ -45,31 +92,31 @@ namespace rabbitxx { namespace trace {
         build_edge(const typename Graph::vertex_descriptor& descriptor,
                    const otf2::definition::location& location)
         {
-            if (edge_points_.count(location.ref()) == 0) {
+            if (edge_points_.count(location) == 0) {
                 logging::debug() << "edge_points_ has no entry location #" << location.ref()
                     << "try access...";
             }
 
-            if (edge_points_[location.ref()].empty()) {
+            if (edge_points_.empty(location)) {
                 logging::debug() << "No vertex in edge_points_ queue.";
                 // We cannot add an edge if only one vertex are given.
                 // So push vertex into queue and return.
-                edge_points_[location.ref()].push(descriptor);
+                edge_points_.enqueue(location, descriptor);
                 return boost::none;
             }
 
-            if (edge_points_[location.ref()].size() > 1) {
+            if (edge_points_.size(location) > 1) {
                 logging::warn() << "More than one vertex in the edge_points_ queue.";
             }
 
-            const auto& from_vertex = edge_points_[location.ref()].front();
+            const auto& from_vertex = edge_points_.front(location);
             const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
             if (! edge_desc.second) {
                 logging::fatal() << "Error could not add edge .. this should not happen.";
             }
-            edge_points_[location.ref()].pop(); // remove old vertex after adding the edge.
+            edge_points_.dequeue(location); // remove old vertex after adding the edge.
             // store descriptor in queue, for adding edges later
-            edge_points_[location.ref()].push(descriptor);
+            edge_points_.enqueue(location, descriptor);
 
             return edge_desc;
         }
@@ -87,11 +134,7 @@ namespace rabbitxx { namespace trace {
             }
 
             // TODO: not sure if just save the name as string is that clever
-            if (region_name_queue_.count(location.ref()) == 0) {
-                logging::debug() << "region_name_queue_ has no entry location #" << location.ref()
-                    << " try to insert ...";
-            }
-            region_name_queue_[location.ref()].push(evt.region().name().str());
+            region_name_queue_.enqueue(location, evt.region().name().str());
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -105,11 +148,7 @@ namespace rabbitxx { namespace trace {
             }
 
             // delete saved region name if leave event is reached
-            if (region_name_queue_.count(location.ref()) == 0) {
-                logging::debug() << "region_name_queue_ has no entry for location #" << location.ref();
-                return;
-            }
-            region_name_queue_[location.ref()].pop();
+            region_name_queue_.dequeue(location);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -125,11 +164,7 @@ namespace rabbitxx { namespace trace {
             // here we just save the event for later.
             // An I/O operation will be merged into one single vertex if the
             // corresponding end occurs.
-            if (io_ops_started_.count(location.ref()) == 0) {
-                logging::debug() << "io_ops_started has no entry location #" << location.ref()
-                    << " try to insert ...";
-            }
-            io_ops_started_[location.ref()].push(evt);
+            io_ops_started_.enqueue(location, evt);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -143,12 +178,7 @@ namespace rabbitxx { namespace trace {
             }
 
             // get corresponding begin_operation
-            if (io_ops_started_.count(location.ref()) == 0) {
-                logging::fatal() << "io_ops_started_ has no entry location #" << location.ref();
-                return;
-            }
-            auto& begin_evt = io_ops_started_[location.ref()].front();
-
+            auto& begin_evt = io_ops_started_.front(location);
             // matching id seems to be always the same, check for equality anyhow.
             assert(evt.matching_id() == begin_evt.matching_id());
 
@@ -161,13 +191,7 @@ namespace rabbitxx { namespace trace {
                 name = evt.handle().name().str();
             }
 
-            // get region name on top of our region name queue
-            if (region_name_queue_.count(location.ref()) == 0) {
-                logging::fatal() << "region_name_queue_ has no entry location #" << location.ref();
-                return;
-            }
-            const auto& region_name = region_name_queue_[location.ref()].front();
-
+            const auto& region_name = region_name_queue_.front(location);
             //TODO: which timestamp should we use? start? or end?
             auto vt =
                 rabbitxx::vertex_io_event_property(location.ref(), name, region_name,
@@ -178,14 +202,8 @@ namespace rabbitxx { namespace trace {
                                                        begin_evt.operation_flag()),
                                                    evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
-            // now, try to add an edge from the vertex before of this process to this one.
             build_edge(descriptor, location);
-
-            if (io_ops_started_.count(location.ref()) == 0) {
-                logging::fatal() << "io_ops_started_ has no entry location #" << location.ref();
-                return;
-            }
-            io_ops_started_[location.ref()].pop();
+            io_ops_started_.dequeue(location);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -225,12 +243,7 @@ namespace rabbitxx { namespace trace {
                 name = evt.handle().name().str();
             }
 
-            if (region_name_queue_.count(location.ref()) == 0) {
-                logging::fatal() << "region_name_queue_ has no entry location #" << location.ref();
-                return;
-            }
-            const auto& region_name = region_name_queue_[location.ref()].front();
-
+            const auto& region_name = region_name_queue_.front(location);
             const auto vt =
                 rabbitxx::vertex_io_event_property(location.ref(), name,
                                                    region_name, 0, 0, 0,
@@ -239,9 +252,7 @@ namespace rabbitxx { namespace trace {
                                                        evt.creation_flags(),
                                                        evt.access_mode()),
                                                    evt.timestamp());
-
             const auto& descriptor = graph_.add_vertex(vt);
-            // now, try to add an edge from the vertex before of this process to this one.
             build_edge(descriptor, location);
         }
 
@@ -265,18 +276,12 @@ namespace rabbitxx { namespace trace {
                 logging::warn() << "No filename for delete file event!";
             }
 
-            if (region_name_queue_.count(location.ref()) == 0) {
-                logging::fatal() << "region_name_queue_ has no entry location #" << location.ref();
-                return;
-            }
-            const auto& region_name = region_name_queue_[location.ref()].front();
-
+            const auto& region_name = region_name_queue_.front(location);
             const auto vt =
                 vertex_io_event_property(location.ref(), name, region_name,
                                          0, 0, 0, io_operation_option_container(),
                                          evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
-            // now, try to add an edge from the vertex before of this process to this one.
             build_edge(descriptor, location);
         }
 
@@ -299,19 +304,13 @@ namespace rabbitxx { namespace trace {
                 name = evt.handle().name().str();
             }
 
-            if (region_name_queue_.count(location.ref()) == 0) {
-                logging::fatal() << "region_name_queue_ has no entry location #" << location.ref();
-                return;
-            }
-            const auto& region_name = region_name_queue_[location.ref()].front();
-
+            const auto& region_name = region_name_queue_.front(location);
             const auto vt =
                 vertex_io_event_property(location.ref(), name,
                                         region_name, 0, 0, 0,
                                         io_operation_option_container(),
                                         evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
-            // now, try to add an edge from the vertex before of this process to this one.
             build_edge(descriptor, location);
         }
 
@@ -334,20 +333,13 @@ namespace rabbitxx { namespace trace {
                 name = evt.new_handle().name().str();
             }
 
-            if (region_name_queue_.count(location.ref()) == 0) {
-                logging::fatal() << "region_name_queue_ has no entry location #" << location.ref();
-                return;
-            }
-            const auto& region_name = region_name_queue_[location.ref()].front();
-
+            const auto& region_name = region_name_queue_.front(location);
             const auto vt =
                 vertex_io_event_property(location.ref(), name,
                                         region_name, 0, 0, 0,
                                         io_creation_option_container(evt.status_flags()),
                                         evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
-
-            // now, try to add an edge from the vertex before of this process to this one.
             build_edge(descriptor, location);
         }
 
@@ -402,13 +394,7 @@ namespace rabbitxx { namespace trace {
                 name = evt.handle().name().str();
             }
 
-            // get region_name in front of our queue
-            if (region_name_queue_.count(location.ref()) == 0) {
-                logging::fatal() << "region_name_queue_ has no entry location #" << location.ref();
-                return;
-            }
-            const auto region_name = region_name_queue_[location.ref()].front();
-
+            const auto region_name = region_name_queue_.front(location);
             // NOTE: Mapping:
             //       request_size = offset_request
             //       response_size = offset_result
@@ -417,9 +403,7 @@ namespace rabbitxx { namespace trace {
                 vertex_io_event_property(location.ref(), name, region_name, evt.offset_request(),
                                          evt.offset_result(), evt.offset_result(), 
                                          evt.seek_option(), evt.timestamp());
-
             const auto& descriptor = graph_.add_vertex(vt);
-            // now, try to add an edge from the vertex before of this process to this one.
             build_edge(descriptor, location);
         }
 
@@ -593,13 +577,10 @@ namespace rabbitxx { namespace trace {
 
     private:
         Graph graph_;
-        // TODO: everything in a queue is unique to a location a processing rank
-        // assigned to different locations should add events occuring on a
-        // specific location event to this specific locations queue.
-        std::map<otf2::reference<otf2::definition::location>::ref_type, std::queue<otf2::event::io_operation_begin>> io_ops_started_;
+        location_queue<otf2::event::io_operation_begin> io_ops_started_;
         mapping_type mapping_;
-        std::map<otf2::reference<otf2::definition::location>::ref_type, std::queue<typename Graph::vertex_descriptor>> edge_points_;
-        std::map<otf2::reference<otf2::definition::location>::ref_type, std::queue<std::string>> region_name_queue_;
+        location_queue<typename Graph::vertex_descriptor> edge_points_;
+        location_queue<std::string> region_name_queue_;
     };
 
 }} // namespace rabbitxx::trace
