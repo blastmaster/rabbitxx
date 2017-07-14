@@ -10,6 +10,9 @@
 #include <otf2xx/event/events.hpp>
 #include <otf2xx/reader/reader.hpp>
 
+#include <boost/optional.hpp>
+
+#include <map>
 #include <queue>
 #include <cassert>
 
@@ -36,6 +39,42 @@ namespace rabbitxx { namespace trace {
             return graph_;
         }
 
+    private:
+
+        boost::optional<typename Graph::edge_add_t>
+        build_edge(const typename Graph::vertex_descriptor& descriptor,
+                   const otf2::definition::location& location)
+        {
+            if (edge_points_.count(location.ref()) == 0) {
+                logging::debug() << "edge_points_ has no entry location #" << location.ref()
+                    << "try access...";
+            }
+
+            if (edge_points_[location.ref()].empty()) {
+                logging::debug() << "No vertex in edge_points_ queue.";
+                // We cannot add an edge if only one vertex are given.
+                // So push vertex into queue and return.
+                edge_points_[location.ref()].push(descriptor);
+                return boost::none;
+            }
+
+            if (edge_points_[location.ref()].size() > 1) {
+                logging::warn() << "More than one vertex in the edge_points_ queue.";
+            }
+
+            const auto& from_vertex = edge_points_[location.ref()].front();
+            const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
+            if (! edge_desc.second) {
+                logging::fatal() << "Error could not add edge .. this should not happen.";
+            }
+            edge_points_[location.ref()].pop(); // remove old vertex after adding the edge.
+            // store descriptor in queue, for adding edges later
+            edge_points_[location.ref()].push(descriptor);
+
+            return edge_desc;
+        }
+
+    public:
         // Events
         virtual void event(const otf2::definition::location& location,
                            const otf2::event::enter& evt) override
@@ -140,26 +179,7 @@ namespace rabbitxx { namespace trace {
                                                    evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             // now, try to add an edge from the vertex before of this process to this one.
-            if (edge_points_.count(location.ref()) == 0) {
-                logging::debug() << "edge_points_ has no entry location #" << location.ref()
-                    << "try access...";
-            }
-            if (edge_points_[location.ref()].empty()) {
-                logging::debug() << "No vertex in edge_points_ queue.";
-            }
-            else if (edge_points_[location.ref()].size() > 1) {
-                logging::warn() << "More than one vertex in the edge_points_ queue.";
-            }
-            else {
-                const auto& from_vertex = edge_points_[location.ref()].front();
-                const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
-                if (! edge_desc.second) {
-                    logging::fatal() << "Error could not add edge .. this should not happen.";
-                }
-                edge_points_[location.ref()].pop(); // remove old vertex after adding the edge.
-            }
-            // store descriptor in queue, for adding edges later
-            edge_points_[location.ref()].push(descriptor);
+            build_edge(descriptor, location);
 
             if (io_ops_started_.count(location.ref()) == 0) {
                 logging::fatal() << "io_ops_started_ has no entry location #" << location.ref();
@@ -222,26 +242,7 @@ namespace rabbitxx { namespace trace {
 
             const auto& descriptor = graph_.add_vertex(vt);
             // now, try to add an edge from the vertex before of this process to this one.
-            if (edge_points_.count(location.ref()) == 0) {
-                logging::debug() << "edge_points_ has no entry location #" << location.ref()
-                    << " try access...";
-            }
-            if (edge_points_[location.ref()].empty()) {
-                logging::debug() << "No vertex in edge_points_ queue.";
-            }
-            else if (edge_points_[location.ref()].size() > 1) {
-                logging::warn() << "More than one vertex in the edge_points_ queue.";
-            }
-            else {
-                const auto& from_vertex = edge_points_[location.ref()].front();
-                const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
-                if (! edge_desc.second) {
-                    logging::fatal() << "Error could not add edge .. this should not happen.";
-                }
-                edge_points_[location.ref()].pop(); // remove old vertex after adding the edge.
-            }
-            // store descriptor in queue, for adding edges later
-            edge_points_[location.ref()].push(descriptor);
+            build_edge(descriptor, location);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -276,26 +277,7 @@ namespace rabbitxx { namespace trace {
                                          evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             // now, try to add an edge from the vertex before of this process to this one.
-            if (edge_points_.count(location.ref()) == 0) {
-                logging::debug() << "edge_points_ has no entry location #" << location.ref()
-                    << " try access ...";
-            }
-            if (edge_points_[location.ref()].empty()) {
-                logging::debug() << "No vertex in edge_points_ queue.";
-            }
-            else if (edge_points_[location.ref()].size() > 1) {
-                logging::warn() << "More than one vertex in the edge_points_ queue.";
-            }
-            else {
-                const auto& from_vertex = edge_points_[location.ref()].front();
-                const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
-                if (! edge_desc.second) {
-                    logging::fatal() << "Error could not add edge .. this should not happen.";
-                }
-                edge_points_[location.ref()].pop(); // remove old vertex after adding the edge.
-            }
-            // store descriptor in queue, for adding edges later
-            edge_points_[location.ref()].push(descriptor);
+            build_edge(descriptor, location);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -330,26 +312,7 @@ namespace rabbitxx { namespace trace {
                                         evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             // now, try to add an edge from the vertex before of this process to this one.
-            if (edge_points_.count(location.ref()) == 0) {
-                logging::debug() << "edge_points_ has no entry location #" << location.ref()
-                    << " try access...";
-            }
-            if (edge_points_[location.ref()].empty()) {
-                logging::debug() << "No vertex in edge_points_ queue.";
-            }
-            else if (edge_points_[location.ref()].size() > 1) {
-                logging::warn() << "More than one vertex in the edge_points_ queue.";
-            }
-            else {
-                const auto& from_vertex = edge_points_[location.ref()].front();
-                const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
-                if (! edge_desc.second) {
-                    logging::fatal() << "Error could not add edge .. this should not happen.";
-                }
-                edge_points_[location.ref()].pop(); // remove old vertex after adding the edge.
-            }
-            // store descriptor in queue, for adding edges later
-            edge_points_[location.ref()].push(descriptor);
+            build_edge(descriptor, location);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -385,26 +348,7 @@ namespace rabbitxx { namespace trace {
             const auto& descriptor = graph_.add_vertex(vt);
 
             // now, try to add an edge from the vertex before of this process to this one.
-            if (edge_points_.count(location.ref()) == 0) {
-                logging::debug() << "edge_points_ has no entry location #" << location.ref()
-                    << " try access...";
-            }
-            if (edge_points_[location.ref()].empty()) {
-                logging::debug() << "No vertex in edge_points_ queue.";
-            }
-            else if (edge_points_[location.ref()].size() > 1) {
-                logging::warn() << "More than one vertex in the edge_points_ queue.";
-            }
-            else {
-                const auto& from_vertex = edge_points_[location.ref()].front();
-                const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
-                if (! edge_desc.second) {
-                    logging::fatal() << "Error could not add edge .. this should not happen.";
-                }
-                edge_points_[location.ref()].pop(); // remove old vertex after adding the edge.
-            }
-            // store descriptor in queue, for adding edges later
-            edge_points_[location.ref()].push(descriptor);
+            build_edge(descriptor, location);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -476,26 +420,7 @@ namespace rabbitxx { namespace trace {
 
             const auto& descriptor = graph_.add_vertex(vt);
             // now, try to add an edge from the vertex before of this process to this one.
-            if (edge_points_.count(location.ref()) == 0) {
-                logging::debug() << "edge_points_ has no entry location #" << location.ref()
-                    << " try access...";
-            }
-            if (edge_points_[location.ref()].empty()) {
-                logging::debug() << "No vertex in edge_points_ queue.";
-            }
-            else if (edge_points_[location.ref()].size() > 1) {
-                logging::warn() << "More than one vertex in the edge_points_ queue.";
-            }
-            else {
-                const auto& from_vertex = edge_points_[location.ref()].front();
-                const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
-                if (! edge_desc.second) {
-                    logging::fatal() << "Error could not add edge .. this should not happen.";
-                }
-                edge_points_[location.ref()].pop(); // remove old vertex after adding the edge.
-            }
-            // store descriptor in queue, for adding edges later
-            edge_points_[location.ref()].push(descriptor);
+            build_edge(descriptor, location);
         }
 
         virtual void event(const otf2::definition::location& location,
