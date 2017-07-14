@@ -14,6 +14,7 @@
 #include <boost/optional/optional_io.hpp>
 #include <boost/graph/distributed/adjacency_list.hpp>
 #include <boost/graph/distributed/mpi_process_group.hpp>
+#include <boost/graph/distributed/graphviz.hpp>
 
 #include <string>
 #include <memory>
@@ -466,6 +467,54 @@ namespace rabbitxx {
     using Graph = graph<graph_impl>;
 
     using SimpleGraph = graph<simple_graph_impl>;
+
+    template<typename G>
+    class vertex_event_writer
+    {
+        public:
+            vertex_event_writer(G* graph_ptr) : g_ptr_(graph_ptr) // pass ptr, because we can copy ptrs
+            {
+            }
+
+            template<typename vertex_descriptor>
+            void operator()(std::ostream& os, const vertex_descriptor& vd) const
+            {
+                auto vertex = g_ptr_->operator[](vd);
+                if (vertex.type == vertex_kind::io_event) {
+                    auto property = boost::get<vertex_io_event_property>(vertex.property);
+                    os << "[label=\"" << property.region_name
+                        << "\", comment=\"" << property.proc_id << "\""
+                        << "]";
+                }
+                else if (vertex.type == vertex_kind::sync_event) {
+                    auto property = boost::get<vertex_sync_event_property>(vertex.property);
+                    //TODO: do graphviz output of sync event vertices!
+                }
+                else {
+                    logging::fatal() << "Unrecognized vertex property for graphviz output";
+                }
+            }
+
+        private:
+            G* g_ptr_;
+    };
+
+
+    template<typename G>
+    void write_graph_to_dot(G& graph, const std::string& filename)
+    {
+        std::ofstream file{filename};
+        boost::write_graphviz(file, *graph.get(),
+                make_vertex_event_writer(graph));
+    }
+
+    template<typename G>
+    inline vertex_event_writer<G>
+    make_vertex_event_writer(G& graph)
+    {
+        return vertex_event_writer<G>(&graph);
+    }
+
 
 } // namespace rabbitxx
 
