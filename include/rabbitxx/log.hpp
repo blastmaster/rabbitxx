@@ -16,6 +16,13 @@
 
 namespace rabbitxx
 {
+    // Incomplete type_printer declaration.
+    // For debugging pruposes.
+    // Usage: type_printer<Type> print_Type;
+    // Yields an error during compilation giving the deduced type Type.
+    template<typename T>
+    class type_printer;
+
     namespace log
     {
         namespace detail

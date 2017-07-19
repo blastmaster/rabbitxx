@@ -1,9 +1,11 @@
 #ifndef __RABBITXX_GRAPH_HPP__
 #define __RABBITXX_GRAPH_HPP__
 
-#include <rabbitxx/log.hpp>
 
-#include <nitro/lang/quaint_ptr.hpp>
+#include <boost/serialization/split_free.hpp>
+#include <boost/serialization/tuple.hpp>
+
+#include <nitro/lang/tuple_operators.hpp>
 
 #include <otf2xx/event/events.hpp>
 #include <otf2xx/chrono/chrono.hpp>
@@ -16,62 +18,12 @@
 #include <boost/graph/distributed/mpi_process_group.hpp>
 #include <boost/graph/distributed/graphviz.hpp>
 
+#include <rabbitxx/log.hpp>
+
 #include <string>
 #include <memory>
 
 namespace rabbitxx {
-
-    //template<typename T>
-    //class TD;
-
-    struct vertex_event
-    {
-        enum event_type
-        {
-            enter,
-            leave,
-        } type;
-
-        nitro::lang::quaint_ptr event;
-
-        vertex_event() = default;
-
-        vertex_event(const event_type& evt_type, nitro::lang::quaint_ptr& evt) : type(evt_type), event(std::move(evt))
-        {
-        }
-
-        vertex_event(const event_type& evt_type, nitro::lang::quaint_ptr&& evt) : type(evt_type), event(std::move(evt))
-        {
-        }
-
-        vertex_event(const vertex_event& other) : type(other.type)
-        {
-            auto evt(other.event.as<otf2::event::enter>()); /// copy event //TODO
-            //TD<decltype(evt)> evtttt;
-            event = nitro::lang::make_quaint<decltype(evt)>(evt); // here we have otf2::event::enter because we use as() above!
-            assert(event.get() != nullptr);
-        }
-
-        vertex_event& operator=(const vertex_event& other)
-        {
-            this->type = other.type;
-            auto evt(other.event.get()); // with get we get void*
-            this->event = nitro::lang::make_quaint<decltype(evt)>(evt); // FIXME: decltype(evt) == void*
-            return *this;
-        }
-
-        vertex_event(vertex_event&&) = default;
-        vertex_event& operator=(vertex_event&&) = default;
-
-        template<typename Archiver>
-        void serialize(Archiver& ar, const unsigned int /* version */)
-        {
-            // TODO: Serialization is mandatory, do something useful here!
-        }
-
-    };
-
-// ------------------------------------------------------------------------------------------------
 
     enum class vertex_kind
     {
@@ -372,6 +324,7 @@ namespace rabbitxx {
             : status_flag(status), creation_flag(otf2::common::io_creation_flag_type::none)
         {
         }
+
     };
 
     inline std::ostream& operator<<(std::ostream& os, const io_creation_option_container& option)
@@ -466,6 +419,11 @@ namespace rabbitxx {
         {
         }
 
+        template<typename Archiver>
+        void serialize(Archiver& ar, const unsigned int /* version */)
+        {
+            ar & proc_id & filename & region_name & request_size & response_size & offset & timestamp; //option & timestamp;
+        }
     };
 
     inline std::ostream& operator<<(std::ostream& os, const vertex_io_event_property& vertex)
@@ -499,6 +457,14 @@ namespace rabbitxx {
         ~vertex_sync_event_property()
         {
         }
+
+        template<typename Archiver>
+        void serialize(Archiver& ar, const unsigned int /* version */)
+        {
+            // TODO: Serialization is mandatory, do something useful here!
+            // TODO: boost::variant cannot be serialized by default.
+            ar & proc_id & region_name & timestamp;
+        }
     };
 
     inline std::ostream& operator<<(std::ostream& os, const vertex_sync_event_property& vertex)
@@ -508,10 +474,44 @@ namespace rabbitxx {
                 << "timestamp: " << vertex.timestamp;
     }
 
+
+    template<typename T1, typename T2>
+    struct my_variant : public boost::variant<T1, T2>
+    {
+        typedef boost::variant<T1, T2> base;
+        vertex_kind type;
+
+        my_variant() : base(), type(vertex_kind::io_event)
+        {
+        }
+
+        my_variant(const T1& t1) : base(t1), type(vertex_kind::io_event)
+        {
+        }
+
+        my_variant(const T2& t2) : base(t2), type(vertex_kind::sync_event)
+        {
+        }
+
+        template<typename Archiver>
+        void serialize(Archiver& ar, const unsigned int /* version */)
+        {
+            if (type == vertex_kind::io_event) {
+                ar & type & boost::get<T1>(*this);
+            }
+            else if (type == vertex_kind::sync_event) {
+                ar & type & boost::get<T2>(*this);
+            }
+        }
+    };
+
+
     struct vertex_event_type
     {
-        using vertex_property = boost::variant<vertex_io_event_property,
-                                               vertex_sync_event_property>;
+        //using vertex_property = boost::variant<vertex_io_event_property,
+                                               //vertex_sync_event_property>;
+        using vertex_property = my_variant<vertex_io_event_property,
+                                           vertex_sync_event_property>;
         vertex_kind type;
         vertex_property property;
 
@@ -539,15 +539,18 @@ namespace rabbitxx {
         void serialize(Archiver& ar, const unsigned int /* version */)
         {
             // TODO: Serialization is mandatory, do something useful here!
+            // TODO: boost::variant cannot be serialized by default.
+            ar & type & property;
         }
     };
 
-    using graph_impl = boost::adjacency_list<
-                                boost::vecS,
-                                boost::distributedS<boost::graph::distributed::mpi_process_group,
-                                                    boost::vecS>,
-                                boost::undirectedS, // NOTE: undirected!
-                                vertex_event>; // vertex type
+
+    //using graph_impl = boost::adjacency_list<
+                                //boost::vecS,
+                                //boost::distributedS<boost::graph::distributed::mpi_process_group,
+                                                    //boost::vecS>,
+                                //boost::undirectedS, // NOTE: undirected!
+                                //vertex_event>; // vertex type
 
     using simple_graph_impl = boost::adjacency_list<
                                         boost::vecS,
@@ -561,6 +564,7 @@ namespace rabbitxx {
     class graph
     {
         public:
+            using impl_type = GraphImpl;
             using vertex_descriptor = typename boost::graph_traits<GraphImpl>::vertex_descriptor;
             using vertex_iterator = typename boost::graph_traits<GraphImpl>::vertex_iterator;
             using edge_descriptor = typename boost::graph_traits<GraphImpl>::edge_descriptor;
@@ -569,9 +573,35 @@ namespace rabbitxx {
             using vertex_range = std::pair<vertex_iterator, vertex_iterator>;
             using edge_add_t = std::pair<edge_descriptor, bool>;
 
+            using process_group = boost::graph::distributed::mpi_process_group;
 
-            graph() noexcept : graph_(std::make_unique<GraphImpl>())
+            struct handler
             {
+                using trigger_recv_context = boost::graph::distributed::trigger_receive_context;
+
+                void operator()(int source, int tag, const vertex_descriptor& data, trigger_recv_context cxt) const
+                {
+                    logging::debug() << "IAM IN!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@";
+                    logging::debug() << "receiving from source: " << source << " with tag: " << tag;
+                    // how to add the edge?
+                }
+
+            };
+
+            graph() noexcept : handler_(), pg_(), graph_(std::make_unique<GraphImpl>())
+            {
+                logging::debug() << "graph()";
+            }
+
+            graph(const process_group& pg) noexcept : handler_(), pg_(pg, boost::parallel::attach_distributed_object()), graph_(std::make_unique<GraphImpl>(pg_))
+            {
+                logging::debug() << "graph(const process_group& pg)";
+            }
+
+            graph(boost::mpi::communicator& comm) noexcept : handler_(), pg_(comm, boost::parallel::attach_distributed_object()), graph_(std::make_unique<GraphImpl>(pg_))
+            {
+                logging::debug() << "graph(boost::mpi::communicator& comm)";
+                //pg_.trigger<vertex_descriptor>(5, handler_);
             }
 
             ~graph()
@@ -581,6 +611,29 @@ namespace rabbitxx {
             GraphImpl* get() noexcept
             {
                 return graph_.get();
+            }
+
+            auto get_process_group()
+            {
+                return graph_->process_group();
+            }
+
+            auto pg()
+            {
+                return pg_;
+            }
+
+            template<typename Handler>
+            void register_trigger(int tag, const Handler& handler)
+            {
+                pg_.trigger<vertex_descriptor>(tag, handler);
+            }
+
+            template<typename Class>
+            void register_simple_trigger(int tag, Class* self,
+                    void (Class::*pmf)(int source, int tag, const vertex_descriptor& data, boost::parallel::trigger_receive_context ctxt))
+            {
+                simple_trigger(pg_, tag, self, &Class::simple_handler);
             }
 
             vertex_descriptor add_vertex(const vertex_type& v)
@@ -616,10 +669,12 @@ namespace rabbitxx {
             }
 
         private:
+            handler handler_;
+            process_group pg_;
             std::unique_ptr<GraphImpl> graph_;
     };
 
-    using Graph = graph<graph_impl>;
+    //using Graph = graph<graph_impl>;
 
     using SimpleGraph = graph<simple_graph_impl>;
 
@@ -673,5 +728,19 @@ namespace rabbitxx {
     }
 
 } // namespace rabbitxx
+
+//BOOST_IS_MPI_DATATYPE(vertex_event_type)
+namespace boost { namespace mpi {
+    template<>
+    struct is_mpi_datatype<rabbitxx::vertex_event_type> : mpl::true_ {};
+} }
+
+BOOST_CLASS_IMPLEMENTATION(rabbitxx::vertex_event_type, object_serializable)
+BOOST_CLASS_TRACKING(rabbitxx::vertex_event_type,track_never)
+
+namespace boost { namespace mpi {
+    template<>
+    struct is_mpi_datatype<unsigned long> : mpl::true_ {};
+} }
 
 #endif // __RABBITXX_GRAPH_HPP__

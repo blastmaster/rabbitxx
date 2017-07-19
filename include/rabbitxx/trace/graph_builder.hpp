@@ -50,8 +50,8 @@ namespace rabbitxx { namespace trace {
                 logging::debug() << "In event handler, found enter event with region name: "
                     << evt.region().name();
 
-                graph_.add_vertex({vertex_event::event_type::enter,
-                                   nitro::lang::make_quaint<otf2::event::enter>(evt)});
+                //graph_.add_vertex({vertex_event::event_type::enter,
+                                   //nitro::lang::make_quaint<otf2::event::enter>(evt)});
             }
 
             virtual void event(const otf2::definition::location& location,
@@ -60,8 +60,8 @@ namespace rabbitxx { namespace trace {
                 logging::trace() << "Found leave event to location #" << location.ref() << " @"
                                  << evt.timestamp();
 
-                graph_.add_vertex({vertex_event::event_type::leave,
-                                   nitro::lang::make_quaint<otf2::event::leave>(evt)});
+                //graph_.add_vertex({vertex_event::event_type::leave,
+                                   //nitro::lang::make_quaint<otf2::event::leave>(evt)});
             }
 
             virtual void event(const otf2::definition::location& location,

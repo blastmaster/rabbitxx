@@ -1,5 +1,5 @@
-#include <rabbitxx/trace/simple_graph_builder.hpp>
 #include <rabbitxx/graph.hpp>
+#include <rabbitxx/trace/simple_graph_builder.hpp>
 #include <rabbitxx/log.hpp>
 
 #include <otf2xx/otf2.hpp>

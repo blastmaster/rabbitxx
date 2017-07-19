@@ -73,12 +73,16 @@ namespace rabbitxx { namespace trace {
     public:
         using otf2::reader::callback::event;
         using otf2::reader::callback::definition;
+        using process_group = boost::graph::distributed::mpi_process_group;
         using mapping_type = mapping<detail::round_robin_mapping>;
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
-        : base(comm), graph_(), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
-          edge_points_(), region_name_queue_()
+        : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
+          edge_points_(), region_name_queue_(), coll_root_(), handler_(), graph_(comm)
         {
+            int trigger_msg_sync_tag = 54;
+            graph_.register_trigger(trigger_msg_sync_tag, handler_);
+            graph_.register_simple_trigger(55, this, &simple_graph_builder::simple_handler);
         }
 
         Graph& graph()
@@ -92,6 +96,51 @@ namespace rabbitxx { namespace trace {
         mapping_type& get_mapping()
         {
             return mapping_;
+        }
+
+        //void simple_handler(int source, int tag, const vertex_event_type& data, boost::parallel::trigger_receive_context ctxt)
+        void simple_handler(int source, int tag, const typename Graph::vertex_descriptor& data, boost::parallel::trigger_receive_context ctxt)
+        {
+            const auto root_loc = mapping_.to_location(comm().rank());
+            logging::debug() << "in simple trigger: receive from source: " << source
+                                << " with tag: " << tag << " @ " << root_loc;
+            assert(comm().rank() == root_loc.ref());
+
+            auto root_vd = edge_points_.front(root_loc);
+            auto root_vertex = graph_[root_vd];
+
+            auto pmap = get(&vertex_event_type::property, *graph_.get());
+            //synchronize(pmap);
+            //type_printer<decltype(pmap)> foo;
+            //auto value = get(pmap, data);
+
+            auto src_vt = coll_root_.front(root_loc);
+            //auto vertex = graph_[src_vt];
+            //std::string name;
+            //if (vertex.type == vertex_kind::sync_event) {
+                //name = boost::get<vertex_sync_event_property>(vertex.property).region_name;
+            //}
+            //else {
+                //name = boost::get<vertex_io_event_property>(vertex.property).region_name;
+            //}
+            //logging::debug() << "received descriptor to " << name;
+
+
+            graph_.add_edge(src_vt, data);
+
+            //if (source == comm().rank()) {
+                //auto vertex = graph_[data]; 
+                ////whooom!
+                //std::string name;
+                //if (vertex.type == vertex_kind::sync_event) {
+                    //name = boost::get<vertex_sync_event_property>(vertex.property).region_name;
+                //}
+                //else {
+                    //name = boost::get<vertex_io_event_property>(vertex.property).region_name;
+                //}
+                //logging::debug() << "received descriptor to " << name;
+            //}
+            coll_root_.dequeue(root_loc);
         }
 
     private:
@@ -128,6 +177,21 @@ namespace rabbitxx { namespace trace {
 
             return edge_desc;
         }
+
+        struct sync_trigger_handler
+        {
+            using v_descriptor = typename Graph::vertex_descriptor;
+            using trigger_recv_context = boost::graph::distributed::trigger_receive_context;
+
+            void operator()(int source, int tag, const v_descriptor& data, trigger_recv_context cxt) const
+            {
+                logging::debug() << "In trigger, source: " << source << " tag: " << tag;
+                //auto vertex = graph_[data];
+                //logging::debug() << "received descriptor to " << (vertex.kind == vertex_kind::sync_event) ? 
+                    //boost::get<vertex_sync_event_property>(vertex.property).region_name :
+                    //boost::get<vertex_io_event_property>(vertex.property).region_name;
+            }
+        };
 
     public:
         // Events
@@ -455,7 +519,7 @@ namespace rabbitxx { namespace trace {
             //       offset = offset_result
             auto vt =
                 vertex_io_event_property(location.ref(), name, region_name, evt.offset_request(),
-                                         evt.offset_result(), evt.offset_result(), 
+                                         evt.offset_result(), evt.offset_result(),
                                          evt.seek_option(), evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
@@ -497,6 +561,54 @@ namespace rabbitxx { namespace trace {
 
             if (mapping_.to_rank(location) != comm().rank()) {
                 return;
+            }
+
+            const auto& begin_evt = mpi_coll_started_.front(location);
+            const auto region_name = region_name_queue_.front(location);
+
+            //logging::debug() << "Found SYNC event with region name: " << region_name
+                            //<< " at location #" << location << " with root: " << evt.root();
+
+            const auto co = evt.comm();
+            //logging::debug() << "comm name: " << co.name();
+            //if (co.has_self_group()) {
+                //logging::debug() << "self group name: " << co.self_group().name();
+                //logging::debug() << "self group type: " << to_string(co.self_group().type());
+                //logging::debug() << "self group size: " << co.self_group().size();
+            //}
+            //try {
+                //logging::debug() << "group name: " << co.group().name();
+                //logging::debug() << "group type: " << to_string(co.group().type());
+                //logging::debug() << "group size: " << co.group().size();
+                //for (const auto& m : co.group().members()) {
+                    //logging::debug() << "has member: " << m;
+                //}
+            //}
+            //catch (...)
+            //{
+            //}
+
+            const auto vt = vertex_sync_event_property(location.ref(), region_name, evt.timestamp());
+            const auto& descriptor = graph_.add_vertex(vt);
+            build_edge(descriptor, location); //TODO!
+
+            //TODO: build collective edges!
+            // need vertex descriptors from all members
+            // this needs to communicate use `trigger_with_reply` which should
+            // send us the vertex_descriptor. For sending the request for
+            // that we should use `send_oob_with_reply`.
+            // First we need to obtain the `process_group`.
+
+            int trigger_msg_sync_tag = 55;
+
+            if (location.ref() != evt.root()) {
+                int dest_rank = mapping_.to_rank(evt.root());
+                logging::debug() << "try send to: " << dest_rank << " from " << comm().rank()
+                    << " tag " << location.ref();
+                boost::graph::distributed::send_oob(graph_.pg(), dest_rank, trigger_msg_sync_tag, descriptor);
+            }
+            else {
+                coll_root_.enqueue(location, descriptor);
             }
         }
 
@@ -669,12 +781,14 @@ namespace rabbitxx { namespace trace {
         }
 
     private:
-        Graph graph_;
         location_queue<otf2::event::io_operation_begin> io_ops_started_;
         location_queue<otf2::event::mpi_collective_begin> mpi_coll_started_;
         mapping_type mapping_;
         location_queue<typename Graph::vertex_descriptor> edge_points_;
         location_queue<std::string> region_name_queue_;
+        location_queue<typename Graph::vertex_descriptor> coll_root_;
+        sync_trigger_handler handler_;
+        Graph graph_;
     };
 
 }} // namespace rabbitxx::trace

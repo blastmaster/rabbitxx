@@ -51,14 +51,14 @@ int main(int argc, char** argv)
         //TODO build communicator to read the trace into the graph!?!?
 
         //TODO build graphbuilder
-        rabbitxx::trace::graph_builder<rabbitxx::Graph> graph_builder(world);
+        //rabbitxx::trace::graph_builder<rabbitxx::Graph> graph_builder(world);
         //TODO set callbacks to graphbuilder
-        reader.set_callback(graph_builder); //FIXME: when passing true as second parameter something went wrong
+        //reader.set_callback(graph_builder); //FIXME: when passing true as second parameter something went wrong
 
-        reader.read_definitions();
+        //reader.read_definitions();
 
         //TODO barrier here!
-        world.barrier(); // wait until each process has read the definition records
+        //world.barrier(); // wait until each process has read the definition records
         //reader.read_events();
 
         logging::info() << "Trace processing done.";

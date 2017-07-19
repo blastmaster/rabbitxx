@@ -44,7 +44,7 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RABBITXX_CXX_FLAGS}")
 
-add_subdirectory(src)
+#add_subdirectory(src)
 
 if (BUILD_TESTS)
     add_subdirectory(test)
