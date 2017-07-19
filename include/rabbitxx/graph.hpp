@@ -482,19 +482,30 @@ namespace rabbitxx {
 
     struct vertex_sync_event_property
     {
-        vertex_sync_event_property() noexcept
+        int proc_id;
+        std::string region_name;
+        otf2::chrono::time_point timestamp;
+
+        vertex_sync_event_property() noexcept : proc_id(-1), region_name(""), timestamp()
+        {
+        }
+
+        vertex_sync_event_property(int process_id, const std::string& rname,
+                                   const otf2::chrono::time_point ts) noexcept
+        : proc_id(process_id), region_name(rname), timestamp(ts)
         {
         }
 
         ~vertex_sync_event_property()
         {
         }
-
     };
 
     inline std::ostream& operator<<(std::ostream& os, const vertex_sync_event_property& vertex)
     {
-        return os << "sync event vertex";
+        return os << "sync event\n"
+                << "region: " << vertex.region_name
+                << "timestamp: " << vertex.timestamp;
     }
 
     struct vertex_event_type
@@ -632,7 +643,9 @@ namespace rabbitxx {
                 }
                 else if (vertex.type == vertex_kind::sync_event) {
                     auto property = boost::get<vertex_sync_event_property>(vertex.property);
-                    //TODO: do graphviz output of sync event vertices!
+                    os << "[label=\"" << property.region_name
+                        << "\", comment=\"" << property.proc_id << "\""
+                        << "]";
                 }
                 else {
                     logging::fatal() << "Unrecognized vertex property for graphviz output";
@@ -658,7 +671,6 @@ namespace rabbitxx {
     {
         return vertex_event_writer<G>(&graph);
     }
-
 
 } // namespace rabbitxx
 
