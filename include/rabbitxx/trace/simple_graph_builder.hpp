@@ -212,6 +212,10 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_acquire_lock event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
             //graph_.add_vertex();
         }
 
@@ -220,6 +224,10 @@ namespace rabbitxx { namespace trace {
         {
             logging::trace() << "Found io_change_status_flag event to location #" << location.ref() << " @"
                                 << evt.timestamp();
+
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
 
             //graph_.add_vertex();
         }
@@ -349,6 +357,10 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_operation_cancelled event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
             //graph_.add_vertex();
         }
 
@@ -357,6 +369,10 @@ namespace rabbitxx { namespace trace {
         {
             logging::trace() << "Found io_operation_issued event to location #" << location.ref() << " @"
                                 << evt.timestamp();
+
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
 
             //graph_.add_vertex();
         }
@@ -367,6 +383,10 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_operation_test event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
             //graph_.add_vertex();
         }
 
@@ -376,6 +396,10 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_release_lock event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
             //graph_.add_vertex();
         }
 
@@ -384,6 +408,10 @@ namespace rabbitxx { namespace trace {
         {
             logging::trace() << "Found io_seek event to location #" << location.ref() << " @"
                                 << evt.timestamp();
+
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
 
             // check if we have a file name or a "non-file" handle
             std::string name;
@@ -413,6 +441,10 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_try_lock event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
+
             //graph_.add_vertex();
         }
 
@@ -422,6 +454,9 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_collective_begin event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
             //graph_.add_vertex();
         }
 
@@ -431,7 +466,9 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_collective_end event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            //graph_.add_vertex();
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -439,6 +476,10 @@ namespace rabbitxx { namespace trace {
         {
             logging::trace() << "Found mpi_ireceive event to location #" << location.ref() << " @"
                                 << evt.timestamp();
+
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
 
             //graph_.add_vertex();
         }
@@ -449,6 +490,9 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_ireceive_request event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
             //graph_.add_vertex();
         }
 
@@ -458,6 +502,9 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_isend event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
             //graph_.add_vertex();
         }
 
@@ -467,6 +514,9 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_isend_complete event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
             //graph_.add_vertex();
         }
 
@@ -476,6 +526,9 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_receive event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
             //graph_.add_vertex();
         }
 
@@ -485,6 +538,9 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_request_cancelled event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
             //graph_.add_vertex();
         }
 
@@ -494,6 +550,9 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_request_test event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
             //graph_.add_vertex();
         }
 
@@ -503,6 +562,9 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_send event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
             //graph_.add_vertex();
         }
 
@@ -512,6 +574,9 @@ namespace rabbitxx { namespace trace {
             logging::warn() << "Found unknown event with timestamp " << evt.timestamp()
                             << " at " << location;
 
+            if (mapping_.to_rank(location) != comm().rank()) {
+                return;
+            }
             //graph_.add_vertex();
         }
 
