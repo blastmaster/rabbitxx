@@ -76,7 +76,7 @@ namespace rabbitxx { namespace trace {
         using mapping_type = mapping<detail::round_robin_mapping>;
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
-        : base(comm), graph_(), io_ops_started_(), mapping_(comm.size(), num_locations),
+        : base(comm), graph_(), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
           edge_points_(), region_name_queue_()
         {
         }
@@ -475,6 +475,9 @@ namespace rabbitxx { namespace trace {
             if (mapping_.to_rank(location) != comm().rank()) {
                 return;
             }
+
+            mpi_coll_started_.enqueue(location, evt);
+
             //graph_.add_vertex();
         }
 
@@ -498,7 +501,6 @@ namespace rabbitxx { namespace trace {
             if (mapping_.to_rank(location) != comm().rank()) {
                 return;
             }
-
             //graph_.add_vertex();
         }
 
@@ -661,6 +663,7 @@ namespace rabbitxx { namespace trace {
     private:
         Graph graph_;
         location_queue<otf2::event::io_operation_begin> io_ops_started_;
+        location_queue<otf2::event::mpi_collective_begin> mpi_coll_started_;
         mapping_type mapping_;
         location_queue<typename Graph::vertex_descriptor> edge_points_;
         location_queue<std::string> region_name_queue_;
