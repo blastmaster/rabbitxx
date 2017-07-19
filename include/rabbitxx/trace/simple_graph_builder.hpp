@@ -86,6 +86,14 @@ namespace rabbitxx { namespace trace {
             return graph_;
         }
 
+        /**
+         * Return the mapping object. This is mainly used for debugging.
+         */
+        mapping_type& get_mapping()
+        {
+            return mapping_;
+        }
+
     private:
 
         boost::optional<typename Graph::edge_add_t>

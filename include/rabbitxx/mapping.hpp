@@ -38,7 +38,7 @@ namespace rabbitxx {
             }
 
             /**
-             * Return a mapping for each rank to a location map<location, rank>.
+             * Return a mapping for each location to a rank map<location, rank>.
              */
             std::map<int, int> operator()() const
             {
@@ -66,6 +66,7 @@ namespace rabbitxx {
             {
             }
 
+            // should we return the rank we assign the location to?
             void register_location(const otf2::definition::location& location)
             {
                 assert(to_rank(location.ref()) == -1);
@@ -95,14 +96,23 @@ namespace rabbitxx {
                 return loc_to_rank_.at(ref);
             }
 
+            // TODO: this will not work if we have ranks assigned to more than one location!
             const otf2::definition::location to_location(int rank) const
             {
+                //FIXME: if multimap is used we should use equal_range(rank) to
+                //get all locations assigned to this rank maybe test with
+                //count() before.
+                auto num_locs = rank_to_loc_.count(rank);
+                logging::debug() << num_locs << " registered to rank: " << rank;
                 const auto it = rank_to_loc_.find(rank);
                 if (it == rank_to_loc_.end()) {
                     logging::fatal() << "There is no location registered to rank: " << rank;
                 }
                 return it->second;
             }
+
+            template<typename strategy>
+            friend void dump_mapping(const mapping<strategy>& map);
 
         private:
             void register_mapping(const otf2::definition::location& location, int rank)
@@ -118,10 +128,26 @@ namespace rabbitxx {
             }
 
             mapping_strategy strategy_;
-            std::map<otf2::reference<otf2::definition::location>::ref_type, int> loc_to_rank_;
-            std::map<int, otf2::definition::location> rank_to_loc_;
+            std::map<otf2::reference<otf2::definition::location>::ref_type, int> loc_to_rank_; // no problem locations are unique
+            //TODO collision if one rank has more than one location to care about
+            // multimap maybe a solution
+            std::multimap<int, otf2::definition::location> rank_to_loc_; 
     };
 
+    template<typename strategy>
+    void dump_mapping(const mapping<strategy>& map)
+    {
+        logging::debug() << "location -> rank";
+        for (const auto& kvp : map.loc_to_rank_)
+        {
+            logging::debug() << kvp.first << " -> " << kvp.second;
+        }
+        logging::debug() << "rank -> location";
+        for (const auto& kvp : map.rank_to_loc_)
+        {
+            logging::debug() << kvp.first << " -> " << kvp.second;
+        }
+    }
 
 } // namespace rabbitxx
 
