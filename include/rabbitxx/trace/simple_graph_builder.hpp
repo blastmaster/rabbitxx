@@ -242,6 +242,15 @@ namespace rabbitxx { namespace trace {
                 return;
             }
 
+            // check for parent! to avoid duplication
+            if (evt.handle().has_parent()) {
+                logging::debug() << "handle has a parent! ... discard";
+                return;
+                // Since we already have the parent handle recorded... discard!
+                // FIXME: This is not quiet correct! How handle more
+                // sophisitcated handles? like hdf5.
+            }
+
             // check if we have a file name or a "non-file" handle
             std::string name;
             if (evt.handle().name().str().empty() && !evt.handle().file().name().str().empty()) {
@@ -301,6 +310,15 @@ namespace rabbitxx { namespace trace {
 
             if (mapping_.to_rank(location) != comm().rank()) {
                 return;
+            }
+
+            //check for parent! avoid duplication
+            if (evt.handle().has_parent()) {
+                logging::debug() << "handle has a parent! ... discard!";
+                return;
+                // Since we already have the parent handle recorded... discard!
+                // FIXME: This is not quiet correct! How handle more
+                // sophisitcated handles? like hdf5.
             }
 
             // check if we have a file name or a "non-file" handle
