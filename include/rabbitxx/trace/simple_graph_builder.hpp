@@ -78,7 +78,7 @@ namespace rabbitxx { namespace trace {
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
         : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
-          edge_points_(), region_name_queue_(), coll_root_(), handler_(), graph_(comm)
+          edge_points_(), region_name_queue_(), events_(), handler_(), graph_(comm)
         {
             int trigger_msg_sync_tag = 54;
             graph_.register_trigger(trigger_msg_sync_tag, handler_);
@@ -98,49 +98,12 @@ namespace rabbitxx { namespace trace {
             return mapping_;
         }
 
-        //void simple_handler(int source, int tag, const vertex_event_type& data, boost::parallel::trigger_receive_context ctxt)
         void simple_handler(int source, int tag, const typename Graph::vertex_descriptor& data, boost::parallel::trigger_receive_context ctxt)
         {
             const auto root_loc = mapping_.to_location(comm().rank());
             logging::debug() << "in simple trigger: receive from source: " << source
                                 << " with tag: " << tag << " @ " << root_loc;
             assert(comm().rank() == root_loc.ref());
-
-            auto root_vd = edge_points_.front(root_loc);
-            auto root_vertex = graph_[root_vd];
-
-            auto pmap = get(&vertex_event_type::property, *graph_.get());
-            //synchronize(pmap);
-            //type_printer<decltype(pmap)> foo;
-            //auto value = get(pmap, data);
-
-            auto src_vt = coll_root_.front(root_loc);
-            //auto vertex = graph_[src_vt];
-            //std::string name;
-            //if (vertex.type == vertex_kind::sync_event) {
-                //name = boost::get<vertex_sync_event_property>(vertex.property).region_name;
-            //}
-            //else {
-                //name = boost::get<vertex_io_event_property>(vertex.property).region_name;
-            //}
-            //logging::debug() << "received descriptor to " << name;
-
-
-            graph_.add_edge(src_vt, data);
-
-            //if (source == comm().rank()) {
-                //auto vertex = graph_[data]; 
-                ////whooom!
-                //std::string name;
-                //if (vertex.type == vertex_kind::sync_event) {
-                    //name = boost::get<vertex_sync_event_property>(vertex.property).region_name;
-                //}
-                //else {
-                    //name = boost::get<vertex_io_event_property>(vertex.property).region_name;
-                //}
-                //logging::debug() << "received descriptor to " << name;
-            //}
-            coll_root_.dequeue(root_loc);
         }
 
     private:
@@ -275,6 +238,7 @@ namespace rabbitxx { namespace trace {
                                                    evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
+            events_.enqueue(location, vt);
             io_ops_started_.dequeue(location);
         }
 
@@ -343,6 +307,7 @@ namespace rabbitxx { namespace trace {
                                                    evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
+            events_.enqueue(location, vt);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -372,6 +337,7 @@ namespace rabbitxx { namespace trace {
                                          evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
+            events_.enqueue(location, vt);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -410,6 +376,7 @@ namespace rabbitxx { namespace trace {
                                         evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
+            events_.enqueue(location, vt);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -439,6 +406,7 @@ namespace rabbitxx { namespace trace {
                                         evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
+            events_.enqueue(location, vt);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -523,6 +491,7 @@ namespace rabbitxx { namespace trace {
                                          evt.seek_option(), evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
+            events_.enqueue(location, vt);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -591,25 +560,7 @@ namespace rabbitxx { namespace trace {
             const auto vt = vertex_sync_event_property(location.ref(), region_name, evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location); //TODO!
-
-            //TODO: build collective edges!
-            // need vertex descriptors from all members
-            // this needs to communicate use `trigger_with_reply` which should
-            // send us the vertex_descriptor. For sending the request for
-            // that we should use `send_oob_with_reply`.
-            // First we need to obtain the `process_group`.
-
-            int trigger_msg_sync_tag = 55;
-
-            if (location.ref() != evt.root()) {
-                int dest_rank = mapping_.to_rank(evt.root());
-                logging::debug() << "try send to: " << dest_rank << " from " << comm().rank()
-                    << " tag " << location.ref();
-                boost::graph::distributed::send_oob(graph_.pg(), dest_rank, trigger_msg_sync_tag, descriptor);
-            }
-            else {
-                coll_root_.enqueue(location, descriptor);
-            }
+            events_.enqueue(location, vt);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -714,14 +665,24 @@ namespace rabbitxx { namespace trace {
             logging::warn() << "Found unknown event with timestamp " << evt.timestamp()
                             << " at " << location;
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
             //graph_.add_vertex();
         }
 
         virtual void events_done(const otf2::reader::reader& rdr) override
         {
+            logging::debug() << "synchronizing ...";
+            synchronize(graph_.pg());
+            if (is_master()) {
+                for (const auto& loc_events : events_)
+                {
+                    logging::debug() << "loc: " << loc_events.first;
+                    for (const auto& v : loc_events.second)
+                    {
+                        logging::debug() << v;
+                    }
+                }
+            }
         }
 
         // Definitions
@@ -786,7 +747,7 @@ namespace rabbitxx { namespace trace {
         mapping_type mapping_;
         location_queue<typename Graph::vertex_descriptor> edge_points_;
         location_queue<std::string> region_name_queue_;
-        location_queue<typename Graph::vertex_descriptor> coll_root_;
+        location_queue<vertex_event_type> events_;
         sync_trigger_handler handler_;
         Graph graph_;
     };

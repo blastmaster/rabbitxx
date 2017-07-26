@@ -544,13 +544,16 @@ namespace rabbitxx {
         }
     };
 
-
-    //using graph_impl = boost::adjacency_list<
-                                //boost::vecS,
-                                //boost::distributedS<boost::graph::distributed::mpi_process_group,
-                                                    //boost::vecS>,
-                                //boost::undirectedS, // NOTE: undirected!
-                                //vertex_event>; // vertex type
+    inline std::ostream& operator<<(std::ostream& os, const rabbitxx::vertex_event_type& vertex)
+    {
+        if (vertex.type == vertex_kind::io_event) {
+            return os << "io event";
+        }
+        else if (vertex.type == vertex_kind::sync_event)
+        {
+            return os << "sync event";
+        }
+    }
 
     using simple_graph_impl = boost::adjacency_list<
                                         boost::vecS,
@@ -601,7 +604,7 @@ namespace rabbitxx {
             graph(boost::mpi::communicator& comm) noexcept : handler_(), pg_(comm, boost::parallel::attach_distributed_object()), graph_(std::make_unique<GraphImpl>(pg_))
             {
                 logging::debug() << "graph(boost::mpi::communicator& comm)";
-                //pg_.trigger<vertex_descriptor>(5, handler_);
+                pg_.trigger<vertex_descriptor>(5, handler_);
             }
 
             ~graph()
