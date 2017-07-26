@@ -15,6 +15,7 @@
 
 #include <cassert>
 
+#define FILTER_RANK if (mapping_.to_rank(location) != comm().rank()) { return; }
 
 namespace rabbitxx { namespace trace {
 
@@ -118,9 +119,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found enter event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             // TODO: not sure if just save the name as string is that clever
             region_name_queue_.enqueue(location, evt.region().name().str());
@@ -132,9 +131,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found leave event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             // delete saved region name if leave event is reached
             region_name_queue_.dequeue(location);
@@ -146,9 +143,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_operation_begin event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             // here we just save the event for later.
             // An I/O operation will be merged into one single vertex if the
@@ -162,9 +157,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_operation_complete event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             // get corresponding begin_operation
             auto& begin_evt = io_ops_started_.front(location);
@@ -202,9 +195,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_acquire_lock event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             //graph_.add_vertex();
         }
@@ -215,9 +206,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_change_status_flag event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             //graph_.add_vertex();
         }
@@ -228,9 +217,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_create_handle event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             // check for parent! to avoid duplication
             if (evt.handle().has_parent()) {
@@ -270,9 +257,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_delete_file event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             // check if we have a file name or a "non-file" handle
             // TODO: here we have no handle, but we can the file directly
@@ -300,9 +285,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_destroy_handle event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             //check for parent! avoid duplication
             if (evt.handle().has_parent()) {
@@ -339,9 +322,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_duplicate_handle event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             // check if we have a file name or a "non-file" handle
             std::string name;
@@ -369,9 +350,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_operation_cancelled event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             //graph_.add_vertex();
         }
@@ -382,9 +361,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_operation_issued event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             //graph_.add_vertex();
         }
@@ -395,9 +372,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_operation_test event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             //graph_.add_vertex();
         }
@@ -408,9 +383,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_release_lock event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             //graph_.add_vertex();
         }
@@ -421,9 +394,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_seek event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             // check if we have a file name or a "non-file" handle
             std::string name;
@@ -454,9 +425,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found io_try_lock event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             //graph_.add_vertex();
         }
@@ -467,9 +436,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_collective_begin event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             mpi_coll_started_.enqueue(location, evt);
 
@@ -482,9 +449,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_collective_end event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
 
             const auto& begin_evt = mpi_coll_started_.front(location);
             const auto region_name = region_name_queue_.front(location);
@@ -523,9 +488,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_ireceive event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
             //graph_.add_vertex();
         }
 
@@ -535,9 +498,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_ireceive_request event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
             //graph_.add_vertex();
         }
 
@@ -547,9 +508,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_isend event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
             //graph_.add_vertex();
         }
 
@@ -559,9 +518,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_isend_complete event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
             //graph_.add_vertex();
         }
 
@@ -571,9 +528,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_receive event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
             //graph_.add_vertex();
         }
 
@@ -583,9 +538,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_request_cancelled event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
             //graph_.add_vertex();
         }
 
@@ -595,9 +548,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_request_test event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
             //graph_.add_vertex();
         }
 
@@ -607,9 +558,7 @@ namespace rabbitxx { namespace trace {
             logging::trace() << "Found mpi_send event to location #" << location.ref() << " @"
                                 << evt.timestamp();
 
-            if (mapping_.to_rank(location) != comm().rank()) {
-                return;
-            }
+            FILTER_RANK
             //graph_.add_vertex();
         }
 
