@@ -15,7 +15,9 @@
 
 #include <cassert>
 
-#define FILTER_RANK if (mapping_.to_rank(location) != comm().rank()) { return; }
+//#define FILTER_RANK if (mapping_.to_rank(location) != comm().rank()) { return; }
+
+#define FILTER_RANK if (!is_master()) { return; }
 
 namespace rabbitxx { namespace trace {
 
