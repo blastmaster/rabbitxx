@@ -469,7 +469,7 @@ namespace rabbitxx {
 
     inline std::ostream& operator<<(std::ostream& os, const vertex_sync_event_property& vertex)
     {
-        return os << "sync event\n"
+        return os << "sync event "
                 << "region: " << vertex.region_name
                 << "timestamp: " << vertex.timestamp;
     }
