@@ -5,6 +5,7 @@
 #include <rabbitxx/graph.hpp>
 #include <rabbitxx/mapping.hpp>
 #include <rabbitxx/log.hpp>
+#include <rabbitxx/location_queue.hpp>
 
 #include <otf2xx/definition/definitions.hpp>
 #include <otf2xx/event/events.hpp>
@@ -12,58 +13,11 @@
 
 #include <boost/optional.hpp>
 
-#include <map>
-#include <queue>
 #include <cassert>
+
 
 namespace rabbitxx { namespace trace {
 
-    template<typename QType>
-    class location_queue
-    {
-    public:
-        using value_type = QType;
-        using container = std::map<otf2::reference<otf2::definition::location>::ref_type,
-                                                   std::queue<value_type>>;
-
-        void enqueue(const otf2::definition::location& location, const value_type& value)
-        {
-            map_[location.ref()].push(value);
-        }
-
-        void dequeue(const otf2::definition::location& location)
-        {
-            map_[location.ref()].pop();
-        }
-
-        value_type& front(const otf2::definition::location& location)
-        {
-            return map_[location.ref()].front();
-        }
-
-        const value_type& front(const otf2::definition::location& location) const
-        {
-            return map_[location.ref()].front();
-        }
-
-        std::size_t size(const otf2::definition::location& location) //const noexcept
-        {
-            return map_[location.ref()].size();
-        }
-
-        bool empty(const otf2::definition::location& location) //const noexcept
-        {
-            return map_[location.ref()].empty();
-        }
-
-        std::size_t count(const otf2::definition::location& location) const
-        {
-            return map_.count(location.ref());
-        }
-
-    private:
-        container map_;
-    };
 
     template<typename Graph>
     class simple_graph_builder : public rabbitxx::trace::base
