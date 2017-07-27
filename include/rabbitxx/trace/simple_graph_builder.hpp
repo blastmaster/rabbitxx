@@ -17,11 +17,9 @@
 #include <cassert>
 
 //#define FILTER_RANK if (mapping_.to_rank(location) != comm().rank()) { return; }
-
 #define FILTER_RANK if (!is_master()) { return; }
 
 namespace rabbitxx { namespace trace {
-
 
     template<typename Graph>
     class simple_graph_builder : public rabbitxx::trace::base
@@ -99,6 +97,15 @@ namespace rabbitxx { namespace trace {
             return edge_desc;
         }
 
+        std::string get_handle_name(const otf2::definition::io_handle& handle) const
+        {
+            // check if we have a file name or a "non-file" handle
+            if (handle.name().str().empty() && !handle.file().name().str().empty()) {
+                return handle.file().name().str();
+            }
+            return handle.name().str();
+        }
+
         struct sync_trigger_handler
         {
             using v_descriptor = typename Graph::vertex_descriptor;
@@ -160,16 +167,7 @@ namespace rabbitxx { namespace trace {
             auto& begin_evt = io_ops_started_.front(location);
             // matching id seems to be always the same, check for equality anyhow.
             assert(evt.matching_id() == begin_evt.matching_id());
-
-            // check if we have a file name or a "non-file" handle
-            std::string name;
-            if (evt.handle().name().str().empty() && !evt.handle().file().name().str().empty()) {
-                name = evt.handle().file().name().str();
-            }
-            else {
-                name = evt.handle().name().str();
-            }
-
+            const auto name = get_handle_name(evt.handle());
             const auto& region_name = region_name_queue_.front(location);
             //TODO: which timestamp should we use? start? or end?
             auto vt =
@@ -225,15 +223,7 @@ namespace rabbitxx { namespace trace {
                 // sophisitcated handles? like hdf5.
             }
 
-            // check if we have a file name or a "non-file" handle
-            std::string name;
-            if (evt.handle().name().str().empty() && !evt.handle().file().name().str().empty()) {
-                name = evt.handle().file().name().str();
-            }
-            else {
-                name = evt.handle().name().str();
-            }
-
+            const auto name = get_handle_name(evt.handle());
             const auto& region_name = region_name_queue_.front(location);
             const auto vt =
                 rabbitxx::vertex_io_event_property(location.ref(), name,
@@ -293,15 +283,7 @@ namespace rabbitxx { namespace trace {
                 // sophisitcated handles? like hdf5.
             }
 
-            // check if we have a file name or a "non-file" handle
-            std::string name;
-            if (evt.handle().name().str().empty() && !evt.handle().file().name().str().empty()) {
-                name = evt.handle().file().name().str();
-            }
-            else {
-                name = evt.handle().name().str();
-            }
-
+            const auto name = get_handle_name(evt.handle());
             const auto& region_name = region_name_queue_.front(location);
             const auto vt =
                 vertex_io_event_property(location.ref(), name,
@@ -321,15 +303,7 @@ namespace rabbitxx { namespace trace {
 
             FILTER_RANK
 
-            // check if we have a file name or a "non-file" handle
-            std::string name;
-            if (evt.new_handle().name().str().empty() && !evt.new_handle().file().name().str().empty()) {
-                name = evt.new_handle().file().name().str();
-            }
-            else {
-                name = evt.new_handle().name().str();
-            }
-
+            const auto name = get_handle_name(evt.new_handle());
             const auto& region_name = region_name_queue_.front(location);
             const auto vt =
                 vertex_io_event_property(location.ref(), name,
@@ -393,15 +367,7 @@ namespace rabbitxx { namespace trace {
 
             FILTER_RANK
 
-            // check if we have a file name or a "non-file" handle
-            std::string name;
-            if (evt.handle().name().str().empty() && !evt.handle().file().name().str().empty()) {
-                name = evt.handle().file().name().str();
-            }
-            else {
-                name = evt.handle().name().str();
-            }
-
+            const auto name = get_handle_name(evt.handle());
             const auto region_name = region_name_queue_.front(location);
             // NOTE: Mapping:
             //       request_size = offset_request
@@ -445,16 +411,12 @@ namespace rabbitxx { namespace trace {
         {
             logging::trace() << "Found mpi_collective_end event to location #" << location.ref() << " @"
                                 << evt.timestamp();
-
             FILTER_RANK
-
-            const auto& begin_evt = mpi_coll_started_.front(location);
+            //TODO: begin event is unused atm. but we could use the timestamp to
+            //claculate time range.
+            //const auto& begin_evt = mpi_coll_started_.front(location);
             const auto region_name = region_name_queue_.front(location);
-
-            //logging::debug() << "Found SYNC event with region name: " << region_name
-                            //<< " at location #" << location << " with root: " << evt.root();
-
-            const auto co = evt.comm();
+            //const auto co = evt.comm();
             //logging::debug() << "comm name: " << co.name();
             //if (co.has_self_group()) {
                 //logging::debug() << "self group name: " << co.self_group().name();
