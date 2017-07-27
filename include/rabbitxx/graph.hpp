@@ -599,11 +599,9 @@ namespace rabbitxx {
 
                 void operator()(int source, int tag, const vertex_descriptor& data, trigger_recv_context cxt) const
                 {
-                    logging::debug() << "IAM IN!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@";
                     logging::debug() << "receiving from source: " << source << " with tag: " << tag;
                     // how to add the edge?
                 }
-
             };
 
             graph() noexcept : handler_(), pg_(), graph_(std::make_unique<GraphImpl>())
@@ -611,12 +609,16 @@ namespace rabbitxx {
                 logging::debug() << "graph()";
             }
 
-            graph(const process_group& pg) noexcept : handler_(), pg_(pg, boost::parallel::attach_distributed_object()), graph_(std::make_unique<GraphImpl>(pg_))
+            graph(const process_group& pg) noexcept
+                : handler_(), pg_(pg, boost::parallel::attach_distributed_object()),
+                  graph_(std::make_unique<GraphImpl>(pg_))
             {
                 logging::debug() << "graph(const process_group& pg)";
             }
 
-            graph(boost::mpi::communicator& comm) noexcept : handler_(), pg_(comm, boost::parallel::attach_distributed_object()), graph_(std::make_unique<GraphImpl>(pg_))
+            graph(boost::mpi::communicator& comm) noexcept
+                : handler_(), pg_(comm, boost::parallel::attach_distributed_object()),
+                  graph_(std::make_unique<GraphImpl>(pg_))
             {
                 logging::debug() << "graph(boost::mpi::communicator& comm)";
                 pg_.trigger<vertex_descriptor>(5, handler_);
@@ -691,8 +693,6 @@ namespace rabbitxx {
             process_group pg_;
             std::unique_ptr<GraphImpl> graph_;
     };
-
-    //using Graph = graph<graph_impl>;
 
     using SimpleGraph = graph<simple_graph_impl>;
 
