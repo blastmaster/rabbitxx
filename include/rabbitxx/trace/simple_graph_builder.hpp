@@ -13,6 +13,7 @@
 
 #include <boost/optional.hpp>
 
+#include <algorithm>
 #include <cassert>
 
 //#define FILTER_RANK if (mapping_.to_rank(location) != comm().rank()) { return; }
@@ -106,10 +107,6 @@ namespace rabbitxx { namespace trace {
             void operator()(int source, int tag, const v_descriptor& data, trigger_recv_context cxt) const
             {
                 logging::debug() << "In trigger, source: " << source << " tag: " << tag;
-                //auto vertex = graph_[data];
-                //logging::debug() << "received descriptor to " << (vertex.kind == vertex_kind::sync_event) ? 
-                    //boost::get<vertex_sync_event_property>(vertex.property).region_name :
-                    //boost::get<vertex_io_event_property>(vertex.property).region_name;
             }
         };
 
@@ -158,9 +155,7 @@ namespace rabbitxx { namespace trace {
         {
             logging::trace() << "Found io_operation_complete event to location #" << location.ref() << " @"
                                 << evt.timestamp();
-
             FILTER_RANK
-
             // get corresponding begin_operation
             auto& begin_evt = io_ops_started_.front(location);
             // matching id seems to be always the same, check for equality anyhow.
@@ -478,7 +473,8 @@ namespace rabbitxx { namespace trace {
             //{
             //}
 
-            const auto vt = vertex_sync_event_property(location.ref(), region_name, evt.timestamp());
+            const auto vt = vertex_sync_event_property(location.ref(), region_name, evt.root(),
+                                                       evt.comm().group().members(), evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location); //TODO!
             events_.enqueue(location, descriptor);
@@ -578,18 +574,52 @@ namespace rabbitxx { namespace trace {
         {
             logging::debug() << "synchronizing ...";
             synchronize(graph_.pg());
+            auto k_map = get(&vertex_event_type::type, *graph_.get());
             if (is_master()) {
                 for (const auto& loc_events : events_)
                 {
                     logging::debug() << "loc: " << loc_events.first;
-                    for (const auto& v : loc_events.second)
+                    std::deque<typename Graph::vertex_descriptor> collectives;
+                    std::copy_if(loc_events.second.begin(), loc_events.second.end(),
+                            std::back_inserter(collectives),
+                            [&k_map, this](const typename Graph::vertex_descriptor& vd) // copy all sync events
+                            {
+                                const auto kind = get(k_map, vd);
+                                return kind == vertex_kind::sync_event;
+                            });
+
+                    auto p_map = get(&vertex_event_type::property, *graph_.get());
+                    for (const auto& v : collectives)
                     {
-                        auto pmap = get(&vertex_event_type::property, *graph_.get());
-                        auto vertex = get(pmap, v);
-                        logging::debug() << vertex;
+                        auto vertex = boost::get<vertex_sync_event_property>(get(p_map, v));
+                        if (vertex.proc_id != vertex.root_rank) {
+                            continue;
+                        }
+                        for (const auto m : vertex.members)
+                        {
+                            if (vertex.proc_id == m) {
+                                continue; // skip myself
+                            }
+                            //find corresponding collective for every
+                            //participating location.
+                            auto it = std::find_if(events_[m].begin(), events_[m].end(),
+                                    [&k_map](const typename Graph::vertex_descriptor& vd)
+                                    {
+                                        const auto kind = get(k_map, vd);
+                                        return kind == vertex_kind::sync_event;
+                                    });
+                            if (it == events_[m].end()) {
+                                logging::fatal() << "cannot find corresponding collective event";
+                                return;
+                            }
+                            graph_.add_edge(v, *it);
+                            events_[m].erase(it);
+                        }
                     }
                 }
             }
+            logging::debug() << "synchronizing ...";
+            synchronize(graph_.pg());
         }
 
         // Definitions
@@ -654,7 +684,6 @@ namespace rabbitxx { namespace trace {
         mapping_type mapping_;
         location_queue<typename Graph::vertex_descriptor> edge_points_;
         location_queue<std::string> region_name_queue_;
-        //location_queue<vertex_event_type> events_;
         location_queue<typename Graph::vertex_descriptor> events_;
         sync_trigger_handler handler_;
         Graph graph_;

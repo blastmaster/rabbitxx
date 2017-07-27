@@ -11,8 +11,8 @@ namespace rabbitxx {
     {
     public:
         using value_type = QType;
-        using container = std::map<otf2::reference<otf2::definition::location>::ref_type,
-                                                   std::deque<value_type>>;
+        using key_type = otf2::reference<otf2::definition::location>::ref_type;
+        using container = std::map<key_type, std::deque<value_type>>;
 
         void enqueue(const otf2::definition::location& location, const value_type& value)
         {
@@ -47,6 +47,16 @@ namespace rabbitxx {
         std::size_t count(const otf2::definition::location& location) const
         {
             return map_.count(location.ref());
+        }
+
+        std::deque<value_type>& operator[](const key_type& key)
+        {
+            return map_[key];
+        }
+
+        const std::deque<value_type>& operator[](const key_type& key) const
+        {
+            return map_[key];
         }
 
         auto begin()

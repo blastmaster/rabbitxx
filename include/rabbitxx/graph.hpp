@@ -21,6 +21,7 @@
 #include <rabbitxx/log.hpp>
 
 #include <string>
+#include <algorithm>
 #include <memory>
 
 namespace rabbitxx {
@@ -442,17 +443,26 @@ namespace rabbitxx {
     {
         int proc_id;
         std::string region_name;
+        std::uint32_t root_rank;
+        std::vector<std::uint64_t> members;
         otf2::chrono::time_point timestamp;
 
-        vertex_sync_event_property() noexcept : proc_id(-1), region_name(""), timestamp()
+        vertex_sync_event_property() noexcept : proc_id(-1), region_name(""), root_rank(-1), members(), timestamp()
         {
         }
 
-        vertex_sync_event_property(int process_id, const std::string& rname,
+        vertex_sync_event_property(int process_id, const std::string& rname, std::uint32_t root,
+                                   const std::vector<std::uint64_t>& member,
                                    const otf2::chrono::time_point ts) noexcept
-        : proc_id(process_id), region_name(rname), timestamp(ts)
+        : proc_id(process_id), region_name(rname), root_rank(root), members(member), timestamp(ts)
         {
         }
+
+        vertex_sync_event_property(const vertex_sync_event_property&) = default;
+        vertex_sync_event_property& operator=(const vertex_sync_event_property&) = default;
+
+        vertex_sync_event_property(vertex_sync_event_property&&) = default;
+        vertex_sync_event_property& operator=(vertex_sync_event_property&&) = default;
 
         ~vertex_sync_event_property()
         {
@@ -469,9 +479,14 @@ namespace rabbitxx {
 
     inline std::ostream& operator<<(std::ostream& os, const vertex_sync_event_property& vertex)
     {
-        return os << "sync event "
-                << "region: " << vertex.region_name
-                << "timestamp: " << vertex.timestamp;
+        os << "sync event "
+            << "region: " << vertex.region_name
+            << " root: " << vertex.root_rank
+            << " members: ";
+        std::copy(vertex.members.begin(), vertex.members.end(),
+                  std::ostream_iterator<std::uint64_t>(os, " "));
+        os << " timestamp: " << vertex.timestamp;
+        return os;
     }
 
 
