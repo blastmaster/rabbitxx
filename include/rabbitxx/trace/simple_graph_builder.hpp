@@ -532,11 +532,15 @@ namespace rabbitxx { namespace trace {
             //graph_.add_vertex();
         }
 
+        /**
+         * TODO:
+         * A whole bunch of collective operations does not have a `root`
+         */
         virtual void events_done(const otf2::reader::reader& rdr) override
         {
             logging::debug() << "synchronizing ...";
             synchronize(graph_.pg());
-            auto k_map = get(&vertex_event_type::type, *graph_.get());
+            auto k_map = get(&vertex_event_type::type, *graph_.get()); //get property map of vertex kinds
             if (is_master()) {
                 for (const auto& loc_events : events_)
                 {
@@ -544,23 +548,30 @@ namespace rabbitxx { namespace trace {
                     std::deque<typename Graph::vertex_descriptor> collectives;
                     std::copy_if(loc_events.second.begin(), loc_events.second.end(),
                             std::back_inserter(collectives),
+                            //FIXME: why passing this?
                             [&k_map, this](const typename Graph::vertex_descriptor& vd) // copy all sync events
                             {
                                 const auto kind = get(k_map, vd);
                                 return kind == vertex_kind::sync_event;
                             });
 
-                    auto p_map = get(&vertex_event_type::property, *graph_.get());
-                    for (const auto& v : collectives)
+                    auto p_map = get(&vertex_event_type::property, *graph_.get()); // get property map of all properties
+                    for (const auto& v : collectives) // iterate through all vertex desciptors of collective operations occuring on this location
                     {
-                        auto vertex = boost::get<vertex_sync_event_property>(get(p_map, v));
-                        if (vertex.proc_id != vertex.root_rank) {
-                            continue;
+                        auto vertex = boost::get<vertex_sync_event_property>(get(p_map, v)); // get the corresponding sync event property
+                        ///XXX if vertex.root_rank == OTF2XXX::irgendwas::undefined
+                        //          hole alle events aus allen locations und
+                        //          nimm als root den kleinsten timestamp
+                        if (vertex.root_rank <= vertex.members.size()) {
+                            // root rank is in the range of members
+                            if (vertex.proc_id != vertex.root_rank) {
+                                continue; //draw edges only from root!
+                            }
                         }
                         for (const auto m : vertex.members)
                         {
                             if (vertex.proc_id == m) {
-                                continue; // skip myself
+                                continue; // skip myself, do not draw cycles
                             }
                             //find corresponding collective for every
                             //participating location.
