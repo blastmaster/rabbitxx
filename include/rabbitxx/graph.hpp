@@ -562,11 +562,11 @@ namespace rabbitxx {
     inline std::ostream& operator<<(std::ostream& os, const rabbitxx::vertex_event_type& vertex)
     {
         if (vertex.type == vertex_kind::io_event) {
-            return os << "io event";
+            return os << "io event:\n" << vertex.property;
         }
         else if (vertex.type == vertex_kind::sync_event)
         {
-            return os << "sync event";
+            return os << "sync event:\n" << vertex.property;
         }
     }
 
@@ -710,20 +710,31 @@ namespace rabbitxx {
                 auto vertex = g_ptr_->operator[](vd);
                 if (vertex.type == vertex_kind::io_event) {
                     auto property = boost::get<vertex_io_event_property>(vertex.property);
-                    os << "[label=\"" << property.region_name
-                        << "\", comment=\"" << property.proc_id << "\""
+                    const std::string label_str = build_label(property.region_name, property.proc_id);
+                    os << "[label=\"" << label_str << "\""
+                        << ", color=red"
                         << "]";
                 }
                 else if (vertex.type == vertex_kind::sync_event) {
                     auto property = boost::get<vertex_sync_event_property>(vertex.property);
-                    os << "[label=\"" << property.region_name
-                        << "\", comment=\"" << property.proc_id << "\""
+                    const std::string label_str = build_label(property.region_name, property.proc_id);
+                    os << "[label=\"" << label_str << "\""
+                        << ", color=green"
                         << "]";
                 }
                 else {
                     logging::fatal() << "Unrecognized vertex property for graphviz output";
                 }
             }
+
+        private:
+
+        const std::string build_label(const std::string& region_name, int rank) const
+        {
+           std::stringstream sstr;
+           sstr << region_name << " @ " << rank;
+           return sstr.str();
+        }
 
         private:
             G* g_ptr_;
