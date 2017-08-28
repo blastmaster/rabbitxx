@@ -411,9 +411,16 @@ namespace rabbitxx { namespace trace {
             //catch (...)
             //{
             //}
+            std::vector<std::uint64_t> members;
+            if (evt.comm().has_self_group()) {
+                members = evt.comm().self_group().members();
+            }
+            else {
+                members = evt.comm().group().members();
+            }
 
             const auto vt = vertex_sync_event_property(location.ref(), region_name, evt.root(),
-                                                       evt.comm().group().members(), evt.timestamp());
+                                                       members, evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location); //TODO!
             events_.enqueue(location, descriptor);
