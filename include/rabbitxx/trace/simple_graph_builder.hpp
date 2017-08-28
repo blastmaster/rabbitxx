@@ -29,16 +29,12 @@ namespace rabbitxx { namespace trace {
     public:
         using otf2::reader::callback::event;
         using otf2::reader::callback::definition;
-        using process_group = boost::graph::distributed::mpi_process_group;
         using mapping_type = mapping<detail::round_robin_mapping>;
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
         : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
-          edge_points_(), region_name_queue_(), events_(), handler_(), graph_(comm)
+          edge_points_(), region_name_queue_(), events_(), graph_(comm)
         {
-            int trigger_msg_sync_tag = 54;
-            graph_.register_trigger(trigger_msg_sync_tag, handler_);
-            graph_.register_simple_trigger(55, this, &simple_graph_builder::simple_handler);
         }
 
         Graph& graph()
@@ -52,14 +48,6 @@ namespace rabbitxx { namespace trace {
         mapping_type& get_mapping()
         {
             return mapping_;
-        }
-
-        void simple_handler(int source, int tag, const typename Graph::vertex_descriptor& data, boost::parallel::trigger_receive_context ctxt)
-        {
-            const auto root_loc = mapping_.to_location(comm().rank());
-            logging::debug() << "in simple trigger: receive from source: " << source
-                                << " with tag: " << tag << " @ " << root_loc;
-            assert(comm().rank() == root_loc.ref());
         }
 
     private:
@@ -105,17 +93,6 @@ namespace rabbitxx { namespace trace {
             }
             return handle.name().str();
         }
-
-        struct sync_trigger_handler
-        {
-            using v_descriptor = typename Graph::vertex_descriptor;
-            using trigger_recv_context = boost::graph::distributed::trigger_receive_context;
-
-            void operator()(int source, int tag, const v_descriptor& data, trigger_recv_context cxt) const
-            {
-                logging::debug() << "In trigger, source: " << source << " tag: " << tag;
-            }
-        };
 
     public:
         // Events
@@ -538,8 +515,6 @@ namespace rabbitxx { namespace trace {
          */
         virtual void events_done(const otf2::reader::reader& rdr) override
         {
-            logging::debug() << "synchronizing ...";
-            synchronize(graph_.pg());
             auto k_map = get(&vertex_event_type::type, *graph_.get()); //get property map of vertex kinds
             if (is_master()) {
                 for (const auto& loc_events : events_)
@@ -591,8 +566,6 @@ namespace rabbitxx { namespace trace {
                     }
                 }
             }
-            logging::debug() << "synchronizing ...";
-            synchronize(graph_.pg());
         }
 
         // Definitions
@@ -658,7 +631,6 @@ namespace rabbitxx { namespace trace {
         location_queue<typename Graph::vertex_descriptor> edge_points_;
         location_queue<std::string> region_name_queue_;
         location_queue<typename Graph::vertex_descriptor> events_;
-        sync_trigger_handler handler_;
         Graph graph_;
     };
 

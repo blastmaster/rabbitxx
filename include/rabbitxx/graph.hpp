@@ -1,22 +1,15 @@
 #ifndef __RABBITXX_GRAPH_HPP__
 #define __RABBITXX_GRAPH_HPP__
 
-
-#include <boost/serialization/split_free.hpp>
-#include <boost/serialization/tuple.hpp>
-
-#include <nitro/lang/tuple_operators.hpp>
-
 #include <otf2xx/event/events.hpp>
 #include <otf2xx/chrono/chrono.hpp>
 
-#include <boost/graph/use_mpi.hpp>
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>
-#include <boost/graph/distributed/adjacency_list.hpp>
-#include <boost/graph/distributed/mpi_process_group.hpp>
-#include <boost/graph/distributed/graphviz.hpp>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/graphviz.hpp>
+#include <boost/mpi.hpp>
 
 #include <rabbitxx/log.hpp>
 
@@ -572,8 +565,7 @@ namespace rabbitxx {
 
     using simple_graph_impl = boost::adjacency_list<
                                         boost::vecS,
-                                        boost::distributedS<boost::graph::distributed::mpi_process_group,
-                                                            boost::vecS>,
+                                        boost::vecS,
                                         boost::directedS, // NOTE: directed!
                                         vertex_event_type>;
 
@@ -591,37 +583,14 @@ namespace rabbitxx {
             using vertex_range = std::pair<vertex_iterator, vertex_iterator>;
             using edge_add_t = std::pair<edge_descriptor, bool>;
 
-            using process_group = boost::graph::distributed::mpi_process_group;
-
-            struct handler
-            {
-                using trigger_recv_context = boost::graph::distributed::trigger_receive_context;
-
-                void operator()(int source, int tag, const vertex_descriptor& data, trigger_recv_context cxt) const
-                {
-                    logging::debug() << "receiving from source: " << source << " with tag: " << tag;
-                    // how to add the edge?
-                }
-            };
-
-            graph() noexcept : handler_(), pg_(), graph_(std::make_unique<GraphImpl>())
+            graph() noexcept : graph_(std::make_unique<GraphImpl>())
             {
                 logging::debug() << "graph()";
             }
 
-            graph(const process_group& pg) noexcept
-                : handler_(), pg_(pg, boost::parallel::attach_distributed_object()),
-                  graph_(std::make_unique<GraphImpl>(pg_))
+            graph(boost::mpi::communicator& comm) noexcept 
+            : graph_(std::make_unique<GraphImpl>())
             {
-                logging::debug() << "graph(const process_group& pg)";
-            }
-
-            graph(boost::mpi::communicator& comm) noexcept
-                : handler_(), pg_(comm, boost::parallel::attach_distributed_object()),
-                  graph_(std::make_unique<GraphImpl>(pg_))
-            {
-                logging::debug() << "graph(boost::mpi::communicator& comm)";
-                pg_.trigger<vertex_descriptor>(5, handler_);
             }
 
             ~graph()
@@ -631,29 +600,6 @@ namespace rabbitxx {
             GraphImpl* get() noexcept
             {
                 return graph_.get();
-            }
-
-            auto get_process_group()
-            {
-                return graph_->process_group();
-            }
-
-            auto pg()
-            {
-                return pg_;
-            }
-
-            template<typename Handler>
-            void register_trigger(int tag, const Handler& handler)
-            {
-                pg_.trigger<vertex_descriptor>(tag, handler);
-            }
-
-            template<typename Class>
-            void register_simple_trigger(int tag, Class* self,
-                    void (Class::*pmf)(int source, int tag, const vertex_descriptor& data, boost::parallel::trigger_receive_context ctxt))
-            {
-                simple_trigger(pg_, tag, self, &Class::simple_handler);
             }
 
             vertex_descriptor add_vertex(const vertex_type& v)
@@ -689,8 +635,6 @@ namespace rabbitxx {
             }
 
         private:
-            handler handler_;
-            process_group pg_;
             std::unique_ptr<GraphImpl> graph_;
     };
 
@@ -757,19 +701,5 @@ namespace rabbitxx {
     }
 
 } // namespace rabbitxx
-
-//BOOST_IS_MPI_DATATYPE(vertex_event_type)
-namespace boost { namespace mpi {
-    template<>
-    struct is_mpi_datatype<rabbitxx::vertex_event_type> : mpl::true_ {};
-} }
-
-BOOST_CLASS_IMPLEMENTATION(rabbitxx::vertex_event_type, object_serializable)
-BOOST_CLASS_TRACKING(rabbitxx::vertex_event_type,track_never)
-
-namespace boost { namespace mpi {
-    template<>
-    struct is_mpi_datatype<unsigned long> : mpl::true_ {};
-} }
 
 #endif // __RABBITXX_GRAPH_HPP__

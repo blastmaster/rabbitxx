@@ -12,7 +12,7 @@ set(RABBITXX_C_FLAGS "-Wall -pedantic -Wextra")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-find_package(Boost 1.62 REQUIRED COMPONENTS program_options system filesystem mpi graph_parallel)
+find_package(Boost 1.62 REQUIRED COMPONENTS program_options system filesystem mpi graph)
 
 find_package(MPI REQUIRED)
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
