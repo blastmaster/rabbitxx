@@ -24,7 +24,7 @@ file(GLOB SUBMODULE_FILES "external/nitro/*")
 list(LENGTH SUBMODULE_FILES COUNT_NITRO)
 file(GLOB SUBMODULE_FILES "external/otf2xx/*")
 list(LENGTH SUBMODULE_FILES COUNT_OTF2XX)
-file(GLOB SUBMODULE_FILES "external/Catach/*")
+file(GLOB SUBMODULE_FILES "external/catch/*")
 list(LENGTH SUBMODULE_FILES COUNT_CATCH)
 if(${COUNT_NITRO} EQUAL 0 OR ${COUNT_OTF2XX} EQUAL 0 OR ${COUNT_CATCH} EQUAL 0)
     #TODO: using wrong branch of otf2xx
@@ -38,14 +38,12 @@ set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI suppo
 include(external/otf2xx/OTF2XX.cmake)
 set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI support or not (Requires Boost.MPI)" FORCE)
 
-include_directories("${CMAKE_SOURCE_DIR}/external/Catch/include")
-
 include_directories("${CMAKE_SOURCE_DIR}/include")
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RABBITXX_CXX_FLAGS}")
 
 #add_subdirectory(src)
 
 if (BUILD_TESTS)
+    include_directories("${CMAKE_SOURCE_DIR}/external/catch/include")
     add_subdirectory(test)
 endif()
