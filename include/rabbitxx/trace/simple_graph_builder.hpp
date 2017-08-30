@@ -526,7 +526,7 @@ namespace rabbitxx { namespace trace {
             if (is_master()) {
                 for (const auto& loc_events : events_)
                 {
-                    logging::debug() << "loc: " << loc_events.first;
+                    logging::debug() << "processing location: " << loc_events.first;
                     std::deque<typename Graph::vertex_descriptor> collectives;
                     std::copy_if(loc_events.second.begin(), loc_events.second.end(),
                             std::back_inserter(collectives),
