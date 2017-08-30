@@ -578,9 +578,11 @@ namespace rabbitxx {
             using vertex_descriptor = typename boost::graph_traits<GraphImpl>::vertex_descriptor;
             using vertex_iterator = typename boost::graph_traits<GraphImpl>::vertex_iterator;
             using edge_descriptor = typename boost::graph_traits<GraphImpl>::edge_descriptor;
+            using edge_iterator = typename boost::graph_traits<GraphImpl>::edge_iterator;
             using vertex_type = typename boost::vertex_bundle_type<GraphImpl>::type;
             using edge_type = typename boost::vertex_bundle_type<GraphImpl>::type;
             using vertex_range = std::pair<vertex_iterator, vertex_iterator>;
+            using edge_range = std::pair<edge_iterator, edge_iterator>;
             using edge_add_t = std::pair<edge_descriptor, bool>;
 
             graph() noexcept : graph_(std::make_unique<GraphImpl>())
@@ -619,6 +621,11 @@ namespace rabbitxx {
                 return boost::vertices(*graph_.get());
             }
 
+            edge_range edges()
+            {
+                return boost::edges(*graph_.get());
+            }
+
             std::size_t num_vertices() const
             {
                 return boost::num_vertices(*graph_.get());
@@ -633,6 +640,7 @@ namespace rabbitxx {
             {
                 return graph_.get()->operator[](vd);
             }
+
 
         private:
             std::unique_ptr<GraphImpl> graph_;
