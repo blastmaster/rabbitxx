@@ -2,7 +2,8 @@
 #define __RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP__
 
 #include <rabbitxx/trace/base.hpp>
-#include <rabbitxx/graph.hpp>
+#include <rabbitxx/graph/simple_graph.hpp>
+//#include <rabbitxx/graph/otf2_trace_event.hpp>
 #include <rabbitxx/mapping.hpp>
 #include <rabbitxx/log.hpp>
 #include <rabbitxx/location_queue.hpp>
@@ -147,11 +148,10 @@ namespace rabbitxx { namespace trace {
             const auto name = get_handle_name(evt.handle());
             const auto& region_name = region_name_queue_.front(location);
             //TODO: which timestamp should we use? start? or end?
-            auto vt =
-                rabbitxx::vertex_io_event_property(location.ref(), name, region_name,
+            auto vt = io_event_property(location.ref(), name, region_name,
                                                    begin_evt.bytes_request(),
                                                    evt.bytes_request(), 0,
-                                                   rabbitxx::io_operation_option_container(
+                                                   io_operation_option_container(
                                                        begin_evt.operation_mode(),
                                                        begin_evt.operation_flag()),
                                                    evt.timestamp());
@@ -202,14 +202,13 @@ namespace rabbitxx { namespace trace {
 
             const auto name = get_handle_name(evt.handle());
             const auto& region_name = region_name_queue_.front(location);
-            const auto vt =
-                rabbitxx::vertex_io_event_property(location.ref(), name,
-                                                   region_name, 0, 0, 0,
-                                                   rabbitxx::io_creation_option_container(
-                                                       evt.status_flags(),
-                                                       evt.creation_flags(),
-                                                       evt.access_mode()),
-                                                   evt.timestamp());
+            const auto vt = io_event_property(location.ref(), name,
+                                            region_name, 0, 0, 0,
+                                            rabbitxx::io_creation_option_container(
+                                                evt.status_flags(),
+                                                evt.creation_flags(),
+                                                evt.access_mode()),
+                                            evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
@@ -234,8 +233,7 @@ namespace rabbitxx { namespace trace {
             }
 
             const auto& region_name = region_name_queue_.front(location);
-            const auto vt =
-                vertex_io_event_property(location.ref(), name, region_name,
+            const auto vt = io_event_property(location.ref(), name, region_name,
                                          0, 0, 0, io_operation_option_container(),
                                          evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
@@ -262,11 +260,10 @@ namespace rabbitxx { namespace trace {
 
             const auto name = get_handle_name(evt.handle());
             const auto& region_name = region_name_queue_.front(location);
-            const auto vt =
-                vertex_io_event_property(location.ref(), name,
-                                        region_name, 0, 0, 0,
-                                        io_operation_option_container(),
-                                        evt.timestamp());
+            const auto vt = io_event_property(location.ref(), name,
+                                            region_name, 0, 0, 0,
+                                            io_operation_option_container(),
+                                            evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
@@ -282,11 +279,10 @@ namespace rabbitxx { namespace trace {
 
             const auto name = get_handle_name(evt.new_handle());
             const auto& region_name = region_name_queue_.front(location);
-            const auto vt =
-                vertex_io_event_property(location.ref(), name,
-                                        region_name, 0, 0, 0,
-                                        io_creation_option_container(evt.status_flags()),
-                                        evt.timestamp());
+            const auto vt = io_event_property(location.ref(), name,
+                                            region_name, 0, 0, 0,
+                                            io_creation_option_container(evt.status_flags()),
+                                            evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
@@ -350,8 +346,7 @@ namespace rabbitxx { namespace trace {
             //       request_size = offset_request
             //       response_size = offset_result
             //       offset = offset_result
-            auto vt =
-                vertex_io_event_property(location.ref(), name, region_name, evt.offset_request(),
+            auto vt = io_event_property(location.ref(), name, region_name, evt.offset_request(),
                                          evt.offset_result(), evt.offset_result(),
                                          evt.seek_option(), evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
@@ -419,7 +414,7 @@ namespace rabbitxx { namespace trace {
                 members = evt.comm().group().members();
             }
 
-            const auto vt = vertex_sync_event_property(location.ref(), region_name, evt.root(),
+            const auto vt = sync_event_property(location.ref(), region_name, evt.root(),
                                                        members, evt.timestamp());
             const auto& descriptor = graph_.add_vertex(vt);
             build_edge(descriptor, location); //TODO!
@@ -516,13 +511,9 @@ namespace rabbitxx { namespace trace {
             //graph_.add_vertex();
         }
 
-        /**
-         * TODO:
-         * A whole bunch of collective operations does not have a `root`
-         */
         virtual void events_done(const otf2::reader::reader& rdr) override
         {
-            auto k_map = get(&vertex_event_type::type, *graph_.get()); //get property map of vertex kinds
+            auto k_map = get(&otf2_trace_event::type, *graph_.get()); //get property map of vertex kinds
             if (is_master()) {
                 for (const auto& loc_events : events_)
                 {
@@ -530,17 +521,16 @@ namespace rabbitxx { namespace trace {
                     std::deque<typename Graph::vertex_descriptor> collectives;
                     std::copy_if(loc_events.second.begin(), loc_events.second.end(),
                             std::back_inserter(collectives),
-                            //FIXME: why passing this?
-                            [&k_map, this](const typename Graph::vertex_descriptor& vd) // copy all sync events
+                            [&k_map](const typename Graph::vertex_descriptor& vd) // copy all sync events
                             {
                                 const auto kind = get(k_map, vd);
                                 return kind == vertex_kind::sync_event;
                             });
 
-                    auto p_map = get(&vertex_event_type::property, *graph_.get()); // get property map of all properties
+                    auto p_map = get(&otf2_trace_event::property, *graph_.get()); // get property map of all properties
                     for (const auto& v : collectives) // iterate through all vertex desciptors of collective operations occuring on this location
                     {
-                        auto vertex = boost::get<vertex_sync_event_property>(get(p_map, v)); // get the corresponding sync event property
+                        auto vertex = boost::get<sync_event_property>(get(p_map, v)); // get the corresponding sync event property
                         ///XXX if vertex.root_rank == OTF2XXX::irgendwas::undefined
                         //          hole alle events aus allen locations und
                         //          nimm als root den kleinsten timestamp

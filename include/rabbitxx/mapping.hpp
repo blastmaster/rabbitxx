@@ -139,8 +139,8 @@ namespace rabbitxx {
             std::multimap<int, otf2::definition::location> rank_to_loc_; 
     };
 
-    template<typename strategy>
-    void dump_mapping(const mapping<strategy>& map)
+    template<typename Strategy>
+    void dump_mapping(const mapping<Strategy>& map)
     {
         logging::debug() << "location -> rank";
         for (const auto& kvp : map.loc_to_rank_)
