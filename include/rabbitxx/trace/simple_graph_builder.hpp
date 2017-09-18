@@ -34,13 +34,18 @@ namespace rabbitxx { namespace trace {
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
         : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
-          edge_points_(), region_name_queue_(), events_(), graph_(comm)
+          edge_points_(), region_name_queue_(), events_(), graph_(std::make_unique<Graph>(comm))
         {
         }
 
-        Graph& graph()
+//         Graph& graph()
+//         {
+//             return graph_;
+//         }
+
+        auto graph()
         {
-            return graph_;
+            return std::move(graph_);
         }
 
         /**
@@ -75,7 +80,7 @@ namespace rabbitxx { namespace trace {
             }
 
             const auto& from_vertex = edge_points_.front(location);
-            const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
+            const auto edge_desc = graph_->add_edge(from_vertex, descriptor);
             if (! edge_desc.second) {
                 logging::fatal() << "Error could not add edge .. this should not happen.";
             }
@@ -155,7 +160,7 @@ namespace rabbitxx { namespace trace {
                                                        begin_evt.operation_mode(),
                                                        begin_evt.operation_flag()),
                                                    evt.timestamp());
-            const auto& descriptor = graph_.add_vertex(vt);
+            const auto& descriptor = graph_->add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
             io_ops_started_.dequeue(location);
@@ -209,7 +214,7 @@ namespace rabbitxx { namespace trace {
                                                 evt.creation_flags(),
                                                 evt.access_mode()),
                                             evt.timestamp());
-            const auto& descriptor = graph_.add_vertex(vt);
+            const auto& descriptor = graph_->add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
         }
@@ -236,7 +241,7 @@ namespace rabbitxx { namespace trace {
             const auto vt = io_event_property(location.ref(), name, region_name,
                                          0, 0, 0, io_operation_option_container(),
                                          evt.timestamp());
-            const auto& descriptor = graph_.add_vertex(vt);
+            const auto& descriptor = graph_->add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
         }
@@ -264,7 +269,7 @@ namespace rabbitxx { namespace trace {
                                             region_name, 0, 0, 0,
                                             io_operation_option_container(),
                                             evt.timestamp());
-            const auto& descriptor = graph_.add_vertex(vt);
+            const auto& descriptor = graph_->add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
         }
@@ -283,7 +288,7 @@ namespace rabbitxx { namespace trace {
                                             region_name, 0, 0, 0,
                                             io_creation_option_container(evt.status_flags()),
                                             evt.timestamp());
-            const auto& descriptor = graph_.add_vertex(vt);
+            const auto& descriptor = graph_->add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
         }
@@ -349,7 +354,7 @@ namespace rabbitxx { namespace trace {
             auto vt = io_event_property(location.ref(), name, region_name, evt.offset_request(),
                                          evt.offset_result(), evt.offset_result(),
                                          evt.seek_option(), evt.timestamp());
-            const auto& descriptor = graph_.add_vertex(vt);
+            const auto& descriptor = graph_->add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
         }
@@ -416,7 +421,7 @@ namespace rabbitxx { namespace trace {
 
             const auto vt = sync_event_property(location.ref(), region_name, evt.root(),
                                                        members, evt.timestamp());
-            const auto& descriptor = graph_.add_vertex(vt);
+            const auto& descriptor = graph_->add_vertex(vt);
             build_edge(descriptor, location); //TODO!
             events_.enqueue(location, descriptor);
         }
@@ -513,7 +518,7 @@ namespace rabbitxx { namespace trace {
 
         virtual void events_done(const otf2::reader::reader& rdr) override
         {
-            auto k_map = get(&otf2_trace_event::type, *graph_.get()); //get property map of vertex kinds
+            auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds
             if (is_master()) {
                 for (const auto& loc_events : events_)
                 {
@@ -527,7 +532,7 @@ namespace rabbitxx { namespace trace {
                                 return kind == vertex_kind::sync_event;
                             });
 
-                    auto p_map = get(&otf2_trace_event::property, *graph_.get()); // get property map of all properties
+                    auto p_map = get(&otf2_trace_event::property, *(graph_->get())); // get property map of all properties
                     for (const auto& v : collectives) // iterate through all vertex desciptors of collective operations occuring on this location
                     {
                         auto vertex = boost::get<sync_event_property>(get(p_map, v)); // get the corresponding sync event property
@@ -557,7 +562,7 @@ namespace rabbitxx { namespace trace {
                                 logging::fatal() << "cannot find corresponding collective event";
                                 return;
                             }
-                            graph_.add_edge(v, *it);
+                            graph_->add_edge(v, *it);
                             events_[m].erase(it);
                         }
                     }
@@ -628,7 +633,27 @@ namespace rabbitxx { namespace trace {
         location_queue<typename Graph::vertex_descriptor> edge_points_;
         location_queue<std::string> region_name_queue_;
         location_queue<typename Graph::vertex_descriptor> events_;
-        Graph graph_;
+        std::unique_ptr<Graph> graph_;
+    };
+
+    struct OTF2_Io_Graph_Builder
+    {
+        using graph_type = rabbitxx::SimpleGraph;
+
+        auto operator()(const std::string trace_file, boost::mpi::communicator& comm)
+        {
+            otf2::reader::reader trc_reader(trace_file);
+            auto num_locations = trc_reader.num_locations();
+            simple_graph_builder<graph_type> builder(comm, num_locations);
+
+            trc_reader.set_callback(builder);
+            trc_reader.read_definitions();
+            comm.barrier();
+            trc_reader.read_events();
+            comm.barrier();
+
+            return std::move(builder.graph());
+        }
     };
 
 }} // namespace rabbitxx::trace

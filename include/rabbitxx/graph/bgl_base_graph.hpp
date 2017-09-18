@@ -34,9 +34,15 @@ namespace rabbitxx { namespace graph {
             {
             }
 
-            ~graph()
-            {
-            }
+//             graph(const graph& other) = delete;
+//             graph& operator=(const graph& other) = delete;
+// 
+//             graph(graph&& other) = default;
+//             graph&& operator=(graph&& other) = default;
+// 
+//             ~graph()
+//             {
+//             }
 
             GraphImpl* get() noexcept
             {
