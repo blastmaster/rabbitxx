@@ -1,8 +1,5 @@
 #include <rabbitxx/graph.hpp>
-#include <rabbitxx/trace/simple_graph_builder.hpp>
 #include <rabbitxx/log.hpp>
-
-#include <otf2xx/otf2.hpp>
 
 #include <boost/mpi.hpp>
 
@@ -45,32 +42,22 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    otf2::reader::reader rdr(argv[1]);
-    auto num_locations = rdr.num_locations();
-
-    rabbitxx::trace::simple_graph_builder<rabbitxx::SimpleGraph> gb(world, num_locations);
-    rdr.set_callback(gb);
-    rdr.read_definitions();
-    world.barrier();
-    rdr.read_events();
-    world.barrier();
-
-    auto& g = gb.graph();
+    auto g = rabbitxx::make_graph<rabbitxx::trace::OTF2_Io_Graph_Builder>(argv[1], world);
     auto print = [&g](const auto& evt_vec)
     {
         for (const auto evt : evt_vec) {
-            std::cout << g[evt] << std::endl;
+            std::cout << g->operator[](evt) << std::endl;
         }
     };
 
     if (argc == 3) {
         std::string filter {argv[2]};
         if (filter == "io") {
-            auto io_evts = get_io_events(g);
+            auto io_evts = get_io_events(*(g.get()));
             print(io_evts);
         }
         else if (filter == "sync") {
-            auto sync_evts = get_sync_events(g);
+            auto sync_evts = get_sync_events(*(g.get()));
             print(sync_evts);
         }
     }

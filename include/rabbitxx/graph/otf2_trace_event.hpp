@@ -278,7 +278,7 @@ namespace rabbitxx {
     void write_graph_to_dot(G& graph, const std::string& filename)
     {
         std::ofstream file{filename};
-        boost::write_graphviz(file, *graph.get(),
+        boost::write_graphviz(file, graph,
                 make_otf2_trace_event_writer(graph));
     }
 

@@ -2,4 +2,6 @@
 add_subdirectory(mapping_test)
 add_subdirectory(dot_output_test)
 add_subdirectory(dump_events)
+add_subdirectory(count_io_events)
 add_subdirectory(simple_graph_test)
+add_subdirectory(graph_builder_test)
