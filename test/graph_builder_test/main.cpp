@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     boost::mpi::communicator world;
     static const std::string trace_file = "/home/soeste/code/otf2cpp/traces/hacc_io/scorep-20170821_1239_11843901293182859/traces.otf2";
 
-    using rabbitxx::trace::OTF2_Io_Graph_Builder;
+    using rabbitxx::graph::OTF2_Io_Graph_Builder;
     auto graph = rabbitxx::make_graph<OTF2_Io_Graph_Builder>(trace_file, world);
     
     return 0;

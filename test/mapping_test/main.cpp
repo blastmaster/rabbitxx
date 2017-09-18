@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
     otf2::reader::reader trc_reader(argv[1]);
     auto num_locations = trc_reader.num_locations();
-    rabbitxx::trace::simple_graph_builder<rabbitxx::SimpleGraph> builder(world, num_locations);
+    rabbitxx::graph::simple_graph_builder<rabbitxx::SimpleIoGraph> builder(world, num_locations);
 
     trc_reader.set_callback(builder);
     trc_reader.read_definitions();

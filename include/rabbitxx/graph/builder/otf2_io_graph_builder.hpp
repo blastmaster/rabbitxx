@@ -1,9 +1,8 @@
-#ifndef __RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP__
-#define __RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP__
+#ifndef RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP
+#define RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP
 
 #include <rabbitxx/trace/base.hpp>
-#include <rabbitxx/graph/simple_graph.hpp>
-//#include <rabbitxx/graph/otf2_trace_event.hpp>
+#include <rabbitxx/graph/io_graph_simple.hpp>
 #include <rabbitxx/mapping.hpp>
 #include <rabbitxx/log.hpp>
 #include <rabbitxx/location_queue.hpp>
@@ -20,7 +19,7 @@
 //#define FILTER_RANK if (mapping_.to_rank(location) != comm().rank()) { return; }
 #define FILTER_RANK if (!is_master()) { return; }
 
-namespace rabbitxx { namespace trace {
+namespace rabbitxx { namespace graph {
 
     template<typename Graph>
     class simple_graph_builder : public rabbitxx::trace::base
@@ -30,18 +29,13 @@ namespace rabbitxx { namespace trace {
     public:
         using otf2::reader::callback::event;
         using otf2::reader::callback::definition;
-        using mapping_type = mapping<detail::round_robin_mapping>;
+        using mapping_type = mapping<rabbitxx::detail::round_robin_mapping>;
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
         : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
           edge_points_(), region_name_queue_(), events_(), graph_(std::make_unique<Graph>(comm))
         {
         }
-
-//         Graph& graph()
-//         {
-//             return graph_;
-//         }
 
         auto graph()
         {
@@ -228,7 +222,7 @@ namespace rabbitxx { namespace trace {
             FILTER_RANK
 
             // check if we have a file name or a "non-file" handle
-            // TODO: here we have no handle, but we can the file directly
+            // TODO: here we have no handle, but we can the io_file definition directly
             std::string name;
             if (!evt.file().name().str().empty()) {
                 name = evt.file().name().str();
@@ -393,24 +387,25 @@ namespace rabbitxx { namespace trace {
             //claculate time range.
             //const auto& begin_evt = mpi_coll_started_.front(location);
             const auto region_name = region_name_queue_.front(location);
-            //const auto co = evt.comm();
-            //logging::debug() << "comm name: " << co.name();
-            //if (co.has_self_group()) {
-                //logging::debug() << "self group name: " << co.self_group().name();
-                //logging::debug() << "self group type: " << to_string(co.self_group().type());
-                //logging::debug() << "self group size: " << co.self_group().size();
-            //}
-            //try {
-                //logging::debug() << "group name: " << co.group().name();
-                //logging::debug() << "group type: " << to_string(co.group().type());
-                //logging::debug() << "group size: " << co.group().size();
-                //for (const auto& m : co.group().members()) {
-                    //logging::debug() << "has member: " << m;
-                //}
-            //}
-            //catch (...)
-            //{
-            //}
+            const auto co = evt.comm();
+            logging::debug() << "comm name: " << co.name();
+            if (co.has_self_group()) {
+                logging::debug() << "self group name: " << co.self_group().name();
+                logging::debug() << "self group type: " << to_string(co.self_group().type());
+                logging::debug() << "self group size: " << co.self_group().size();
+            }
+            try {
+                logging::debug() << "group name: " << co.group().name();
+                logging::debug() << "group type: " << to_string(co.group().type());
+                logging::debug() << "group size: " << co.group().size();
+                for (const auto& m : co.group().members()) {
+                    logging::debug() << "has member: " << m;
+                }
+            }
+            catch (...)
+            {
+            }
+
             std::vector<std::uint64_t> members;
             if (evt.comm().has_self_group()) {
                 members = evt.comm().self_group().members();
@@ -638,9 +633,9 @@ namespace rabbitxx { namespace trace {
 
     struct OTF2_Io_Graph_Builder
     {
-        using graph_type = rabbitxx::SimpleGraph;
+        using graph_type = rabbitxx::SimpleIoGraph;
 
-        auto operator()(const std::string trace_file, boost::mpi::communicator& comm)
+        auto operator()(const std::string trace_file, boost::mpi::communicator& comm) const
         {
             otf2::reader::reader trc_reader(trace_file);
             auto num_locations = trc_reader.num_locations();
@@ -658,4 +653,4 @@ namespace rabbitxx { namespace trace {
 
 }} // namespace rabbitxx::trace
 
-#endif // __RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP__
+#endif // RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP

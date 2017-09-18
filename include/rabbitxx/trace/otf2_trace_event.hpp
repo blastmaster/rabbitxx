@@ -4,7 +4,6 @@
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>
-
 #include <boost/graph/graphviz.hpp>
 
 #include <otf2xx/otf2.hpp>

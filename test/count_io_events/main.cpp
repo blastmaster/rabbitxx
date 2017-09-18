@@ -16,7 +16,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto g = rabbitxx::make_graph<rabbitxx::trace::OTF2_Io_Graph_Builder>(argv[1], world);
+    auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
     const auto vip = g->vertices();
     if (world.rank() == 0) {
         int count = 0;
