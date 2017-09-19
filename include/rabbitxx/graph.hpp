@@ -1,5 +1,5 @@
-#ifndef __RABBITXX_GRAPH_HPP__
-#define __RABBITXX_GRAPH_HPP__
+#ifndef RABBITXX_GRAPH_HPP
+#define RABBITXX_GRAPH_HPP
 
 #include <rabbitxx/graph/builder/builder.hpp>
 
@@ -17,4 +17,4 @@ namespace rabbitxx {
 
 } // namespace rabbitxx
 
-#endif // __RABBITXX_GRAPH_HPP__
+#endif // RABBITXX_GRAPH_HPP

@@ -1,5 +1,5 @@
-#ifndef __RABBITXX_MAPPING_HPP__
-#define __RABBITXX_MAPPING_HPP__
+#ifndef RABBITXX_MAPPING_HPP_
+#define _RABBITXX_MAPPING_HPP_
 
 #include <rabbitxx/log.hpp>
 
@@ -156,4 +156,4 @@ namespace rabbitxx {
 
 } // namespace rabbitxx
 
-#endif // __RABBITXX_MAPPING_HPP__
+#endif // RABBITXX_MAPPING_HPP

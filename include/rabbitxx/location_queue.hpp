@@ -1,5 +1,5 @@
-#ifndef __RABBITXX_LOCATION_QUEUE_HPP__
-#define __RABBITXX_LOCATION_QUEUE_HPP__
+#ifndef RABBITXX_LOCATION_QUEUE_HPP
+#define RABBITXX_LOCATION_QUEUE_HPP
 
 #include <map>
 #include <deque>
@@ -85,4 +85,4 @@ namespace rabbitxx {
 
 } // namespace rabbitxx
 
-#endif // __RABBITXX_LOCATION_QUEUE_HPP__
+#endif // RABBITXX_LOCATION_QUEUE_HPP

@@ -1,5 +1,5 @@
-#ifndef __RABBITXX_LOG_HPP__
-#define __RABBITXX_LOG_HPP__
+#ifndef RABBITXX_LOG_HPP
+#define RABBITXX_LOG_HPP
 
 #include <nitro/log/log.hpp>
 #include <nitro/log/sink/stdout.hpp>
@@ -73,4 +73,4 @@ namespace rabbitxx
 
 } // namespace rabbitxx
 
-#endif // __RABBITXX_LOG_HPP__
+#endif // RABBITXX_LOG_HPP

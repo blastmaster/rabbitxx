@@ -417,7 +417,7 @@ namespace rabbitxx { namespace graph {
             const auto vt = sync_event_property(location.ref(), region_name, evt.root(),
                                                        members, evt.timestamp());
             const auto& descriptor = graph_->add_vertex(vt);
-            build_edge(descriptor, location); //TODO!
+            build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
         }
 
@@ -513,12 +513,13 @@ namespace rabbitxx { namespace graph {
 
         virtual void events_done(const otf2::reader::reader& rdr) override
         {
-            auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds
+            auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds {SYNC,IO}
             if (is_master()) {
                 for (const auto& loc_events : events_)
                 {
                     logging::debug() << "processing location: " << loc_events.first;
-                    std::deque<typename Graph::vertex_descriptor> collectives;
+                    std::deque<typename Graph::vertex_descriptor> collectives; //TODO should be named sync events or something like that! There are not just collectives!
+                    //Copy all synchronization events in separate vector.
                     std::copy_if(loc_events.second.begin(), loc_events.second.end(),
                             std::back_inserter(collectives),
                             [&k_map](const typename Graph::vertex_descriptor& vd) // copy all sync events
@@ -528,7 +529,7 @@ namespace rabbitxx { namespace graph {
                             });
 
                     auto p_map = get(&otf2_trace_event::property, *(graph_->get())); // get property map of all properties
-                    for (const auto& v : collectives) // iterate through all vertex desciptors of collective operations occuring on this location
+                    for (const auto& v : collectives) // iterate through all vertex desciptors of sync operations occuring on this location
                     {
                         auto vertex = boost::get<sync_event_property>(get(p_map, v)); // get the corresponding sync event property
                         ///XXX if vertex.root_rank == OTF2XXX::irgendwas::undefined
@@ -651,6 +652,6 @@ namespace rabbitxx { namespace graph {
         }
     };
 
-}} // namespace rabbitxx::trace
+}} // namespace rabbitxx::graph
 
-#endif // RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP
+#endif // RABBITXX_SIMPLE_GRAPH_BUILDER_HPP

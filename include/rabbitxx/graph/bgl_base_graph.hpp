@@ -1,5 +1,5 @@
-#ifndef __RABBITXX_GRAPH_BGL_BASE_GRAPH_HPP__
-#define __RABBITXX_GRAPH_BGL_BASE_GRAPH_HPP__
+#ifndef RABBITXX_GRAPH_BGL_BASE_GRAPH_HPP
+#define RABBITXX_GRAPH_BGL_BASE_GRAPH_HPP
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/mpi.hpp>
@@ -108,4 +108,4 @@ namespace rabbitxx { namespace graph {
 
 }} // namespace rabbitxx::graph
 
-#endif /* __RABBITXX_GRAPH_BGL_BASE_GRAPH_HPP__ */
+#endif /* RABBITXX_GRAPH_BGL_BASE_GRAPH_HPP */

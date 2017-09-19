@@ -127,9 +127,9 @@ namespace rabbitxx {
         {
         }
 
-        ~io_event_property()
-        {
-        }
+//        ~io_event_property()
+//        {
+//        }
     };
 
     inline std::ostream& operator<<(std::ostream& os, const io_event_property& vertex)
@@ -290,4 +290,4 @@ namespace rabbitxx {
 
 } // namespace rabbtixx
 
-#endif /* __RABBITXX_GRAPH_OTF2_TRACE_EVENT_HPP__ */
+#endif /* RABBITXX_GRAPH_OTF2_TRACE_EVENT_HPP */
