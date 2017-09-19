@@ -414,8 +414,9 @@ namespace rabbitxx { namespace graph {
                 members = evt.comm().group().members();
             }
 
-            const auto vt = sync_event_property(location.ref(), region_name, evt.root(),
-                                                       members, evt.timestamp());
+            const auto vt = sync_event_property(location.ref(), region_name,
+                                                collective(evt.root(), members),
+                                                evt.timestamp());
             const auto& descriptor = graph_->add_vertex(vt);
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
@@ -532,34 +533,44 @@ namespace rabbitxx { namespace graph {
                     for (const auto& v : collectives) // iterate through all vertex desciptors of sync operations occuring on this location
                     {
                         auto vertex = boost::get<sync_event_property>(get(p_map, v)); // get the corresponding sync event property
-                        ///XXX if vertex.root_rank == OTF2XXX::irgendwas::undefined
-                        //          hole alle events aus allen locations und
-                        //          nimm als root den kleinsten timestamp
-                        if (vertex.root_rank <= vertex.members.size()) {
-                            // root rank is in the range of members
-                            if (vertex.proc_id != vertex.root_rank) {
-                                continue; //draw edges only from root!
+                        // TODO here we need to distinguish between collectives and peer2peer synchronization!!!!!!
+                        if (vertex.comm_kind == sync_event_kind::collective) 
+                        {
+                            logging::debug() << "vertex sync_event_kind is collective";
+                            auto coll_op = boost::get<collective>(vertex.op_data);
+                            ///XXX if vertex.root_rank == OTF2XXX::irgendwas::undefined
+                            //          hole alle events aus allen locations und
+                            //          nimm als root den kleinsten timestamp
+                            if (coll_op.root() <= coll_op.members().size()) { // or just if (coll_op.has_root())
+                                // root rank is in the range of members
+                                if (vertex.proc_id != coll_op.root()) {
+                                    continue; //draw edges only from root!
+                                }
+                            }
+                            for (const auto m : coll_op.members())
+                            {
+                                if (vertex.proc_id == m) {
+                                    continue; // skip myself, do not draw cycles
+                                }
+                                //find corresponding collective for every
+                                //participating location.
+                                auto it = std::find_if(events_[m].begin(), events_[m].end(),
+                                                       [&k_map](const typename Graph::vertex_descriptor& vd)
+                                                       {
+                                                           const auto kind = get(k_map, vd);
+                                                           return kind == vertex_kind::sync_event;
+                                                       });
+                                if (it == events_[m].end()) {
+                                    logging::fatal() << "cannot find corresponding collective event";
+                                    return;
+                                }
+                                graph_->add_edge(v, *it);
+                                events_[m].erase(it);
                             }
                         }
-                        for (const auto m : vertex.members)
+                        else
                         {
-                            if (vertex.proc_id == m) {
-                                continue; // skip myself, do not draw cycles
-                            }
-                            //find corresponding collective for every
-                            //participating location.
-                            auto it = std::find_if(events_[m].begin(), events_[m].end(),
-                                    [&k_map](const typename Graph::vertex_descriptor& vd)
-                                    {
-                                        const auto kind = get(k_map, vd);
-                                        return kind == vertex_kind::sync_event;
-                                    });
-                            if (it == events_[m].end()) {
-                                logging::fatal() << "cannot find corresponding collective event";
-                                return;
-                            }
-                            graph_->add_edge(v, *it);
-                            events_[m].erase(it);
+                            logging::debug() << "vertex sync_event_kind is NOT collective";
                         }
                     }
                 }

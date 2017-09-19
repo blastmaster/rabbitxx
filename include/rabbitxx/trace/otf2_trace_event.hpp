@@ -144,24 +144,117 @@ namespace rabbitxx {
                  << " timestamp: " << vertex.timestamp;
     }
 
-    struct sync_event_property
+    enum class sync_event_kind
     {
-        int proc_id;
-        std::string region_name;
-        std::uint32_t root_rank;
-        std::vector<std::uint64_t> members;
-        otf2::chrono::time_point timestamp;
-        // TODO here we need some tag defining which kind of synchronization happens. This is necessary since collective operations have another semantic
-        // than recieve 
+        collective,
+        p2p,
+        async,
+        undef,
+    };
 
-        sync_event_property() noexcept : proc_id(-1), region_name(""), root_rank(-1), members(), timestamp()
+    class peer2peer
+    {
+    public:
+        static constexpr sync_event_kind kind()
+        {
+            return sync_event_kind::p2p;
+        }
+
+        peer2peer() noexcept
         {
         }
 
-        sync_event_property(int process_id, const std::string& rname, std::uint32_t root,
-                                   const std::vector<std::uint64_t>& member,
-                                   const otf2::chrono::time_point ts) noexcept
-        : proc_id(process_id), region_name(rname), root_rank(root), members(member), timestamp(ts)
+        peer2peer(std::uint32_t proc, std::uint32_t mtag, std::uint64_t mlength) noexcept
+        : process_(proc), msg_tag_(mtag), msg_length_(mlength)
+        {
+        }
+
+        std::uint32_t process() const noexcept // the other end of the communication in receive calls the sender in send calls the receiver
+        {
+            return process_;
+        }
+
+        std::uint32_t msg_tag() const noexcept
+        {
+            return msg_tag_;
+        }
+
+        std::uint64_t msg_length() const noexcept
+        {
+            return msg_length_;
+        }
+
+    private:
+        std::uint32_t process_;
+        std::uint32_t msg_tag_;
+        std::uint64_t msg_length_;
+    };
+
+    class collective
+    {
+    public:
+        static constexpr sync_event_kind kind()
+        {
+            return sync_event_kind::collective;
+        }
+
+        collective() noexcept
+        {
+        }
+
+        collective(std::uint32_t root, const std::vector<std::uint64_t>& members) noexcept
+        : root_rank_(root), members_(members)
+        {
+        }
+
+        //since not every collective operation does have an `root`
+        collective(const std::vector<std::uint64_t>& members) noexcept
+        : root_rank_(-1), members_(members)
+        {
+        }
+
+        bool has_root() const noexcept
+        {
+            return root_rank_ >= 0;
+        }
+
+        std::uint32_t root() const noexcept
+        {
+            return root_rank_;
+        }
+
+        std::vector<std::uint64_t> members() const noexcept
+        {
+            return members_;
+        }
+
+    private:
+        std::uint32_t root_rank_;
+        std::vector<std::uint64_t> members_;
+    };
+
+    struct sync_event_property
+    {
+        using comm_type = boost::variant<peer2peer, collective>;
+
+        int proc_id;
+        std::string region_name;
+        sync_event_kind comm_kind;
+        comm_type op_data;
+        otf2::chrono::time_point timestamp;
+        // TODO here we need some tag defining which kind of synchronization happens. This is necessary since collective operations have another semantic than recieve 
+
+        sync_event_property() noexcept : proc_id(-1), region_name(""), comm_kind(sync_event_kind::undef), op_data(), timestamp()
+        {
+        }
+
+        sync_event_property(int process_id, const std::string& rname, const peer2peer& op_dat, const otf2::chrono::time_point ts) noexcept 
+        : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::p2p), op_data(op_dat), timestamp(ts)
+        {
+        }
+
+        sync_event_property(int process_id, const std::string& rname, const collective& op_dat, const otf2::chrono::time_point ts) noexcept
+        : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::collective), op_data(op_dat), timestamp(ts)
         {
         }
 
@@ -177,15 +270,38 @@ namespace rabbitxx {
 
     };
 
+    struct comm_type_printer : boost::static_visitor<std::string>
+    {
+        std::string operator()(const collective& comm_data) const
+        {
+            std::stringstream sstr;
+            if (comm_data.has_root()) {
+                sstr << "root rank: " << comm_data.root();
+            }
+            sstr << "members: ";
+            std::copy(comm_data.members().begin(),
+                      comm_data.members().end(),
+                      std::ostream_iterator<std::uint64_t>(sstr, ", "));
+            return sstr.str();
+        }
+
+        std::string operator()(const peer2peer& comm_data) const
+        {
+            std::stringstream sstr;
+            sstr << "process: " << comm_data.process()
+                << "message tag: " << comm_data.msg_tag()
+                << "message length: " << comm_data.msg_length();
+            return sstr.str();
+        }
+    };
+
     inline std::ostream& operator<<(std::ostream& os, const sync_event_property& vertex)
     {
         os << "sync event "
+            << "process id: " << vertex.proc_id
             << "region: " << vertex.region_name
-            << " root: " << vertex.root_rank
-            << " members: ";
-        std::copy(vertex.members.begin(), vertex.members.end(),
-                  std::ostream_iterator<std::uint64_t>(os, " "));
-        os << " timestamp: " << vertex.timestamp;
+            << "comm_data: " << boost::apply_visitor(comm_type_printer(), vertex.op_data)
+            << " timestamp: " << vertex.timestamp;
         return os;
     }
 
