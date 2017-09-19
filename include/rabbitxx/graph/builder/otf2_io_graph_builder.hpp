@@ -1,5 +1,5 @@
-#ifndef RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP
-#define RABBITXX_TRACE_SIMPLE_GRAPH_BUILDER_HPP
+#ifndef RABBITXX_OTF2_IO_GRAPH_BUILDER_HPP
+#define RABBITXX_OTF2_IO_GRAPH_BUILDER_HPP
 
 #include <rabbitxx/trace/base.hpp>
 #include <rabbitxx/graph/io_graph_simple.hpp>
@@ -145,9 +145,9 @@ namespace rabbitxx { namespace graph {
             // matching id seems to be always the same, check for equality anyhow.
             assert(evt.matching_id() == begin_evt.matching_id());
             const auto name = get_handle_name(evt.handle());
-            const auto& region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.front(location);
             //TODO: which timestamp should we use? start? or end?
-            auto vt = io_event_property(location.ref(), name, region_name,
+            const auto vt = io_event_property(location.ref(), name, region_name,
                                                    begin_evt.bytes_request(),
                                                    evt.bytes_request(), 0,
                                                    io_operation_option_container(
@@ -373,8 +373,6 @@ namespace rabbitxx { namespace graph {
             FILTER_RANK
 
             mpi_coll_started_.enqueue(location, evt);
-
-            //graph_.add_vertex();
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -383,29 +381,11 @@ namespace rabbitxx { namespace graph {
             logging::trace() << "Found mpi_collective_end event to location #" << location.ref() << " @"
                                 << evt.timestamp();
             FILTER_RANK
-            //TODO: begin event is unused atm. but we could use the timestamp to
-            //claculate time range.
-            //const auto& begin_evt = mpi_coll_started_.front(location);
-            const auto region_name = region_name_queue_.front(location);
-            const auto co = evt.comm();
-            logging::debug() << "comm name: " << co.name();
-            if (co.has_self_group()) {
-                logging::debug() << "self group name: " << co.self_group().name();
-                logging::debug() << "self group type: " << to_string(co.self_group().type());
-                logging::debug() << "self group size: " << co.self_group().size();
-            }
-            try {
-                logging::debug() << "group name: " << co.group().name();
-                logging::debug() << "group type: " << to_string(co.group().type());
-                logging::debug() << "group size: " << co.group().size();
-                for (const auto& m : co.group().members()) {
-                    logging::debug() << "has member: " << m;
-                }
-            }
-            catch (...)
-            {
-            }
 
+            //TODO: begin event is unused atm. but we could use the timestamp to claculate time range.
+            //const auto& begin_evt = mpi_coll_started_.front(location);
+
+            const auto region_name = region_name_queue_.front(location);
             std::vector<std::uint64_t> members;
             if (evt.comm().has_self_group()) {
                 members = evt.comm().self_group().members();
@@ -665,4 +645,4 @@ namespace rabbitxx { namespace graph {
 
 }} // namespace rabbitxx::graph
 
-#endif // RABBITXX_SIMPLE_GRAPH_BUILDER_HPP
+#endif // RABBITXX_OTF2_IO_GRAPH_BUILDER_HPP
