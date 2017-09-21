@@ -409,7 +409,16 @@ namespace rabbitxx { namespace graph {
                                 << evt.timestamp();
 
             FILTER_RANK
-            //graph_.add_vertex();
+
+            const auto region_name = region_name_queue_.front(location);
+            const auto vt = sync_event_property(location.ref(), region_name,
+                                                peer2peer(evt.sender(), evt.msg_tag(),
+                                                          evt.msg_length(),
+                                                          evt.request_id()),
+                                                evt.timestamp());
+            const auto& descriptor = graph_->add_vertex(vt);
+            build_edge(descriptor, location);
+            events_.enqueue(location, descriptor);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -429,7 +438,16 @@ namespace rabbitxx { namespace graph {
                                 << evt.timestamp();
 
             FILTER_RANK
-            //graph_.add_vertex();
+
+            const auto region_name = region_name_queue_.front(location);
+            const auto vt = sync_event_property(location.ref(), region_name,
+                                                peer2peer(evt.receiver(), evt.msg_tag(),
+                                                          evt.msg_length(),
+                                                          evt.request_id()),
+                                                evt.timestamp());
+            const auto& descriptor = graph_->add_vertex(vt);
+            build_edge(descriptor, location);
+            events_.enqueue(location, descriptor);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -449,7 +467,15 @@ namespace rabbitxx { namespace graph {
                                 << evt.timestamp();
 
             FILTER_RANK
-            //graph_.add_vertex();
+
+            const auto region_name = region_name_queue_.front(location);
+            const auto vt = sync_event_property(location.ref(), region_name,
+                                                peer2peer(evt.sender(), evt.msg_tag(),
+                                                          evt.msg_length()),
+                                                evt.timestamp());
+            const auto& descriptor = graph_->add_vertex(vt);
+            build_edge(descriptor, location);
+            events_.enqueue(location, descriptor);
         }
 
         virtual void event(const otf2::definition::location& location,
@@ -479,7 +505,15 @@ namespace rabbitxx { namespace graph {
                                 << evt.timestamp();
 
             FILTER_RANK
-            //graph_.add_vertex();
+
+            const auto& region_name = region_name_queue_.front(location);
+            const auto vt = sync_event_property(location.ref(), region_name,
+                                                peer2peer(evt.receiver(), evt.msg_tag(),
+                                                          evt.msg_length()),
+                                                evt.timestamp());
+            const auto& descriptor = graph_->add_vertex(vt);
+            build_edge(descriptor, location);
+            events_.enqueue(location, descriptor);
         }
 
         virtual void event(const otf2::definition::location& location,

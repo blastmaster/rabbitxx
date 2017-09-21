@@ -169,6 +169,11 @@ namespace rabbitxx {
         {
         }
 
+        peer2peer(std::uint32_t proc, std::uint32_t mtag, std::uint64_t mlength, std::uint64_t reqid) noexcept
+        : process_(proc), msg_tag_(mtag), msg_length_(mlength), request_id_(reqid)
+        {
+        }
+
         std::uint32_t process() const noexcept // the other end of the communication in receive calls the sender in send calls the receiver
         {
             return process_;
@@ -184,10 +189,16 @@ namespace rabbitxx {
             return msg_length_;
         }
 
+        boost::optional<std::uint64_t> request_id() const noexcept
+        {
+            return request_id_;
+        }
+
     private:
         std::uint32_t process_;
         std::uint32_t msg_tag_;
         std::uint64_t msg_length_;
+        boost::optional<std::uint64_t> request_id_;
     };
 
     class collective
