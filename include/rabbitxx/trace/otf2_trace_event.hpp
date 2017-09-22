@@ -1,5 +1,5 @@
-#ifndef __RABBITXX_GRAPH_OTF2_TRACE_EVENT_HPP__
-#define __RABBITXX_GRAPH_OTF2_TRACE_EVENT_HPP__
+#ifndef RABBITXX_GRAPH_OTF2_TRACE_EVENT_HPP
+#define RABBITXX_GRAPH_OTF2_TRACE_EVENT_HPP
 
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
@@ -253,7 +253,6 @@ namespace rabbitxx {
         sync_event_kind comm_kind;
         comm_type op_data;
         otf2::chrono::time_point timestamp;
-        // TODO here we need some tag defining which kind of synchronization happens. This is necessary since collective operations have another semantic than recieve 
 
         sync_event_property() noexcept : proc_id(-1), region_name(""), comm_kind(sync_event_kind::undef), op_data(), timestamp()
         {
@@ -286,10 +285,11 @@ namespace rabbitxx {
         std::string operator()(const collective& comm_data) const
         {
             std::stringstream sstr;
+            sstr << "[Collective-Event]\n";
             if (comm_data.has_root()) {
-                sstr << "root rank: " << comm_data.root();
+                sstr << "[Root rank]: " << comm_data.root() << "\n";
             }
-            sstr << "members: ";
+            sstr << "[Members]: ";
             std::copy(comm_data.members().begin(),
                       comm_data.members().end(),
                       std::ostream_iterator<std::uint64_t>(sstr, ", "));
@@ -299,20 +299,23 @@ namespace rabbitxx {
         std::string operator()(const peer2peer& comm_data) const
         {
             std::stringstream sstr;
-            sstr << "process: " << comm_data.process()
-                << "message tag: " << comm_data.msg_tag()
-                << "message length: " << comm_data.msg_length();
+            sstr << "[P2P-Event]\n";
+            sstr << "[Process]: " << comm_data.process() << "\n"
+                << "[Message tag]: " << comm_data.msg_tag() << "\n"
+                << "[Message length]: " << comm_data.msg_length() << "\n";
             return sstr.str();
         }
     };
 
     inline std::ostream& operator<<(std::ostream& os, const sync_event_property& vertex)
     {
-        os << "sync event "
-            << "process id: " << vertex.proc_id
-            << "region: " << vertex.region_name
-            << "comm_data: " << boost::apply_visitor(comm_type_printer(), vertex.op_data)
-            << " timestamp: " << vertex.timestamp;
+        os << "[Sync-Event]\n"
+            << "[Process ID]: " << vertex.proc_id << "\n"
+            << "[Region Name]: " << vertex.region_name << "\n"
+            << "[Kind]: "
+            << (vertex.comm_kind == sync_event_kind::p2p ? "p2p" : "collective") << "\n"
+            << boost::apply_visitor(comm_type_printer(), vertex.op_data) << "\n"
+            << "[Timestamp]: " << vertex.timestamp;
         return os;
     }
 
