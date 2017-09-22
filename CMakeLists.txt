@@ -5,7 +5,8 @@ set(PROJECT_VERSION "0.0.1")
 
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
-option(BUILD_TESTS "build tests" OFF)
+option(BUILD_TESTS "build tests" ON)
+option(BUILD_MODULES "build modules" ON)
 
 set(RABBITXX_CXX_FLAGS "-Wall -pedantic -Wextra -std=c++14")
 set(RABBITXX_C_FLAGS "-Wall -pedantic -Wextra")
@@ -41,7 +42,9 @@ set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI suppo
 include_directories("${CMAKE_SOURCE_DIR}/include")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RABBITXX_CXX_FLAGS}")
 
-#add_subdirectory(src)
+if (BUILD_MODULES)
+    add_subdirectory(modules)
+endif()
 
 if (BUILD_TESTS)
     include_directories("${CMAKE_SOURCE_DIR}/external/catch/include")
