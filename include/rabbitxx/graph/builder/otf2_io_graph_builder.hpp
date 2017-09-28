@@ -589,7 +589,7 @@ namespace rabbitxx { namespace graph {
                         }
                         else
                         {
-                            logging::debug() << "vertex sync_event_kind is NOT collective";
+                            logging::debug() << "vertex sync_event_kind is p2p";
                             assert(vertex.comm_kind == sync_event_kind::p2p);
                             auto p2p_op = boost::get<peer2peer>(vertex.op_data);
                             const auto remote = p2p_op.remote_process();
