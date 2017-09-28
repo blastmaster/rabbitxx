@@ -164,19 +164,20 @@ namespace rabbitxx {
         {
         }
 
-        peer2peer(std::uint32_t proc, std::uint32_t mtag, std::uint64_t mlength) noexcept
-        : process_(proc), msg_tag_(mtag), msg_length_(mlength)
+        peer2peer(std::uint32_t rproc, std::uint32_t mtag, std::uint64_t mlength) noexcept
+        : remote_process_(rproc), msg_tag_(mtag), msg_length_(mlength)
         {
         }
 
-        peer2peer(std::uint32_t proc, std::uint32_t mtag, std::uint64_t mlength, std::uint64_t reqid) noexcept
-        : process_(proc), msg_tag_(mtag), msg_length_(mlength), request_id_(reqid)
+        peer2peer(std::uint32_t rproc, std::uint32_t mtag, std::uint64_t mlength, std::uint64_t reqid) noexcept
+        : remote_process_(rproc), msg_tag_(mtag), msg_length_(mlength), request_id_(reqid)
         {
         }
 
-        std::uint32_t process() const noexcept // the other end of the communication in receive calls the sender in send calls the receiver
+        // the other end of the communication in receive calls the sender in send calls the receiver
+        std::uint32_t remote_process() const noexcept 
         {
-            return process_;
+            return remote_process_;
         }
 
         std::uint32_t msg_tag() const noexcept
@@ -195,7 +196,7 @@ namespace rabbitxx {
         }
 
     private:
-        std::uint32_t process_;
+        std::uint32_t remote_process_;
         std::uint32_t msg_tag_;
         std::uint64_t msg_length_;
         boost::optional<std::uint64_t> request_id_;
@@ -220,7 +221,7 @@ namespace rabbitxx {
 
         //since not every collective operation does have an `root`
         collective(const std::vector<std::uint64_t>& members) noexcept
-        : root_rank_(-1), members_(members)
+        : root_rank_(), members_(members)
         {
         }
 
@@ -268,15 +269,15 @@ namespace rabbitxx {
         {
         }
 
-        sync_event_property(const sync_event_property&) = default;
-        sync_event_property& operator=(const sync_event_property&) = default;
-
-        sync_event_property(sync_event_property&&) = default;
-        sync_event_property& operator=(sync_event_property&&) = default;
-
-        ~sync_event_property()
-        {
-        }
+//         sync_event_property(const sync_event_property&) = default;
+//         sync_event_property& operator=(const sync_event_property&) = default;
+// 
+//         sync_event_property(sync_event_property&&) = default;
+//         sync_event_property& operator=(sync_event_property&&) = default;
+// 
+//         ~sync_event_property()
+//         {
+//         }
 
     };
 
@@ -300,7 +301,7 @@ namespace rabbitxx {
         {
             std::stringstream sstr;
             sstr << "[P2P-Event]\n";
-            sstr << "[Process]: " << comm_data.process() << "\n"
+            sstr << "[Process]: " << comm_data.remote_process() << "\n"
                 << "[Message tag]: " << comm_data.msg_tag() << "\n"
                 << "[Message length]: " << comm_data.msg_length() << "\n";
             return sstr.str();
@@ -342,9 +343,9 @@ namespace rabbitxx {
         {
         }
 
-        ~otf2_trace_event()
-        {
-        }
+//         ~otf2_trace_event()
+//         {
+//         }
 
     };
 

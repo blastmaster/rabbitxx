@@ -529,25 +529,27 @@ namespace rabbitxx { namespace graph {
         virtual void events_done(const otf2::reader::reader& rdr) override
         {
             auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds {SYNC,IO}
-            if (is_master()) {
+            if (is_master())
+            {
                 for (const auto& loc_events : events_)
                 {
                     logging::debug() << "processing location: " << loc_events.first;
-                    std::deque<typename Graph::vertex_descriptor> collectives; //TODO should be named sync events or something like that! There are not just collectives!
+                    std::deque<typename Graph::vertex_descriptor> sync_events;
                     //Copy all synchronization events in separate vector.
                     std::copy_if(loc_events.second.begin(), loc_events.second.end(),
-                            std::back_inserter(collectives),
+                            std::back_inserter(sync_events),
                             [&k_map](const typename Graph::vertex_descriptor& vd) // copy all sync events
                             {
                                 const auto kind = get(k_map, vd);
                                 return kind == vertex_kind::sync_event;
                             });
-
-                    auto p_map = get(&otf2_trace_event::property, *(graph_->get())); // get property map of all properties
-                    for (const auto& v : collectives) // iterate through all vertex desciptors of sync operations occuring on this location
+                    // get property map of all properties
+                    auto p_map = get(&otf2_trace_event::property, *(graph_->get()));
+                    // iterate through all vertex desciptors of sync_events occuring on this location
+                    for (const auto& v : sync_events) 
                     {
                         auto vertex = boost::get<sync_event_property>(get(p_map, v)); // get the corresponding sync event property
-                        // TODO here we need to distinguish between collectives and peer2peer synchronization!!!!!!
+                        // Distinguish between sync_event_kind's atm. just collective and p2p.
                         if (vertex.comm_kind == sync_event_kind::collective) 
                         {
                             logging::debug() << "vertex sync_event_kind is collective";
@@ -566,13 +568,16 @@ namespace rabbitxx { namespace graph {
                                 if (vertex.proc_id == m) {
                                     continue; // skip myself, do not draw cycles
                                 }
-                                //find corresponding collective for every
-                                //participating location.
+                                //find corresponding collective for every participating location.
                                 auto it = std::find_if(events_[m].begin(), events_[m].end(),
-                                                       [&k_map](const typename Graph::vertex_descriptor& vd)
+                                                       [&k_map, &p_map](const typename Graph::vertex_descriptor& vd)
                                                        {
                                                            const auto kind = get(k_map, vd);
-                                                           return kind == vertex_kind::sync_event;
+                                                           if (kind != vertex_kind::sync_event) {
+                                                               return false;
+                                                           }
+                                                           const auto sync_kind = boost::get<sync_event_property>(get(p_map, vd)).comm_kind;
+                                                           return sync_kind == sync_event_kind::collective;
                                                        });
                                 if (it == events_[m].end()) {
                                     logging::fatal() << "cannot find corresponding collective event";
@@ -585,6 +590,25 @@ namespace rabbitxx { namespace graph {
                         else
                         {
                             logging::debug() << "vertex sync_event_kind is NOT collective";
+                            assert(vertex.comm_kind == sync_event_kind::p2p);
+                            auto p2p_op = boost::get<peer2peer>(vertex.op_data);
+                            const auto remote = p2p_op.remote_process();
+                            auto it = std::find_if(events_[remote].begin(), events_[remote].end(),
+                                         [&k_map, &p_map](const typename Graph::vertex_descriptor& vd)
+                                         {
+                                            const auto kind = get(k_map, vd);
+                                            if (kind != vertex_kind::sync_event) {
+                                                return false;
+                                            }
+                                            const auto sync_kind = boost::get<sync_event_property>(get(p_map, vd)).comm_kind;
+                                            return sync_kind == sync_event_kind::p2p;
+                                         });
+                            if (it == events_[remote].end()) {
+                                logging::fatal() << "cannot find corresponding p2p event";
+                                return;
+                            }
+                            graph_->add_edge(v, *it);
+                            events_[remote].erase(it);
                         }
                     }
                 }
