@@ -351,13 +351,16 @@ namespace rabbitxx {
 
     inline std::ostream& operator<<(std::ostream& os, const rabbitxx::otf2_trace_event& vertex)
     {
-        if (vertex.type == vertex_kind::io_event) {
-            return os << "io event:\n" << vertex.property;
-        }
-        else if (vertex.type == vertex_kind::sync_event)
+        switch (vertex.type)
         {
-            return os << "sync event:\n" << vertex.property;
+            case vertex_kind::io_event:
+                os << "io event:\n" << vertex.property;
+                break;
+            case vertex_kind::sync_event:
+                os << "sync event:\n" << vertex.property;
+                break;
         }
+        return os;
     }
 
     template<typename G>
