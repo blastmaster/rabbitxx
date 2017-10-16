@@ -11,6 +11,8 @@
 #include <rabbitxx/log.hpp>
 #include <utils/enum_to_string.hpp>
 
+#include <limits>
+
 namespace rabbitxx {
 
     enum class vertex_kind
@@ -103,7 +105,7 @@ namespace rabbitxx {
                                            io_creation_option_container,
                                            otf2::common::io_seek_option_type>;
 
-        int proc_id;
+        std::uint64_t proc_id;
         std::string filename;
         std::string region_name;
         std::uint64_t request_size; // bytes requested by an I/O operation
@@ -112,12 +114,13 @@ namespace rabbitxx {
         option_type option;
         otf2::chrono::time_point timestamp;
 
-        io_event_property() noexcept :  proc_id(-1), filename(""), region_name(""),
+        io_event_property() noexcept 
+        :  proc_id(std::numeric_limits<std::uint64_t>::max()), filename(""), region_name(""),
             request_size(0), response_size(0),  offset(0), option(), timestamp()
         {
         }
 
-        io_event_property(int process_id, const std::string& fname,
+        io_event_property(std::uint64_t process_id, const std::string& fname,
                             const std::string& reg_name, std::uint64_t req_size,
                             std::uint64_t resp_size,
                             std::uint64_t off, option_type mode,
@@ -126,10 +129,6 @@ namespace rabbitxx {
             response_size(resp_size), offset(off), option(mode), timestamp(ts)
         {
         }
-
-//        ~io_event_property()
-//        {
-//        }
     };
 
     inline std::ostream& operator<<(std::ostream& os, const io_event_property& vertex)
@@ -227,7 +226,7 @@ namespace rabbitxx {
 
         bool has_root() const noexcept
         {
-            return root_rank_ >= 0;
+            return root_rank_ < std::numeric_limits<std::uint32_t>::max();
         }
 
         std::uint32_t root() const noexcept
