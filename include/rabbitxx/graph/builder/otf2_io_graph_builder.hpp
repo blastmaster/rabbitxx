@@ -200,7 +200,7 @@ namespace rabbitxx { namespace graph {
             }
 
             const auto name = get_handle_name(evt.handle());
-            const auto& region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.front(location);
             const auto vt = io_event_property(location.ref(), name,
                                             region_name, 0, 0, 0,
                                             rabbitxx::io_creation_option_container(
@@ -231,7 +231,7 @@ namespace rabbitxx { namespace graph {
                 logging::warn() << "No filename for delete file event!";
             }
 
-            const auto& region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.front(location);
             const auto vt = io_event_property(location.ref(), name, region_name,
                                          0, 0, 0, io_operation_option_container(),
                                          evt.timestamp());
@@ -258,7 +258,7 @@ namespace rabbitxx { namespace graph {
             }
 
             const auto name = get_handle_name(evt.handle());
-            const auto& region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.front(location);
             const auto vt = io_event_property(location.ref(), name,
                                             region_name, 0, 0, 0,
                                             io_operation_option_container(),
@@ -277,7 +277,7 @@ namespace rabbitxx { namespace graph {
             FILTER_RANK
 
             const auto name = get_handle_name(evt.new_handle());
-            const auto& region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.front(location);
             const auto vt = io_event_property(location.ref(), name,
                                             region_name, 0, 0, 0,
                                             io_creation_option_container(evt.status_flags()),

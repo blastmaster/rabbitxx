@@ -18,9 +18,6 @@ find_package(Boost 1.62 REQUIRED COMPONENTS program_options system filesystem mp
 find_package(MPI REQUIRED)
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
-message(STATUS "Boost Include dir: ${Boost_INCLUDE_DIRS}")
-message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
-
 file(GLOB SUBMODULE_FILES "external/nitro/*")
 list(LENGTH SUBMODULE_FILES COUNT_NITRO)
 file(GLOB SUBMODULE_FILES "external/otf2xx/*")

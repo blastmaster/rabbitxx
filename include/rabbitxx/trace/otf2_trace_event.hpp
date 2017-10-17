@@ -342,10 +342,6 @@ namespace rabbitxx {
         {
         }
 
-//         ~otf2_trace_event()
-//         {
-//         }
-
     };
 
     inline std::ostream& operator<<(std::ostream& os, const rabbitxx::otf2_trace_event& vertex)
