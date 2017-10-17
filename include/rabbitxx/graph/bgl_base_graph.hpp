@@ -19,6 +19,7 @@ namespace rabbitxx { namespace graph {
             using vertex_iterator = typename boost::graph_traits<GraphImpl>::vertex_iterator;
             using edge_descriptor = typename boost::graph_traits<GraphImpl>::edge_descriptor;
             using edge_iterator = typename boost::graph_traits<GraphImpl>::edge_iterator;
+            using adjacency_iterator = typename boost::graph_traits<GraphImpl>::adjacency_iterator;
             using vertex_type = typename boost::vertex_bundle_type<GraphImpl>::type;
             using edge_type = typename boost::vertex_bundle_type<GraphImpl>::type;
             using vertex_range = std::pair<vertex_iterator, vertex_iterator>;
