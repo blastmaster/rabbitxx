@@ -114,7 +114,7 @@ namespace rabbitxx {
         option_type option;
         otf2::chrono::time_point timestamp;
 
-        io_event_property() noexcept 
+        io_event_property() noexcept
         :  proc_id(std::numeric_limits<std::uint64_t>::max()), filename(""), region_name(""),
             request_size(0), response_size(0),  offset(0), option(), timestamp()
         {
@@ -174,7 +174,7 @@ namespace rabbitxx {
         }
 
         // the other end of the communication in receive calls the sender in send calls the receiver
-        std::uint32_t remote_process() const noexcept 
+        std::uint32_t remote_process() const noexcept
         {
             return remote_process_;
         }
@@ -248,35 +248,25 @@ namespace rabbitxx {
     {
         using comm_type = boost::variant<peer2peer, collective>;
 
-        int proc_id;
+        std::uint64_t proc_id;
         std::string region_name;
         sync_event_kind comm_kind;
         comm_type op_data;
         otf2::chrono::time_point timestamp;
 
-        sync_event_property() noexcept : proc_id(-1), region_name(""), comm_kind(sync_event_kind::undef), op_data(), timestamp()
+        sync_event_property() noexcept : proc_id(std::numeric_limits<std::uint64_t>::max()), region_name(""), comm_kind(sync_event_kind::undef), op_data(), timestamp()
         {
         }
 
-        sync_event_property(int process_id, const std::string& rname, const peer2peer& op_dat, const otf2::chrono::time_point ts) noexcept 
+        sync_event_property(std::uint64_t process_id, const std::string& rname, const peer2peer& op_dat, const otf2::chrono::time_point ts) noexcept
         : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::p2p), op_data(op_dat), timestamp(ts)
         {
         }
 
-        sync_event_property(int process_id, const std::string& rname, const collective& op_dat, const otf2::chrono::time_point ts) noexcept
+        sync_event_property(std::uint64_t process_id, const std::string& rname, const collective& op_dat, const otf2::chrono::time_point ts) noexcept
         : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::collective), op_data(op_dat), timestamp(ts)
         {
         }
-
-//         sync_event_property(const sync_event_property&) = default;
-//         sync_event_property& operator=(const sync_event_property&) = default;
-// 
-//         sync_event_property(sync_event_property&&) = default;
-//         sync_event_property& operator=(sync_event_property&&) = default;
-// 
-//         ~sync_event_property()
-//         {
-//         }
 
     };
 
@@ -328,7 +318,7 @@ namespace rabbitxx {
 
         otf2_trace_event() = default;
 
-        otf2_trace_event(const vertex_kind& t) noexcept : type(t)
+        otf2_trace_event(const vertex_kind& t)  noexcept : type(t)
         {
         }
 
@@ -337,9 +327,41 @@ namespace rabbitxx {
         {
         }
 
-        otf2_trace_event(const sync_event_property& sync_p) noexcept 
+        otf2_trace_event(const sync_event_property& sync_p) noexcept
         : type(vertex_kind::sync_event), property(sync_p)
         {
+        }
+
+        std::uint64_t id() const
+        {
+            if (type == vertex_kind::io_event) {
+                const auto& p = boost::get<io_event_property>(property);
+                return p.proc_id;
+            }
+            else if (type == vertex_kind::sync_event) {
+                const auto& p = boost::get<sync_event_property>(property);
+                return p.proc_id;
+            }
+            else {
+                logging::fatal() << "This should not happen! property type seems wether of type io_event_property neither of type sync_event_property.";
+                return std::numeric_limits<std::uint64_t>::max();
+            }
+        }
+
+        std::string name() const
+        {
+            if (type == vertex_kind::io_event) {
+                const auto& p = boost::get<io_event_property>(property);
+                return p.region_name;
+            }
+            else if (type == vertex_kind::sync_event) {
+                const auto& p = boost::get<sync_event_property>(property);
+                return p.region_name;
+            }
+            else {
+                logging::fatal() << "This should not happen! property type seems wether of type io_event_property neither of type sync_event_property.";
+                return "";
+            }
         }
 
     };
