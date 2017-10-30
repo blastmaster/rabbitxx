@@ -388,11 +388,20 @@ namespace rabbitxx { namespace graph {
             const auto region_name = region_name_queue_.front(location);
             std::vector<std::uint64_t> members;
             if (evt.comm().has_self_group()) {
+                // TODO: skip sync event if no members are involved!
+                // A single process sync with itself is no synchronization.
+                if (evt.comm().self_group().size() <= 0) {
+                    logging::debug() << "[" << region_name << "] has no members, therefore no synchronizations happens... skip!";
+                    return;
+                }
+
                 members = evt.comm().self_group().members();
             }
             else {
                 members = evt.comm().group().members();
             }
+
+            assert(members.size() != 0); // getting sure!
 
             const auto vt = sync_event_property(location.ref(), region_name,
                                                 collective(evt.root(), members),
