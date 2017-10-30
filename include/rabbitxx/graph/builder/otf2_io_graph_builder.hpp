@@ -603,14 +603,22 @@ namespace rabbitxx { namespace graph {
                             auto p2p_op = boost::get<peer2peer>(vertex.op_data);
                             const auto remote = p2p_op.remote_process();
                             auto it = std::find_if(events_[remote].begin(), events_[remote].end(),
-                                         [&k_map, &p_map](const typename Graph::vertex_descriptor& vd)
+                                         [&k_map, &p_map, &vertex](const typename Graph::vertex_descriptor& vd)
                                          {
                                             const auto kind = get(k_map, vd);
                                             if (kind != vertex_kind::sync_event) {
-                                                return false;
+                                                return false; //discard if not a sync event
                                             }
-                                            const auto sync_kind = boost::get<sync_event_property>(get(p_map, vd)).comm_kind;
-                                            return sync_kind == sync_event_kind::p2p;
+
+                                            const auto sevt = boost::get<sync_event_property>(get(p_map, vd));
+                                            if (sevt.comm_kind != sync_event_kind::p2p) {
+                                                return false; //discard if not a p2p event
+                                            }
+                                            const auto p2pevt = boost::get<peer2peer>(sevt.op_data);
+                                            if (vertex.proc_id == p2pevt.remote_process()) {
+                                                return true;
+                                            }
+                                            return false;
                                          });
                             if (it == events_[remote].end()) {
                                 logging::fatal() << "cannot find corresponding p2p event";
