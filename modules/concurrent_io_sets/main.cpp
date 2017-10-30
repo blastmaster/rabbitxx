@@ -17,6 +17,11 @@ using rabbitxx::logging;
 #include <vector>
 #include <memory>
 
+/**
+ * Own Concurrent-I/O-Set Visitor
+ * TODO: look at boost::default_{bfs,dfs}_visitor and the generic boost graph
+ * visitor concept!
+ */
 template<typename Graph>
 class CIO_Visitor
 {
@@ -73,7 +78,7 @@ void traverse_adjacent_vertices(Graph& graph, Vertex v, Visitor& vis)
     {
        logging::debug() << graph[*adj_begin]; 
        vis(graph, *adj_begin);
-       // traverse_adjacent_vertices(graph, *adj_begin);
+       traverse_adjacent_vertices(graph, *adj_begin, vis);
     }
 }
 
@@ -91,31 +96,12 @@ void collect_concurrent_sets(Graph& graph)
                             }
                             return false;
                         });
-    int out_dgr = static_cast<int>(boost::out_degree(*it, *graph.get()));
-    assert(out_dgr > 1);
-    logging::debug() << "get: " << *it << "\n" << graph[*it];
-    logging::debug() << "out degree: " << out_dgr;
     CIO_Visitor<Graph> vis;
     logging::debug() << "adjacent vertices:\n";
-    traverse_adjacent_vertices(graph, *it, vis);
+    //traverse_adjacent_vertices(graph, *it, vis);
+    //                                start at beginnging!?!?
+    traverse_adjacent_vertices(graph, vertex(0, *graph.get()), vis);
 }
-
-template<typename Graph>
-std::vector<int>
-get_out_degrees(Graph& graph)
-{
-    using descriptor = typename Graph::vertex_descriptor;
-    std::vector<int> out_degrees(graph.num_vertices());
-    const auto vertices = graph.vertices();
-    std::transform(vertices.first, vertices.second, std::begin(out_degrees),
-                [&graph](const descriptor& vd)
-                {
-                    return static_cast<int>(boost::out_degree(vd, *(graph.get())));
-                }
-    );
-    return out_degrees;
-}
-
 
 int main(int argc, char** argv)
 {
@@ -134,11 +120,6 @@ int main(int argc, char** argv)
     logging::debug() << "Try to read first vertex";
     std::cout << graph->operator[](0) << std::endl;
 
-    const auto out_degrees = get_out_degrees(*graph.get());
-//     for (const auto& out_d : out_degrees)
-//     {
-//         std::cout << out_d << std::endl;
-//     }
     collect_concurrent_sets(*graph.get());
 
     return 0;
