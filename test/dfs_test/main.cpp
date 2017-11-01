@@ -18,12 +18,12 @@ public:
         if (g[v].type == rabbitxx::vertex_kind::sync_event)
         {
             auto vertex = boost::get<rabbitxx::sync_event_property>(g[v].property);
-            std::cout << "Descriptor: " << v << " process: " << vertex.proc_id << " Name: " << vertex.region_name << "\n";
+            std::cout << "Sync Event Descriptor #" << v << " @ " << vertex.proc_id << " Name: " << vertex.region_name << "\n";
         }
         else if (g[v].type == rabbitxx::vertex_kind::io_event)
         {
             auto vertex = boost::get<rabbitxx::io_event_property>(g[v].property);
-            std::cout << "Descriptor: " << v << " process: " << vertex.proc_id << " Name: " << vertex.region_name << "\n";
+            std::cout << "I/O Event Descriptor #" << v << " @ " << vertex.proc_id << " Name: " << vertex.region_name << "\n";
         }
     }
 };
