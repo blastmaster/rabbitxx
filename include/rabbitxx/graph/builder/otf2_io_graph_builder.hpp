@@ -33,7 +33,8 @@ namespace rabbitxx { namespace graph {
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
         : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
-          edge_points_(), region_name_queue_(), events_(), graph_(std::make_unique<Graph>(comm))
+          edge_points_(), region_name_queue_(), events_(), graph_(std::make_unique<Graph>(comm)),
+          root_(create_synthetic_root())
         {
         }
 
@@ -52,6 +53,17 @@ namespace rabbitxx { namespace graph {
 
     private:
 
+        /**
+         * Create synthetic root vertex, this method is called once during
+         * initiallzation.
+         */
+        typename Graph::vertex_descriptor
+        create_synthetic_root()
+        {
+            assert(graph_->num_vertices() == 0);
+            return graph_->add_vertex(otf2_trace_event(vertex_kind::synthetic));
+        }
+
         boost::optional<typename Graph::edge_add_t>
         build_edge(const typename Graph::vertex_descriptor& descriptor,
                    const otf2::definition::location& location)
@@ -66,6 +78,9 @@ namespace rabbitxx { namespace graph {
                 // We cannot add an edge if only one vertex are given.
                 // So push vertex into queue and return.
                 edge_points_.enqueue(location, descriptor);
+                // add edge from synthetic root-vertex to the first vertex on
+                // this location.
+                graph_->add_edge(root_, descriptor);
                 return boost::none;
             }
 
@@ -696,6 +711,7 @@ namespace rabbitxx { namespace graph {
         location_queue<std::string> region_name_queue_;
         location_queue<typename Graph::vertex_descriptor> events_;
         std::unique_ptr<Graph> graph_;
+        typename Graph::vertex_descriptor root_;
     };
 
     struct OTF2_Io_Graph_Builder
@@ -707,7 +723,6 @@ namespace rabbitxx { namespace graph {
             otf2::reader::reader trc_reader(trace_file);
             auto num_locations = trc_reader.num_locations();
             simple_graph_builder<graph_type> builder(comm, num_locations);
-
             trc_reader.set_callback(builder);
             trc_reader.read_definitions();
             comm.barrier();

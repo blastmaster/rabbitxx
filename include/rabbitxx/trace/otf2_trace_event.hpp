@@ -15,10 +15,17 @@
 
 namespace rabbitxx {
 
+    /**
+     * Describes which kind of vertex the current `otf2_trace_event` are.
+     * `io_event` I/O vertex
+     * `sync_event` synchronization vertex
+     * `synthetic` synthetic vertex with no additional semantic meaning.
+     */
     enum class vertex_kind
     {
         io_event,
         sync_event,
+        synthetic,
     };
 
     struct io_creation_option_container
@@ -342,6 +349,9 @@ namespace rabbitxx {
                 const auto& p = boost::get<sync_event_property>(property);
                 return p.proc_id;
             }
+            else if (type == vertex_kind::synthetic) {
+                return std::numeric_limits<std::uint64_t>::max();
+            }
             else {
                 logging::fatal() << "This should not happen! property type seems wether of type io_event_property neither of type sync_event_property.";
                 return std::numeric_limits<std::uint64_t>::max();
@@ -357,6 +367,9 @@ namespace rabbitxx {
             else if (type == vertex_kind::sync_event) {
                 const auto& p = boost::get<sync_event_property>(property);
                 return p.region_name;
+            }
+            else if (type == vertex_kind::synthetic) {
+                return "Synthetic Root";
             }
             else {
                 logging::fatal() << "This should not happen! property type seems wether of type io_event_property neither of type sync_event_property.";
@@ -375,6 +388,9 @@ namespace rabbitxx {
                 break;
             case vertex_kind::sync_event:
                 os << "sync event:\n" << vertex.property;
+                break;
+            case vertex_kind::synthetic:
+                os << "synthetic event!\n";
                 break;
         }
         return os;
@@ -405,6 +421,10 @@ namespace rabbitxx {
                     os << "[label=\"" << label_str << "\""
                         << ", color=green"
                         << "]";
+                }
+                else if (vertex.type == vertex_kind::synthetic) {
+                    logging::debug() << "Draw synthetic root node!";
+                    os << "[label=\"root\", color=gray]";
                 }
                 else {
                     logging::fatal() << "Unrecognized vertex property for graphviz output";
