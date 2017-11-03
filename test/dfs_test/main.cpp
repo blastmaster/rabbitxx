@@ -28,6 +28,61 @@ public:
     }
 };
 
+class dfs_test_visitor : public boost::default_dfs_visitor
+{
+    public:
+        template<typename Vertex, typename Graph>
+        void initialize_vertex(Vertex v, const Graph& g) const
+        {
+            logging::debug() << "initialize vertex #" << v << " @ " << g[v].id() << " [" << g[v].name() << "]";
+        }
+
+        template<typename Vertex, typename Graph>
+        void start_vertex(Vertex v, const Graph& g) const
+        {
+            logging::debug() << "start vertex #" << v << " @ " << g[v].id() << " [" << g[v].name() << "]";
+        }
+
+        template<typename Vertex, typename Graph>
+        void discover_vertex(Vertex v, const Graph& g) const
+        {
+            logging::debug() << "discover vertex #" << v << " @ " << g[v].id() << " [" << g[v].name() << "]";
+        }
+
+        template<typename Edge, typename Graph>
+        void examine_edge(Edge e, const Graph& g) const
+        {
+            const auto src_vd = source(e, g);
+            const auto trg_vd = target(e, g);
+            logging::debug() << "examine edge from vertex #" << src_vd << " @ " << g[src_vd].id()
+                << " [" << g[src_vd].name() << "] -> to vertex #" << trg_vd << " @ " << g[trg_vd].id()
+                << " [" << g[trg_vd].name() << "]";
+        }
+
+        template<typename Edge, typename Graph>
+        void tree_edge(Edge e, const Graph& g) const
+        {
+            logging::debug() << "tree edge: ";
+        }
+
+        template<typename Edge, typename Graph>
+        void back_edge(Edge e, const Graph& g) const
+        {
+            logging::debug() << "back_edge: ";
+        }
+
+        template<typename Edge, typename Graph>
+        void forward_or_cross_edge(Edge e, const Graph& g) const
+        {
+            logging::debug() << "forward or cross edge: ";
+        }
+
+        template<typename Vertex, typename Graph>
+        void finish_vertex(Vertex v, const Graph& g) const
+        {
+            logging::debug() << "finish vertex #" << v << " @ " << g[v].id() << " [" << g[v].name() << "]";
+        }
+};
 
 int main(int argc, char** argv)
 {
@@ -41,7 +96,8 @@ int main(int argc, char** argv)
     }
 
     auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
-    dfs_print_visitor vis;
+    //dfs_print_visitor vis;
+    dfs_test_visitor vis;
     boost::depth_first_search(*g->get(), boost::visitor(vis));
 
     return 0;
