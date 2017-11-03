@@ -530,7 +530,7 @@ namespace rabbitxx { namespace graph {
 
             FILTER_RANK
 
-            const auto& region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.front(location);
             const auto vt = sync_event_property(location.ref(), region_name,
                                                 peer2peer(evt.receiver(), evt.msg_tag(),
                                                           evt.msg_length()),
@@ -552,7 +552,7 @@ namespace rabbitxx { namespace graph {
 
         virtual void events_done(const otf2::reader::reader& rdr) override
         {
-            auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds {SYNC,IO}
+            auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds {SYNC,IO, SYNTHETIC}
             if (is_master())
             {
                 for (const auto& loc_events : events_)
@@ -570,11 +570,11 @@ namespace rabbitxx { namespace graph {
                     // get property map of all properties
                     auto p_map = get(&otf2_trace_event::property, *(graph_->get()));
                     // iterate through all vertex desciptors of sync_events occuring on this location
-                    for (const auto& v : sync_events) 
+                    for (const auto& v : sync_events)
                     {
                         auto vertex = boost::get<sync_event_property>(get(p_map, v)); // get the corresponding sync event property
                         // Distinguish between sync_event_kind's atm. just collective and p2p.
-                        if (vertex.comm_kind == sync_event_kind::collective) 
+                        if (vertex.comm_kind == sync_event_kind::collective)
                         {
                             logging::debug() << "vertex sync_event_kind is collective";
                             auto coll_op = boost::get<collective>(vertex.op_data);
@@ -604,7 +604,7 @@ namespace rabbitxx { namespace graph {
                                                            return sync_kind == sync_event_kind::collective;
                                                        });
                                 if (it == events_[m].end()) {
-                                    logging::fatal() << "cannot find corresponding collective event";
+                                    logging::fatal() << "cannot find corresponding collective event for member: " << m << vertex;
                                     return;
                                 }
                                 graph_->add_edge(v, *it);
