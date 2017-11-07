@@ -33,7 +33,6 @@ std::ostream& operator<<(std::ostream& os, const Set_State state)
     return os;
 }
 
-
 template<typename EvtType, typename ValueType>
 class CIO_Set
 {
@@ -181,7 +180,7 @@ find_root(Graph& graph)
     const auto vertices = graph.vertices();
     const auto root = std::find_if(vertices.first, vertices.second,
             [&graph](const typename Graph::vertex_descriptor& vd) {
-                return graph[vd].type == rabbitxx::vertex_kind::synthetic;
+                return graph[vd].type == vertex_kind::synthetic;
             });
     return *root;
 }
@@ -197,22 +196,19 @@ std::uint64_t num_procs(Graph& graph) noexcept
     return static_cast<std::uint64_t>(boost::out_degree(root, *graph.get()));
 }
 
-// TODO: remove rabbitxx:: namespace prefix while we are within this namespace!
-
 /**
  * Return vector containing all the process id's of the processes participating
  * within a given synchronization event.
  */
 std::vector<std::uint64_t>
-procs_in_sync_involved(const rabbitxx::sync_event_property& sevt)
+procs_in_sync_involved(const sync_event_property& sevt)
 {
-    std::uint64_t procs_involved {0};
-    if (sevt.comm_kind == rabbitxx::sync_event_kind::collective) {
-        const auto coll_evt = boost::get<rabbitxx::collective>(sevt.op_data);
+    if (sevt.comm_kind == sync_event_kind::collective) {
+        const auto coll_evt = boost::get<collective>(sevt.op_data);
         return coll_evt.members();
     }
-    else if (sevt.comm_kind == rabbitxx::sync_event_kind::p2p) {
-        const auto p2p_evt = boost::get<rabbitxx::peer2peer>(sevt.op_data);
+    else if (sevt.comm_kind == sync_event_kind::p2p) {
+        const auto p2p_evt = boost::get<peer2peer>(sevt.op_data);
         return {sevt.proc_id, p2p_evt.remote_process()};
     }
 }
@@ -220,33 +216,28 @@ procs_in_sync_involved(const rabbitxx::sync_event_property& sevt)
 /**
  * Return the number of processes involved in a given synchronization routine.
  */
-std::uint64_t num_procs_in_sync_involved(const rabbitxx::sync_event_property& sevt)
+std::uint64_t num_procs_in_sync_involved(const sync_event_property& sevt)
 {
     return procs_in_sync_involved(sevt).size();
 }
 
-template<typename Graph, typename Vertex, typename Visitor>
-void traverse_adjacent_vertices(Graph& graph, Vertex v, Visitor& vis)
-{
-    typename Graph::adjacency_iterator adj_begin, adj_end;
-    for (std::tie(adj_begin, adj_end) = boost::adjacent_vertices(v, *graph.get());
-         adj_begin != adj_end;
-        ++adj_begin)
-    {
-       //vis(graph, *adj_begin);
-       traverse_adjacent_vertices(graph, *adj_begin, vis);
-    }
-}
+//template<typename Graph, typename Vertex, typename Visitor>
+//void traverse_adjacent_vertices(Graph& graph, Vertex v, Visitor& vis)
+//{
+    //typename Graph::adjacency_iterator adj_begin, adj_end;
+    //for (std::tie(adj_begin, adj_end) = boost::adjacent_vertices(v, *graph.get());
+         //adj_begin != adj_end;
+        //++adj_begin)
+    //{
+       ////vis(graph, *adj_begin);
+       //traverse_adjacent_vertices(graph, *adj_begin, vis);
+    //}
+//}
 
-//template<typename Outiter, typename Cont>
 template<typename Cont>
 class CIO_Visitor : public boost::default_dfs_visitor
 {
     public:
-        //CIO_Visitor() : set_cnt_ptr_(std::make_shared<Cont>())
-        //{
-        //}
-
         CIO_Visitor(std::shared_ptr<Cont>& sp, std::uint64_t np) : set_cnt_ptr_(sp), num_procs_(np)
         {
         }
@@ -265,14 +256,12 @@ class CIO_Visitor : public boost::default_dfs_visitor
                     logging::debug() << "Synthetic Event ... create a new set";
                     // create a new set
                     set_cnt_ptr_->emplace_back(num_procs_, g[v]);
-                    //*set_ptr = set_cnt_ptr_->back(); CAUSES SEGV
                 }
                 else if (vertex_kind::sync_event == g[v].type) {
                     // we are on a sync event and have no open set
                     logging::debug() << "Sync Event ... create a new set";
-                    // create a new set and get a pointer to this set.
+                    // create a new set
                     set_cnt_ptr_->emplace_back(num_procs_, g[v]);
-                    //*set_ptr = set_cnt_ptr_->back(); CAUSES SEGV
                 }
             }
             else { // an open set for this process was found
@@ -314,9 +303,10 @@ class CIO_Visitor : public boost::default_dfs_visitor
 
     private:
         //template<typename Set>
+        // TODO: use optional instead of trailing return type syntax
         auto find_open_set_for(const std::uint64_t proc_id) -> typename Cont::value_type*
         {
-            auto it = std::find_if(std::begin(*set_cnt_ptr_.get()), std::end(*set_cnt_ptr_.get()),
+            auto it = std::find_if(set_cnt_ptr_->begin(), set_cnt_ptr_->end(),
                     [&proc_id](typename Cont::value_type& set) {
                         return Set_State::Open == set.state_for(proc_id);
                     });
@@ -329,38 +319,20 @@ class CIO_Visitor : public boost::default_dfs_visitor
     private:
         std::shared_ptr<Cont> set_cnt_ptr_;
         std::uint64_t num_procs_;
-        //Outiter out_;
 };
-
-//template<typename Out>
-//auto make_cio_visitor(Out out)
-//{
-    //CIO_Visitor<Outiter> vis(out);
-    //return vis;
-//}
 
 template<typename Graph>
 auto collect_concurrent_io_sets(Graph& graph)
 {
-    //std::vector<CIO_Set<
-        //otf2_trace_event,
-        //typename Graph::vertex_descriptor>> set_v;
-
     using set_container_t = std::vector<CIO_Set<
                                 otf2_trace_event,
                                 typename Graph::vertex_descriptor>>;
 
     auto root = find_root(graph);
+    assert(graph[root].type == vertex_kind::synthetic);
     const auto np = num_procs(graph);
-
     auto shared_set_container(std::make_shared<set_container_t>());
     CIO_Visitor<set_container_t> vis(shared_set_container, np);
-
-    logging::debug() << "first vertex at: " << graph[root].id() << " [" << graph[root].name() << "]";
-    logging::debug() << "START";
-
-    //traverse_adjacent_vertices(graph, root, vis);
-
     std::vector<boost::default_color_type> color_map(graph.num_vertices());
     boost::depth_first_visit(*graph.get(), root, vis,
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
