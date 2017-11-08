@@ -69,6 +69,12 @@ class CIO_Set
         return state_map_[proc_id];
     }
 
+    bool is_closed() const noexcept
+    {
+        return std::all_of(state_map_.begin(), state_map_.end(),
+                [](const auto& state_pair){ return Set_State::Closed == state_pair.second; });
+    }
+
     EvtType start_event() const noexcept
     {
         return start_evt_;
