@@ -18,31 +18,38 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    // create graph
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
-    //rabbitxx::collect_concurrent_sets(*graph.get());
-    //rabbitxx::type_printer<typename decltype(graph)::element_type::vertex_descriptor> tp;
-
-    //std::vector<rabbitxx::CIO_Set<
-        //rabbitxx::otf2_trace_event,
-        //typename decltype(graph)::element_type::vertex_descriptor>> setv;
-
+    // find concurrent I/O-Sets
     auto io_sets = rabbitxx::collect_concurrent_io_sets(*graph.get());
-    logging::debug() << "\n\n";
+    std::cout << "================================================================================\n";
+    const auto n_sets_before_filter = io_sets->size();
     //FIXME remove empty sets
     io_sets->erase(std::remove_if(
                 io_sets->begin(),
                 io_sets->end(),
-                [](const auto& set) { return set.empty(); }),
+                [](const auto& set){ return set.empty(); }),
                 io_sets->end());
+    const auto n_sets_after_filter = io_sets->size();
 
+    std::cout << "CIO_Sets before filter: " << n_sets_before_filter << "\n";
+    std::cout << "CIO_Sets after filter: " << n_sets_after_filter << "\n";
+    std::cout << "\n";
 
+    int cnt = 0;
     for (const auto& set : *io_sets) {
-        std::cout << set;
+        std::cout << "Found set number: " << ++cnt << "\n";
+        std::cout << (set.is_closed() ? "Set is closed" : "Set is NOT closed") << "\n";
+        std::cout << "Start-Event: @" << set.start_event().id() << " " << set.start_event().name() << "\n";
+        std::cout << "End-Event: @" << set.end_event().id() << " " << set.end_event().name() << "\n";
+        std::cout << "Number of Events: " << set.size() << "\n";
         std::cout << "Events:\n";
         for (auto evt : set) {
             std::cout << "@" << graph->operator[](evt).id()
                 << " Name: " << graph->operator[](evt).name() << "\n";
         }
+        std::cout << "\n";
+        std::cout << "================================================================================\n";
     }
 
     return 0;

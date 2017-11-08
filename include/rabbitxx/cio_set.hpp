@@ -276,7 +276,8 @@ class CIO_Visitor : public boost::default_dfs_visitor
                     logging::debug() << "I/O Event ... ";
                     // open set and on I/O event -> insert I/O event into set
                     set_ptr->insert(v);
-                    logging::debug() << "insert vertex #" << v << " into current set";
+                    logging::debug() << "insert vertex #" << v << " @ rank "
+                        << g[v].id() << " " << g[v].name() << " into current set";
                 }
                 else if (vertex_kind::synthetic == g[v].type) {
                     logging::debug() << "Synthetic Event ... THIS SHOULD NEVER HAPPEN";
