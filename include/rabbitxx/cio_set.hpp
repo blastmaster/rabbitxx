@@ -246,6 +246,18 @@ std::uint64_t num_procs_in_sync_involved(const sync_event_property& sevt)
     //}
 //}
 
+/**
+* Checks if the start event of a set `of_v` is an adjacent vertex of the current
+* event `cur_v`.
+*/
+template<typename Vertex, typename Graph>
+bool is_adjacent_event_of(const Vertex of_v, const Vertex cur_v, const Graph& g)
+{
+    const auto adjacent_r = boost::adjacent_vertices(cur_v, g);
+    return std::any_of(adjacent_r.first, adjacent_r.second,
+            [&of_v](const Vertex vd) { return vd == of_v; });
+}
+
 template<typename Cont>
 class CIO_Visitor : public boost::default_dfs_visitor
 {
