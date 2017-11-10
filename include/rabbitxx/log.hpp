@@ -28,10 +28,10 @@ namespace rabbitxx
         namespace detail
         {
             typedef nitro::log::record<nitro::log::message_attribute,
-                                       nitro::log::timestamp_attribute,
-                                       nitro::log::hostname_attribute,
-                                       nitro::log::severity_attribute,
-                                       nitro::log::mpi_rank_attribute> record;
+                                       /*nitro::log::timestamp_attribute,*/
+                                       /*nitro::log::hostname_attribute,*/
+                                       nitro::log::severity_attribute
+                                       /*nitro::log::mpi_rank_attribute*/> record;
 
             template<typename Record>
             class rabbitxx_log_formater
@@ -41,8 +41,10 @@ namespace rabbitxx
                     {
                         std::stringstream msg;
 
-                        msg << "[" << r.timestamp().count() << "][Rank: " << r.mpi_rank()
-                            << "][" << r.severity() << "]: " << r.message();
+                        msg << "[" << r.severity() << "]: " << r.message();
+
+                        //msg << "[" << r.timestamp().count() << "][Rank: " << r.mpi_rank()
+                            //<< "][" << r.severity() << "]: " << r.message();
 
                         return msg.str();
                     }
