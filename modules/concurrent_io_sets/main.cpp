@@ -40,8 +40,8 @@ int main(int argc, char** argv)
     for (const auto& set : *io_sets) {
         std::cout << "Found set number: " << ++cnt << "\n";
         std::cout << (set.is_closed() ? "Set is closed" : "Set is NOT closed") << "\n";
-        std::cout << "Start-Event: @" << set.start_event().id() << " " << set.start_event().name() << "\n";
-        std::cout << "End-Event: @" << set.end_event().id() << " " << set.end_event().name() << "\n";
+        std::cout << "Start-Event: @" << graph->operator[](set.start_event()).id() << " " << graph->operator[](set.start_event()).name() << "\n";
+        std::cout << "End-Event: @" << graph->operator[](set.end_event().value()).id() << " " << graph->operator[](set.end_event().value()).name() << "\n";
         std::cout << "Number of Events: " << set.size() << "\n";
         std::cout << "Events:\n";
         for (auto evt : set) {

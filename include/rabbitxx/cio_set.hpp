@@ -4,6 +4,7 @@
 #include <rabbitxx/log.hpp>
 
 #include <boost/graph/depth_first_search.hpp>
+#include <boost/optional.hpp>
 
 #include <map>
 #include <unordered_set>
@@ -33,10 +34,10 @@ std::ostream& operator<<(std::ostream& os, const Set_State state)
     return os;
 }
 
-template<typename EvtType, typename ValueType>
+template<typename VertexDescriptor>
 class CIO_Set
 {
-    using value_type = ValueType;
+    using value_type = VertexDescriptor;
     using set_t = std::unordered_set<value_type>;
     using size_type = typename set_t::size_type;
     using iterator = typename set_t::iterator;
@@ -50,7 +51,7 @@ class CIO_Set
         }
     }
 
-    CIO_Set(std::uint64_t num_procs, const EvtType& start_event)
+    CIO_Set(std::uint64_t num_procs, const value_type& start_event)
     {
         for (std::uint64_t i = 0; i < num_procs; ++i) {
             state_map_.insert(std::make_pair(i, Set_State::Open));
@@ -75,17 +76,17 @@ class CIO_Set
                 [](const auto& state_pair){ return Set_State::Closed == state_pair.second; });
     }
 
-    EvtType start_event() const noexcept
+    value_type start_event() const noexcept
     {
         return start_evt_;
     }
 
-    EvtType end_event() const noexcept
+    boost::optional<value_type> end_event() const noexcept
     {
         return end_evt_;
     }
 
-    void set_end_event(const EvtType& end_event)
+    void set_end_event(const value_type& end_event)
     {
         end_evt_ = end_event;
     }
@@ -143,8 +144,8 @@ class CIO_Set
 
     private:
     State_Map<Set_State> state_map_;
-    EvtType start_evt_;
-    EvtType end_evt_;
+    value_type start_evt_;
+    boost::optional<value_type> end_evt_;
     set_t set_;
 };
 
@@ -158,16 +159,21 @@ std::string dump_state_map(const Set& set)
     return sstr.str();
 }
 
-template<typename EvtType, typename ValueType>
-inline std::ostream& operator<<(std::ostream& os, const CIO_Set<EvtType, ValueType>& set)
+template<typename DescriptorType>
+inline std::ostream& operator<<(std::ostream& os, const CIO_Set<DescriptorType>& set)
 {
     os << "CIO_Set {\n"
-        << "[State] " << dump_state_map(set) << "\n"
-        << "[Start Evt] " << set.start_event() << "\n"
-        << "[End Evt] " << set.end_event() << "\n"
-        << "[Events] [ ";
+        << "\t[State] " << dump_state_map(set) << "\n"
+        << "\t[Start Evt] " << set.start_event() << "\n";
+    if (boost::optional<DescriptorType> end_evt = set.end_event()) {
+        os << "\t[End Evt] " << *end_evt << "\n";
+    }
+    else {
+        os << "\t[End Evt] " << "NONE\n";
+    }
+    os << "\t[Events] [ ";
     std::copy(set.begin(), set.end(), 
-            std::ostream_iterator<ValueType>(os, ", "));
+            std::ostream_iterator<DescriptorType>(os, ", "));
     os << " ]\n};\n";
     return os;
 }
@@ -261,13 +267,13 @@ class CIO_Visitor : public boost::default_dfs_visitor
                 else if (vertex_kind::synthetic == g[v].type) {
                     logging::debug() << "Synthetic Event ... create a new set";
                     // create a new set
-                    set_cnt_ptr_->emplace_back(num_procs_, g[v]);
+                    set_cnt_ptr_->emplace_back(num_procs_, v);
                 }
                 else if (vertex_kind::sync_event == g[v].type) {
                     // we are on a sync event and have no open set
                     logging::debug() << "Sync Event ... create a new set";
                     // create a new set
-                    set_cnt_ptr_->emplace_back(num_procs_, g[v]);
+                    set_cnt_ptr_->emplace_back(num_procs_, v);
                 }
             }
             else { // an open set for this process was found
@@ -288,11 +294,10 @@ class CIO_Visitor : public boost::default_dfs_visitor
                     // open set and on sync event -> close set
                     set_ptr->close(g[v].id());
                     // if have end event, check if current sync event is successors of the end event!
-                    set_ptr->set_end_event(g[v]);
                     logging::debug() << *set_ptr;
                     logging::debug() << "create a new set!";
                     //TODO do not create every time a new set
-                    set_cnt_ptr_->emplace_back(num_procs_, g[v]);
+                    set_cnt_ptr_->emplace_back(num_procs_, v);
 
                 }
             }
@@ -332,7 +337,6 @@ template<typename Graph>
 auto collect_concurrent_io_sets(Graph& graph)
 {
     using set_container_t = std::vector<CIO_Set<
-                                otf2_trace_event,
                                 typename Graph::vertex_descriptor>>;
 
     auto root = find_root(graph);
