@@ -411,14 +411,14 @@ namespace rabbitxx {
                 if (vertex.type == vertex_kind::io_event) {
                     auto property = boost::get<io_event_property>(vertex.property);
                     const std::string label_str = build_label(property.region_name, property.proc_id);
-                    os << "[label=\"" << label_str << "\""
+                    os << "[label=\"" << "# " << vd << label_str << "\""
                         << ", color=red"
                         << "]";
                 }
                 else if (vertex.type == vertex_kind::sync_event) {
                     auto property = boost::get<sync_event_property>(vertex.property);
                     const std::string label_str = build_label(property.region_name, property.proc_id);
-                    os << "[label=\"" << label_str << "\""
+                    os << "[label=\"" << "# " << vd << label_str << "\""
                         << ", color=green"
                         << "]";
                 }
@@ -435,7 +435,7 @@ namespace rabbitxx {
             const std::string build_label(const std::string& region_name, int rank) const
             {
                 std::stringstream sstr;
-                sstr << region_name << " @ " << rank;
+                sstr << " " << region_name << " @ " << rank;
                 return sstr.str();
             }
 
