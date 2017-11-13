@@ -28,6 +28,20 @@ namespace rabbitxx {
         synthetic,
     };
 
+    inline std::ostream& operator<<(std::ostream& os, const vertex_kind& kind)
+    {
+        switch (kind)
+        {
+            case vertex_kind::io_event:
+                os << "io event"; break;
+            case vertex_kind::sync_event:
+                os << "sync event"; break;
+            case vertex_kind::synthetic:
+                os << "synthetic"; break;
+        }
+        return os;
+    }
+
     struct io_creation_option_container
     {
         otf2::common::io_status_flag_type status_flag;
