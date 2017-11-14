@@ -178,12 +178,90 @@ inline std::ostream& operator<<(std::ostream& os, const CIO_Set<DescriptorType>&
     return os;
 }
 
+/**
+ * @brief Get all in-going synchronization-events of a given vertex.
+ *
+ * @param v: The vertex descriptor of the synchronization-event.
+ * @param g: A Reference to the Graph.
+ *
+ * @return Retruns a vector containing the vertex descriptors of all in-going
+ * synchronization events from a given vertex v.
+ */
+template<typename Vertex, typename Graph>
+std::vector<Vertex>
+get_in_going_syncs(Vertex v, Graph& g)
+{
+    const auto in_edge_r = boost::in_edges(v, g);
+    std::vector<Vertex> results;
+    for (auto edge_it = in_edge_r.first; edge_it != in_edge_r.second; ++edge_it) {
+        const auto src_v = source(*edge_it, g);
+        if (vertex_kind::sync_event == g[src_v].type) {
+            results.push_back(src_v);
+        }
+    }
+    return results;
+}
 
 /**
- * Utility function
- * Finds the synthetic root node of a given graph.
+ * @brief Find the root-Event of a given Synchronization Event.
+ * 
+ * @param v the vertex descriptor of a synchronization-event.
+ * @param g a reference to the graph.
+ *
+ * @return The vertex descriptor of the root-event of the synchronization.
+ */
+template<typename Vertex, typename Graph>
+Vertex root_of_sync(Vertex v, Graph& g)
+{
+    assert(vertex_kind::sync_event == g[v].type);
+    const auto in_dgr = boost::in_degree(v, *g.get());
+    if (in_dgr == 1) {
+        return v;
+    }
+    const auto sync_evt = boost::get<sync_event_property>(g[v].property);
+    // if p2p event get remote proc
+    if (sync_evt.comm_kind == sync_event_kind::p2p) {
+        const auto p2p_evt = boost::get<rabbitxx::peer2peer>(sync_evt.op_data);
+        const auto r_proc = p2p_evt.remote_process();
+        // look at in_edges
+        const auto in_syncs = get_in_going_syncs(v, *g.get());
+        for (const auto s : in_syncs) {
+            const auto id = g[s].id();
+            if (id == r_proc) { // Test if r_proc is proc_id from root!
+                logging::debug() << "process id matches remote proc id!";
+                return s;
+            }
+        }
+    } // if collective
+    else if (sync_evt.comm_kind == sync_event_kind::collective) {
+        const auto coll_evt = boost::get<collective>(sync_evt.op_data);
+        // check if collective has an explicit root
+        if (coll_evt.has_root()) {
+            const auto root_rank = coll_evt.root();
+            if (root_rank == g[v].id()) { // we *are* the root sync event!
+                logging::debug() << " v " << v << " root rank " << root_rank;
+                return v; // return our own vertex descriptor
+            }
+        }
+        // look at in_edges
+        const auto in_syncs = get_in_going_syncs(v, *g.get());
+        for (const auto s : in_syncs) {
+            const auto in_dgr = boost::in_degree(s, *g.get());
+            const auto out_dgr = boost::out_degree(s, *g.get());
+            if ((out_dgr >= coll_evt.members().size() - 1) && (in_dgr == 1)) {
+                return s;
+            }
+        }
+    }
+}
+
+/**
+ * @brief Finds the synthetic root node of a given graph.
+ *
  * Root node is the only vertex with a `vertex_kind::synthetic`.
- * Returns the vertex_descriptor of the root node.
+ *
+ * @param graph: A reference to the Graph.
+ * @return The vertex descriptor of the root node.
  */
 template<typename Graph>
 typename Graph::vertex_descriptor
@@ -198,8 +276,12 @@ find_root(Graph& graph)
 }
 
 /**
- * Get the number of processes involved, in a given I/O Graph.
- * Take the synthetic root vertex and count the out_edges.
+ * @brief Get the number of processes involved, in a given I/O Graph.
+ * 
+ * Therefore we take the synthetic root vertex and count the out-going edges.
+ *
+ * @param graph: A reference to the graph.
+ * @return The number of processes that have events in the graph.
  */
 template<typename Graph>
 std::uint64_t num_procs(Graph& graph) noexcept
@@ -209,8 +291,13 @@ std::uint64_t num_procs(Graph& graph) noexcept
 }
 
 /**
+ * @brief Get all processes which are involved in a given synchronization event.
+ *
  * Return vector containing all the process id's of the processes participating
  * within a given synchronization event.
+ *
+ * @param sevt: Reference to a synchronization event.
+ * @return Vector of process ids, which are involved in the synchronization.
  */
 std::vector<std::uint64_t>
 procs_in_sync_involved(const sync_event_property& sevt)
