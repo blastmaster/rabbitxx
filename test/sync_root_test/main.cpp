@@ -49,7 +49,7 @@ int main(int argc, char** argv)
     auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
     const auto sync_evts = get_sync_events(*g);
     for (const auto svd : sync_evts) {
-        const auto root_evt = rabbitxx::root_of_sync(svd, *g);
+        const auto root_evt = rabbitxx::root_of_sync(svd, *g->get());
         logging::debug() << "Root of Sync Event # "  << svd << " @ "
             << g->operator[](svd).id() << " " << g->operator[](svd).name() << " Is: "
             << root_evt << " @ " << g->operator[](root_evt).id() << " " << g->operator[](root_evt).name();
