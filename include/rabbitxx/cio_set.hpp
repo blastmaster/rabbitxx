@@ -13,9 +13,6 @@
 
 namespace rabbitxx {
 
-template<typename State>
-using State_Map = std::map<std::uint64_t, State>;
-
 enum class Set_State
 {
     Open,
@@ -34,6 +31,12 @@ std::ostream& operator<<(std::ostream& os, const Set_State state)
     return os;
 }
 
+template<typename Set>
+using ProcSet = std::vector<Set>;
+
+template<typename ProcessSet>
+using ProcSetMap = std::map<std::uint64_t, ProcessSet>;
+
 template<typename VertexDescriptor>
 class CIO_Set
 {
@@ -44,36 +47,28 @@ class CIO_Set
     using const_iterator = typename set_t::const_iterator;
 
     public:
-    CIO_Set(std::uint64_t num_procs)
+    //CIO_Set(std::uint64_t proc_id) : process_id_(proc_id), state_(Set_State::Open)
+    //{
+    //}
+
+    CIO_Set(std::uint64_t proc_id, const value_type& start_event) 
+        : process_id_(proc_id), start_evt_(start_event), state_(Set_State::Open)
     {
-        for (std::uint64_t i = 0; i < num_procs; ++i) {
-            state_map_.insert(std::make_pair(i, Set_State::Open));
-        }
     }
 
-    CIO_Set(std::uint64_t num_procs, const value_type& start_event)
+    std::uint64_t id() const noexcept
     {
-        for (std::uint64_t i = 0; i < num_procs; ++i) {
-            state_map_.insert(std::make_pair(i, Set_State::Open));
-        }
-        start_evt_ = start_event;
+        return process_id_;
     }
 
-    State_Map<Set_State> state_map() const noexcept
+    Set_State state() const noexcept
     {
-        return state_map_;
+        return state_;
     }
 
-    Set_State state_for(std::uint64_t proc_id) noexcept
+    void close() noexcept
     {
-        assert(state_map_.size() > proc_id);
-        return state_map_[proc_id];
-    }
-
-    bool is_closed() const noexcept
-    {
-        return std::all_of(state_map_.begin(), state_map_.end(),
-                [](const auto& state_pair){ return Set_State::Closed == state_pair.second; });
+        state_ = Set_State::Closed;
     }
 
     value_type start_event() const noexcept
@@ -89,12 +84,6 @@ class CIO_Set
     void set_end_event(const value_type& end_event)
     {
         end_evt_ = end_event;
-    }
-
-    void close(std::uint64_t proc_id)
-    {
-        assert(state_map_.size() > proc_id);
-        state_map_[proc_id] = Set_State::Closed;
     }
 
     size_type size() const noexcept
@@ -143,27 +132,19 @@ class CIO_Set
     }
 
     private:
-    State_Map<Set_State> state_map_;
+    std::uint64_t process_id_;
     value_type start_evt_;
+    Set_State state_;
     boost::optional<value_type> end_evt_;
     set_t set_;
 };
-
-template<typename Set>
-std::string dump_state_map(const Set& set)
-{
-    std::stringstream sstr;
-    for (const auto& kvp : set.state_map()) {
-        sstr << kvp.first << ": [" << kvp.second << "] ";
-    }
-    return sstr.str();
-}
 
 template<typename DescriptorType>
 inline std::ostream& operator<<(std::ostream& os, const CIO_Set<DescriptorType>& set)
 {
     os << "CIO_Set {\n"
-        << "\t[State] " << dump_state_map(set) << "\n"
+        << "\t[PID] " << set.id() << "\n"
+        << "\t[State] " << set.state() << "\n"
         << "\t[Start Evt] " << set.start_event() << "\n";
     if (boost::optional<DescriptorType> end_evt = set.end_event()) {
         os << "\t[End Evt] " << *end_evt << "\n";
@@ -214,7 +195,7 @@ template<typename Vertex, typename Graph>
 Vertex root_of_sync(Vertex v, Graph& g)
 {
     assert(vertex_kind::sync_event == g[v].type);
-    const auto in_dgr = boost::in_degree(v, *g.get());
+    const auto in_dgr = boost::in_degree(v, g);
     if (in_dgr == 1) {
         return v;
     }
@@ -224,7 +205,7 @@ Vertex root_of_sync(Vertex v, Graph& g)
         const auto p2p_evt = boost::get<rabbitxx::peer2peer>(sync_evt.op_data);
         const auto r_proc = p2p_evt.remote_process();
         // look at in_edges
-        const auto in_syncs = get_in_going_syncs(v, *g.get());
+        const auto in_syncs = get_in_going_syncs(v, g);
         for (const auto s : in_syncs) {
             const auto id = g[s].id();
             if (id == r_proc) { // Test if r_proc is proc_id from root!
@@ -244,10 +225,10 @@ Vertex root_of_sync(Vertex v, Graph& g)
             }
         }
         // look at in_edges
-        const auto in_syncs = get_in_going_syncs(v, *g.get());
+        const auto in_syncs = get_in_going_syncs(v, g);
         for (const auto s : in_syncs) {
-            const auto in_dgr = boost::in_degree(s, *g.get());
-            const auto out_dgr = boost::out_degree(s, *g.get());
+            const auto in_dgr = boost::in_degree(s, g);
+            const auto out_dgr = boost::out_degree(s, g);
             if ((out_dgr >= coll_evt.members().size() - 1) && (in_dgr == 1)) {
                 return s;
             }
@@ -356,23 +337,26 @@ class CIO_Visitor : public boost::default_dfs_visitor
         template<typename Vertex, typename Graph>
         void discover_vertex(Vertex v, const Graph& g)
         {
-            auto *set_ptr = find_open_set_for(g[v].id());
+            const auto cur_pid = g[v].id();
+            auto *set_ptr = find_open_set_for(cur_pid);
             if (set_ptr == nullptr) { // no open set was found for this process
                 logging::debug() << "No open set was found!";
                 if (vertex_kind::io_event == g[v].type) {
-                    logging::debug() << "I/O Event ... THIS SHOULD NEVER HAPPEN";
+                    logging::fatal() << "I/O Event ... THIS SHOULD NEVER HAPPEN";
                     return;
                 }
                 else if (vertex_kind::synthetic == g[v].type) {
-                    logging::debug() << "Synthetic Event ... create a new set";
+                    //logging::debug() << "Synthetic Event ... create a new set";
+                    logging::debug() << "Synthetic Event ... doing nothing....";
                     // create a new set
-                    set_cnt_ptr_->emplace_back(num_procs_, v);
+                    //set_cnt_ptr_->at(cur_pid).emplace_back(num_procs_, v);
                 }
                 else if (vertex_kind::sync_event == g[v].type) {
                     // we are on a sync event and have no open set
                     logging::debug() << "Sync Event ... create a new set";
+                    const auto sync_root = root_of_sync(v, g);
                     // create a new set
-                    set_cnt_ptr_->emplace_back(num_procs_, v);
+                    set_cnt_ptr_->operator[](cur_pid).emplace_back(cur_pid, sync_root);
                 }
             }
             else { // an open set for this process was found
@@ -385,19 +369,15 @@ class CIO_Visitor : public boost::default_dfs_visitor
                         << g[v].id() << " " << g[v].name() << " into current set";
                 }
                 else if (vertex_kind::synthetic == g[v].type) {
-                    logging::debug() << "Synthetic Event ... THIS SHOULD NEVER HAPPEN";
+                    logging::fatal() << "Synthetic Event ... THIS SHOULD NEVER HAPPEN";
                     return;
                 }
                 else if (vertex_kind::sync_event == g[v].type) {
-                    logging::debug() << "Sync Event ... close current set @" << g[v].id();
-                    // open set and on sync event -> close set
-                    set_ptr->close(g[v].id());
-                    // if have end event, check if current sync event is successors of the end event!
-                    logging::debug() << *set_ptr;
-                    logging::debug() << "create a new set!";
-                    //TODO do not create every time a new set
-                    set_cnt_ptr_->emplace_back(num_procs_, v);
-
+                    logging::debug() << "Sync Event " << g[v].name()
+                        << " ... close current set @" << g[v].id();
+                        set_ptr->close();
+                        const auto sync_root = root_of_sync(v, g);
+                        set_ptr->set_end_event(sync_root);
                 }
             }
         }
@@ -415,13 +395,17 @@ class CIO_Visitor : public boost::default_dfs_visitor
     private:
         //template<typename Set>
         // TODO: use optional instead of trailing return type syntax
-        auto find_open_set_for(const std::uint64_t proc_id) -> typename Cont::value_type*
+        auto find_open_set_for(const std::uint64_t proc_id) -> typename Cont::mapped_type::value_type*
         {
-            auto it = std::find_if(set_cnt_ptr_->begin(), set_cnt_ptr_->end(),
-                    [&proc_id](typename Cont::value_type& set) {
-                        return Set_State::Open == set.state_for(proc_id);
+            if (set_cnt_ptr_->empty()) {
+                return nullptr;
+            }
+            auto it = std::find_if(set_cnt_ptr_->operator[](proc_id).begin(),
+                    set_cnt_ptr_->operator[](proc_id).end(),
+                    [](typename Cont::mapped_type::value_type& set) {
+                        return Set_State::Open == set.state();
                     });
-            if (it == std::end(*set_cnt_ptr_.get())) {
+            if (it == set_cnt_ptr_->operator[](proc_id).end()) {
                 return nullptr;
             }
             return &(*it);
@@ -435,8 +419,10 @@ class CIO_Visitor : public boost::default_dfs_visitor
 template<typename Graph>
 auto collect_concurrent_io_sets(Graph& graph)
 {
-    using set_container_t = std::vector<CIO_Set<
-                                typename Graph::vertex_descriptor>>;
+    using set_container_t = ProcSetMap<
+                                ProcSet<
+                                    CIO_Set<
+                                        typename Graph::vertex_descriptor>>>;
 
     auto root = find_root(graph);
     assert(graph[root].type == vertex_kind::synthetic);
