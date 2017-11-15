@@ -64,6 +64,17 @@ namespace rabbitxx { namespace graph {
             return graph_->add_vertex(otf2_trace_event(vertex_kind::synthetic));
         }
 
+        void create_synthetic_end()
+        {
+            //try to add synthetic end vertex.
+            const auto end_descriptor = graph_->add_vertex(otf2_trace_event(vertex_kind::synthetic));
+            //get last event from each location
+            for (const auto loc : locations_) {
+                const auto last_proc_event = edge_points_.front(loc);
+                graph_->add_edge(last_proc_event, end_descriptor);
+            }
+        }
+
         boost::optional<typename Graph::edge_add_t>
         build_edge(const typename Graph::vertex_descriptor& descriptor,
                    const otf2::definition::location& location)
@@ -555,6 +566,7 @@ namespace rabbitxx { namespace graph {
             auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds {SYNC,IO, SYNTHETIC}
             if (is_master())
             {
+                create_synthetic_end();
                 for (const auto& loc_events : events_)
                 {
                     logging::debug() << "processing location: " << loc_events.first;
@@ -657,6 +669,7 @@ namespace rabbitxx { namespace graph {
         virtual void definition(const otf2::definition::location& definition) override
         {
             logging::trace() << "Found location defintion";
+            locations_.push_back(definition);
         }
 
         virtual void definition(const otf2::definition::region& definition) override
@@ -712,6 +725,7 @@ namespace rabbitxx { namespace graph {
         location_queue<typename Graph::vertex_descriptor> events_;
         std::unique_ptr<Graph> graph_;
         typename Graph::vertex_descriptor root_;
+        std::vector<otf2::definition::location> locations_;
     };
 
     struct OTF2_Io_Graph_Builder
