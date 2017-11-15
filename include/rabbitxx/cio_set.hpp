@@ -345,18 +345,17 @@ class CIO_Visitor : public boost::default_dfs_visitor
                     logging::fatal() << "I/O Event ... THIS SHOULD NEVER HAPPEN";
                     return;
                 }
-                else if (vertex_kind::synthetic == g[v].type) {
-                    //logging::debug() << "Synthetic Event ... create a new set";
+                else if (vertex_kind::synthetic == g[v].type) { // synthetic events have no pid so there is nothing to do here.
                     logging::debug() << "Synthetic Event ... doing nothing....";
-                    // create a new set
-                    //set_cnt_ptr_->at(cur_pid).emplace_back(num_procs_, v);
+                    return;
                 }
                 else if (vertex_kind::sync_event == g[v].type) {
                     // we are on a sync event and have no open set
-                    logging::debug() << "Sync Event ... create a new set";
+                    logging::debug() << "Sync Event " << v << " ... create a new set";
                     const auto sync_root = root_of_sync(v, g);
                     // create a new set
-                    set_cnt_ptr_->operator[](cur_pid).emplace_back(cur_pid, sync_root);
+                    //set_cnt_ptr_->operator[](cur_pid).emplace_back(cur_pid, sync_root);
+                    create_new_set(cur_pid, sync_root);
                 }
             }
             else { // an open set for this process was found
@@ -368,16 +367,22 @@ class CIO_Visitor : public boost::default_dfs_visitor
                     logging::debug() << "insert vertex #" << v << " @ rank "
                         << g[v].id() << " " << g[v].name() << " into current set";
                 }
-                else if (vertex_kind::synthetic == g[v].type) {
+                else if (vertex_kind::synthetic == g[v].type) { // set should be already closed during examination of the edges!
                     logging::fatal() << "Synthetic Event ... THIS SHOULD NEVER HAPPEN";
                     return;
                 }
                 else if (vertex_kind::sync_event == g[v].type) {
                     logging::debug() << "Sync Event " << g[v].name()
                         << " ... close current set @" << g[v].id();
-                        set_ptr->close();
-                        const auto sync_root = root_of_sync(v, g);
-                        set_ptr->set_end_event(sync_root);
+                    set_ptr->close();
+                    const auto sync_root = root_of_sync(v, g);
+                    set_ptr->set_end_event(sync_root);
+                    const auto out_dgr = boost::out_degree(v, g);
+                    if (out_dgr > 0) { // just create a new set if we are not the last event, here it could be maybe better to have a look at our adjacent vertices
+                        logging::debug() << "create a new set for pid: " << cur_pid;
+                        //set_cnt_ptr_->operator[](cur_pid).emplace_back(cur_pid, sync_root);
+                        create_new_set(cur_pid, sync_root);
+                    }
                 }
             }
         }
@@ -385,19 +390,74 @@ class CIO_Visitor : public boost::default_dfs_visitor
         template<typename Edge, typename Graph>
         void examine_edge(Edge e, const Graph& g)
         {
-        }
+            const auto src_vd = source(e, g);
+            const auto trg_vd = target(e, g);
+            logging::debug() << "on examine edge from " << src_vd << " to " << trg_vd;
+            const auto src_pid = g[src_vd].id();
+            const auto trg_pid = g[trg_vd].id();
 
-        template<typename Edge, typename Graph>
-        void tree_edge(Edge e, const Graph& g)
-        {
+            // close current set if synthetic end event is found!
+            if (g[trg_vd].type == vertex_kind::synthetic) {
+                auto *set_ptr = find_open_set_for(src_pid);
+                if (set_ptr == nullptr) {
+                    logging::fatal() << "No set was found on the way to synthetic event! This was not expected.";
+                    return;
+                }
+                else {
+                    logging::debug() << "on end for pid: " << src_pid << " close set";
+                    set_ptr->close();
+                    set_ptr->set_end_event(trg_vd);
+                }
+            }
+
+            // close current set if we reach a sync event next.
+            // This is necessary for backtracking during dfs.
+            if (src_pid == trg_pid) {
+                auto *set_ptr = find_open_set_for(trg_pid);
+                if (set_ptr == nullptr) {
+                    return;
+                }
+                if (g[trg_vd].type == vertex_kind::sync_event) {
+                    set_ptr->close();
+                    const auto sync_root = root_of_sync(trg_vd, g);
+                    set_ptr->set_end_event(sync_root);
+                }
+            }
+
+            // create new set if we come from synthetic root event.
+            if (g[src_vd].type == vertex_kind::synthetic) {
+                logging::debug() << "source is synthetic ...";
+                //set_cnt_ptr_->operator[](trg_pid).emplace_back(trg_pid, src_vd);
+                create_new_set(trg_pid, src_vd);
+                if (g[trg_vd].type == vertex_kind::sync_event) {
+                    logging::debug() << "target is sync event ... close!";
+                    auto *set_ptr = find_open_set_for(trg_pid);
+                    if (set_ptr == nullptr) {
+                        logging::fatal() << "Error no set found!";
+                        return;
+                    }
+                    set_ptr->close();
+                    const auto sync_root = root_of_sync(trg_vd, g);
+                    set_ptr->set_end_event(sync_root);
+                }
+            }
         }
 
     private:
+
+        template<typename Vertex>
+        void create_new_set(const std::uint64_t pid, Vertex v)
+        {
+            set_cnt_ptr_->operator[](pid).emplace_back(pid, v);
+        }
+
         //template<typename Set>
         // TODO: use optional instead of trailing return type syntax
         auto find_open_set_for(const std::uint64_t proc_id) -> typename Cont::mapped_type::value_type*
         {
-            if (set_cnt_ptr_->empty()) {
+            if (set_cnt_ptr_->empty() ||
+                    proc_id == std::numeric_limits<std::uint64_t>::max())
+            {
                 return nullptr;
             }
             auto it = std::find_if(set_cnt_ptr_->operator[](proc_id).begin(),
