@@ -391,6 +391,23 @@ namespace rabbitxx {
             }
         }
 
+        boost::optional<otf2::chrono::time_point>
+        timestamp() const
+        {
+            if (type == vertex_kind::io_event) {
+                const auto& p = boost::get<io_event_property>(property);
+                return p.timestamp;
+            }
+            else if (type == vertex_kind::sync_event) {
+                const auto& p = boost::get<sync_event_property>(property);
+                return p.timestamp;
+            }
+            else {
+                logging::fatal() << "Event has no timestamp";
+                return boost::none;
+            }
+        }
+
     };
 
     inline std::ostream& operator<<(std::ostream& os, const rabbitxx::otf2_trace_event& vertex)
