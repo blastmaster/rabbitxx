@@ -41,20 +41,35 @@ template<typename VertexDescriptor>
 class CIO_Set
 {
     using value_type = VertexDescriptor;
-    using set_t = std::unordered_set<value_type>;
+    //using set_t = std::unordered_set<value_type>;
+    using set_t = std::set<value_type>;
     using size_type = typename set_t::size_type;
     using iterator = typename set_t::iterator;
     using const_iterator = typename set_t::const_iterator;
 
     public:
-    //CIO_Set(std::uint64_t proc_id) : process_id_(proc_id), state_(Set_State::Open)
-    //{
-    //}
+
+    CIO_Set() = default;
 
     CIO_Set(std::uint64_t proc_id, const value_type& start_event) 
         : process_id_(proc_id), start_evt_(start_event), state_(Set_State::Open)
     {
     }
+
+    CIO_Set(const CIO_Set<value_type>& other) = default;
+
+
+    void merge(CIO_Set<value_type>& other_set)
+    {
+        //TODO: start event!
+        //logging::debug() << "in merge";
+        assert(!other_set.empty());
+        auto oset = other_set.set();
+        std::copy(oset.begin(), oset.end(),
+                std::inserter(set_, set_.begin()));
+        //logging::debug() << "finish copy";
+    }
+
 
     std::uint64_t id() const noexcept
     {
@@ -64,6 +79,11 @@ class CIO_Set
     Set_State state() const noexcept
     {
         return state_;
+    }
+
+    set_t set() const noexcept
+    {
+        return set_;
     }
 
     void close() noexcept
@@ -475,6 +495,179 @@ class CIO_Visitor : public boost::default_dfs_visitor
         std::shared_ptr<Cont> set_cnt_ptr_;
         std::uint64_t num_procs_;
 };
+
+template<typename SetMap>
+void remove_empty_sets(SetMap& sets)
+{
+    std::for_each(sets.begin(), sets.end(),
+            [](auto& proc_sets) {
+                proc_sets.second.erase(
+                        std::remove_if(
+                            std::begin(proc_sets.second),
+                            std::end(proc_sets.second),
+                            [](const auto& set) {
+                                return set.empty();
+                            }),
+                        std::end(proc_sets.second));
+                });
+}
+
+
+template<typename Graph>
+std::vector<typename Graph::vertex_descriptor>
+get_sync_events(Graph& g)
+{
+    using vertex_descriptor = typename Graph::vertex_descriptor;
+    const auto vip = g.vertices();
+    std::vector<vertex_descriptor> sync_events;
+    std::copy_if(vip.first, vip.second, std::back_inserter(sync_events),
+            [&g](const vertex_descriptor& vd) {
+                return g[vd].type == rabbitxx::vertex_kind::sync_event;
+            });
+    return sync_events;
+}
+
+/**
+ * @breif sort sets per process with ascending start events of the CIO_Set.
+ *
+ * @param cio_sets: Reference to the SetMap container.
+ *
+ * When it comes that sets are not sorted, this can happen during backtracking
+ * e.g.. 
+ * We can sort them using `sort` or try just to `reverse` the vector.
+ * Reversing the vector maybe enough if the only reason for sorting
+ * is the reverse order of sets through the backtracking during the DFS.
+ */
+template<typename SetMap>
+void sort_sets_by_descriptor(SetMap& cio_sets)
+{
+    std::for_each(cio_sets.begin(), cio_sets.end(),
+            [](auto& kvp_ps) {
+                bool sorted = std::is_sorted(
+                        std::begin(kvp_ps.second),
+                        std::end(kvp_ps.second),
+                        [](const auto& set_a, const auto& set_b) {
+                            return set_a.start_event() < set_b.start_event();
+                        });
+                if (!sorted) {
+                    //try to reverse
+                    //std::reverse(kvp_ps.second.begin(), kvp_ps.second.end());
+                    //... or sort conventionally
+                    std::sort(std::begin(kvp_ps.second),
+                            std::end(kvp_ps.second),
+                            [](const auto& set_a, const auto& set_b) {
+                                return set_a.start_event() < set_b.start_event();
+                            });
+                }
+            });
+}
+
+template<typename Graph>
+std::vector<typename Graph::vertex_descriptor>
+collect_root_sync_events(Graph& graph)
+{
+    using vertex_descriptor = typename Graph::vertex_descriptor;
+    std::vector<vertex_descriptor> result;
+    // get all sync events in the graph
+    const auto sync_events = get_sync_events(graph);
+    // store the root-sync-event in result vector
+    std::transform(sync_events.begin(), sync_events.end(),
+            std::back_inserter(result),
+            [&graph](const vertex_descriptor& vd) {
+                return root_of_sync(vd, *graph.get());
+            });
+    // sort the events if necessary
+    if (!std::is_sorted(result.begin(), result.end())) {
+        std::sort(result.begin(), result.end());
+    }
+    // delete everything but hold unique ones
+    result.erase(std::unique(result.begin(), result.end()),
+                result.end());
+
+    return result;
+}
+
+template<typename Graph, typename Vertex>
+void sort_events_chronological(Graph& graph, std::vector<Vertex>& events)
+{
+    auto chrono_cmp = [&graph](const Vertex& vd_a, const Vertex& vd_b)
+        {
+            const auto t_a = graph[vd_a].timestamp().value();
+            const auto t_b = graph[vd_b].timestamp().value();
+            return t_a < t_b;
+        };
+
+    if (!std::is_sorted(events.begin(), events.end(), chrono_cmp)) {
+        logging::debug() << "not chronologically sorted, ... sorting";
+        std::sort(events.begin(), events.end(), chrono_cmp);
+    }
+}
+
+template<typename SetMap, typename Vertex>
+//TODO: some sort of set_type should be encoded in the SetMap type or provided
+//as general type-alias
+std::vector<CIO_Set<Vertex>>
+merge_sets(SetMap& set_map, const std::vector<Vertex>& sorted_sync_evts)
+{
+    std::vector<CIO_Set<Vertex>> merged_sets;
+    unsigned int count {0};
+
+    while (!std::all_of(set_map.begin(), set_map.end(),
+                [](const auto& proc_sets) {
+                    return proc_sets.second.empty();
+                }))
+    {
+        std::vector<Vertex> end_evts;
+        CIO_Set<Vertex> cur_set;
+        //std::transform(set_map.begin(), set_map.end(),
+                //std::back_inserter(end_evts),
+                //[&cur_set](auto& proc_sets) {
+                    //auto& first_set = proc_sets.second.front();
+                    //cur_set.merge(first_set);
+                    //return first_set.end_event().value();
+                //});
+        //logging::debug() << "set map size: " << set_map.size();
+        for (auto& proc_set : set_map)
+        {
+            if (!proc_set.second.empty()) {
+                auto& first_set = proc_set.second.front();
+                cur_set.merge(first_set); // TODO: const-correctness
+                end_evts.push_back(first_set.end_event().value());
+            }
+            else {
+                logging::fatal() << "proc: " << proc_set.first << " is empty!";
+            }
+        }
+
+        std::cout << "End-Events in iteration: " << count << "\n";
+        std::copy(end_evts.begin(), end_evts.end(),
+                std::ostream_iterator<Vertex>(std::cout, ", "));
+        std::cout << "\n";
+
+        assert(set_map.size() == end_evts.size());
+        // it points to first occurence in sorted_sync_evts
+        auto first = std::find_first_of(sorted_sync_evts.begin(),
+                sorted_sync_evts.end(),
+                end_evts.begin(), end_evts.end());
+
+        logging::debug() << "iteration: " << count << " first end-event of set: " << *first;
+        // the first end event ends the set.
+        cur_set.close();
+        cur_set.set_end_event(*first);
+        merged_sets.push_back(cur_set);
+
+        for (std::size_t i = 0; i < end_evts.size(); ++i)
+        {
+            if (*first == end_evts[i]) {
+                logging::debug() << "delete first set of proc: " << i;
+                set_map[i].erase(set_map[i].begin());
+            }
+        }
+        count++;
+    }
+
+    return merged_sets;
+}
 
 template<typename Graph>
 auto collect_concurrent_io_sets(Graph& graph)
