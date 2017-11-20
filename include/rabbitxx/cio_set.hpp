@@ -592,8 +592,8 @@ void sort_events_chronological(Graph& graph, std::vector<Vertex>& events)
 {
     auto chrono_cmp = [&graph](const Vertex& vd_a, const Vertex& vd_b)
         {
-            const auto t_a = graph[vd_a].timestamp().value();
-            const auto t_b = graph[vd_b].timestamp().value();
+            const auto t_a = graph[vd_a].timestamp();
+            const auto t_b = graph[vd_b].timestamp();
             return t_a < t_b;
         };
 

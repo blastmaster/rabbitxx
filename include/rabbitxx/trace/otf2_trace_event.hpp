@@ -330,10 +330,35 @@ namespace rabbitxx {
         return os;
     }
 
+    struct synthetic_event_property
+    {
+        std::string name;
+        otf2::chrono::time_point timestamp;
+
+        synthetic_event_property() noexcept : name("synthetic event")
+        {
+        }
+
+        synthetic_event_property(const std::string& evt_name, const otf2::chrono::time_point& ts) noexcept 
+            : name(evt_name), timestamp(ts)
+        {
+        }
+
+    };
+
+    inline std::ostream& operator<<(std::ostream& os, const synthetic_event_property& vertex)
+    {
+        os << "[Synthetic-Event]\n"
+            << "[Name]: " << vertex.name << "\n"
+            << "[Timestamp]: " << vertex.timestamp;
+        return os;
+    }
+
     struct otf2_trace_event
     {
         using vertex_property = boost::variant<io_event_property,
-                                               sync_event_property>;
+                                               sync_event_property,
+                                               synthetic_event_property>;
         vertex_kind type;
         vertex_property property;
 
@@ -344,12 +369,17 @@ namespace rabbitxx {
         }
 
         otf2_trace_event(const io_event_property& io_p) noexcept
-        : type(vertex_kind::io_event), property(io_p)
+            : type(vertex_kind::io_event), property(io_p)
         {
         }
 
         otf2_trace_event(const sync_event_property& sync_p) noexcept
-        : type(vertex_kind::sync_event), property(sync_p)
+            : type(vertex_kind::sync_event), property(sync_p)
+        {
+        }
+
+        otf2_trace_event(const synthetic_event_property& synthetic_p) noexcept
+            : type(vertex_kind::synthetic), property(synthetic_p)
         {
         }
 
@@ -364,6 +394,7 @@ namespace rabbitxx {
                 return p.proc_id;
             }
             else if (type == vertex_kind::synthetic) {
+                logging::fatal() << "Synthetic Event has no process id return INT MAX.";
                 return std::numeric_limits<std::uint64_t>::max();
             }
             else {
@@ -383,7 +414,8 @@ namespace rabbitxx {
                 return p.region_name;
             }
             else if (type == vertex_kind::synthetic) {
-                return "Synthetic Root";
+                const auto& p = boost::get<synthetic_event_property>(property);
+                return p.name;
             }
             else {
                 logging::fatal() << "This should not happen! property type seems wether of type io_event_property neither of type sync_event_property.";
@@ -391,8 +423,7 @@ namespace rabbitxx {
             }
         }
 
-        boost::optional<otf2::chrono::time_point>
-        timestamp() const
+        otf2::chrono::time_point timestamp() const
         {
             if (type == vertex_kind::io_event) {
                 const auto& p = boost::get<io_event_property>(property);
@@ -402,9 +433,13 @@ namespace rabbitxx {
                 const auto& p = boost::get<sync_event_property>(property);
                 return p.timestamp;
             }
+            else if (type == vertex_kind::synthetic) {
+                const auto& p = boost::get<synthetic_event_property>(property);
+                return p.timestamp;
+            }
             else {
-                logging::fatal() << "Event has no timestamp";
-                return boost::none;
+                logging::fatal() << "ERROR invalid vertex_kind! Return MAX";
+                return otf2::chrono::time_point::max();
             }
         }
 
@@ -415,13 +450,13 @@ namespace rabbitxx {
         switch (vertex.type)
         {
             case vertex_kind::io_event:
-                os << "io event:\n" << vertex.property;
+                os << vertex.property;
                 break;
             case vertex_kind::sync_event:
-                os << "sync event:\n" << vertex.property;
+                os << vertex.property;
                 break;
             case vertex_kind::synthetic:
-                os << "synthetic event!\n";
+                os << vertex.property;
                 break;
         }
         return os;
@@ -440,22 +475,23 @@ namespace rabbitxx {
             {
                 auto vertex = g_ptr_->operator[](vd);
                 if (vertex.type == vertex_kind::io_event) {
-                    auto property = boost::get<io_event_property>(vertex.property);
+                    const auto property = boost::get<io_event_property>(vertex.property);
                     const std::string label_str = build_label(property.region_name, property.proc_id);
                     os << "[label=\"" << "# " << vd << label_str << "\""
                         << ", color=red"
                         << "]";
                 }
                 else if (vertex.type == vertex_kind::sync_event) {
-                    auto property = boost::get<sync_event_property>(vertex.property);
+                    const auto property = boost::get<sync_event_property>(vertex.property);
                     const std::string label_str = build_label(property.region_name, property.proc_id);
                     os << "[label=\"" << "# " << vd << label_str << "\""
                         << ", color=green"
                         << "]";
                 }
                 else if (vertex.type == vertex_kind::synthetic) {
-                    logging::debug() << "Draw synthetic root node!";
-                    os << "[label=\"root\", color=gray]";
+                        logging::debug() << "Draw synthetic node!";
+                    const auto property = boost::get<synthetic_event_property>(vertex.property);
+                    os << "[label=\"" << property.name << "\", color=gray]";
                 }
                 else {
                     logging::fatal() << "Unrecognized vertex property for graphviz output";

@@ -54,20 +54,25 @@ namespace rabbitxx { namespace graph {
     private:
 
         /**
-         * Create synthetic root vertex, this method is called once during
-         * initiallzation.
+         * @brief Create synthetic root vertex, this method is called once during initiallzation.
+         *
+         * @return The vertex descriptor of the new synthetic root-event.
          */
         typename Graph::vertex_descriptor
         create_synthetic_root()
         {
             assert(graph_->num_vertices() == 0);
-            return graph_->add_vertex(otf2_trace_event(vertex_kind::synthetic));
+            const auto& vt = synthetic_event_property("Root", otf2::chrono::time_point::min());
+            return graph_->add_vertex(vt);
         }
 
+        /**
+         * @brief Create synthetic end vertex, this method is called after all events are processed.
+         */
         void create_synthetic_end()
         {
-            //try to add synthetic end vertex.
-            const auto end_descriptor = graph_->add_vertex(otf2_trace_event(vertex_kind::synthetic));
+            const auto& vt = synthetic_event_property("End", otf2::chrono::time_point::max());
+            const auto end_descriptor = graph_->add_vertex(vt);
             //get last event from each location
             for (const auto loc : locations_) {
                 const auto last_proc_event = edge_points_.front(loc);
