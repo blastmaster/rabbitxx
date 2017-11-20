@@ -63,9 +63,13 @@ class CIO_Set
     {
         //TODO: start event!
         //logging::debug() << "in merge";
-        assert(!other_set.empty());
-        auto oset = other_set.set();
-        std::copy(oset.begin(), oset.end(),
+        //assert(!other_set.empty());
+        if (other_set.empty()) {
+            logging::debug() << "in merge, other set is empty... skip!";
+            return ;
+        }
+
+        std::copy(other_set.begin(), other_set.end(),
                 std::inserter(set_, set_.begin()));
         //logging::debug() << "finish copy";
     }
@@ -501,30 +505,53 @@ void remove_empty_sets(SetMap& sets)
 {
     std::for_each(sets.begin(), sets.end(),
             [](auto& proc_sets) {
-                proc_sets.second.erase(
-                        std::remove_if(
-                            std::begin(proc_sets.second),
-                            std::end(proc_sets.second),
-                            [](const auto& set) {
-                                return set.empty();
-                            }),
-                        std::end(proc_sets.second));
-                });
+                remove_empty_sets(proc_sets.second);
+            });
+}
+
+template<typename Set>
+void remove_empty_sets(std::vector<Set>& sets)
+{
+    sets.erase(std::remove_if(
+                sets.begin(),
+                sets.end(),
+                [](const auto& set) {
+                    return set.empty();
+                }),
+            sets.end());
 }
 
 
+//template<typename Graph>
+//std::vector<typename Graph::vertex_descriptor>
+//get_sync_events(Graph& g)
+//{
+    //using vertex_descriptor = typename Graph::vertex_descriptor;
+    //const auto vip = g.vertices();
+    //std::vector<vertex_descriptor> sync_events;
+    //std::copy_if(vip.first, vip.second, std::back_inserter(sync_events),
+            //[&g](const vertex_descriptor& vd) {
+                //return g[vd].type == rabbitxx::vertex_kind::sync_event;
+            //});
+    //return sync_events;
+//}
+
+// should maybe a variadic template
 template<typename Graph>
 std::vector<typename Graph::vertex_descriptor>
-get_sync_events(Graph& g)
+get_events_by_kind(Graph& graph, const std::vector<vertex_kind>& kinds)
 {
     using vertex_descriptor = typename Graph::vertex_descriptor;
-    const auto vip = g.vertices();
-    std::vector<vertex_descriptor> sync_events;
-    std::copy_if(vip.first, vip.second, std::back_inserter(sync_events),
-            [&g](const vertex_descriptor& vd) {
-                return g[vd].type == rabbitxx::vertex_kind::sync_event;
+    const auto vp = graph.vertices();
+    std::vector<vertex_descriptor> events;
+    std::copy_if(vp.first, vp.second, std::back_inserter(events),
+            [&kinds,&graph](const vertex_descriptor& vd) {
+                return std::any_of(kinds.begin(), kinds.end(),
+                        [&vd,&graph](const vertex_kind& kind) {
+                            return graph[vd].type == kind;
+                        });
             });
-    return sync_events;
+    return events;
 }
 
 /**
@@ -569,12 +596,18 @@ collect_root_sync_events(Graph& graph)
     using vertex_descriptor = typename Graph::vertex_descriptor;
     std::vector<vertex_descriptor> result;
     // get all sync events in the graph
-    const auto sync_events = get_sync_events(graph);
+    //const auto sync_events = get_sync_events(graph);
+    const auto sync_events = get_events_by_kind(graph, {vertex_kind::sync_event, vertex_kind::synthetic});
     // store the root-sync-event in result vector
     std::transform(sync_events.begin(), sync_events.end(),
             std::back_inserter(result),
             [&graph](const vertex_descriptor& vd) {
-                return root_of_sync(vd, *graph.get());
+                if (graph[vd].type == vertex_kind::sync_event) {
+                    return root_of_sync(vd, *graph.get());
+                }
+                else {
+                    return vd;
+                }
             });
     // sort the events if necessary
     if (!std::is_sorted(result.begin(), result.end())) {
