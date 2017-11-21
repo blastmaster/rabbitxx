@@ -510,6 +510,39 @@ namespace rabbitxx {
             G* g_ptr_;
     };
 
+    template<typename Set>
+    class set_graph_writer
+    {
+        public:
+            set_graph_writer(const std::vector<Set>& set_v) : sets_(set_v) {}
+
+            void operator()(std::ostream& out)
+            {
+                std::uint64_t s_cnt = 0;
+                std::string color = colors_.front();
+                for (const auto& set : sets_)
+                {
+                    ++s_cnt;
+                    out << "subgraph cluster_" << s_cnt << "{\n"
+                        << "shape=rect;\n"
+                        << "style=filled;\n"
+                        << "color=" << color << ";\n"
+                        << "label=\"" << "set_" << s_cnt << "\";\n";
+
+                    out << set.start_event() << " -> { ";
+                    std::copy(set.begin(), set.end(),
+                            std::ostream_iterator<typename Set::value_type>(out, " "));
+                    out << " }"
+                        << "[style=invis]"
+                        << "\n}\n";
+                    color = colors_[s_cnt % colors_.size()];
+                }
+            }
+
+        private:
+            std::vector<Set> sets_;
+            std::vector<std::string> colors_ {"lightblue", "springgreen", "orange", "lightgoldenrod"};
+    };
 
     template<typename G>
     void write_graph_to_dot(G& graph, const std::string& filename)
@@ -517,6 +550,24 @@ namespace rabbitxx {
         std::ofstream file{filename};
         boost::write_graphviz(file, graph,
                 make_otf2_trace_event_writer(graph));
+    }
+
+    template<typename Graph, typename Set>
+    void write_graph_to_dot(Graph& graph, const std::string& filename,
+            const std::vector<Set>& sets)
+    {
+        std::ofstream file{filename};
+        boost::write_graphviz(file, graph,
+                make_otf2_trace_event_writer(graph),
+                boost::default_writer(),
+                make_set_graph_writer(sets));
+    }
+
+    template<typename Set>
+    inline set_graph_writer<Set>
+    make_set_graph_writer(const std::vector<Set>& sets)
+    {
+        return set_graph_writer<Set>(sets);
     }
 
     template<typename G>
