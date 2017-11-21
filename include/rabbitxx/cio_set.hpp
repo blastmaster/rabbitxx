@@ -37,9 +37,14 @@ using ProcSet = std::vector<Set>;
 template<typename ProcessSet>
 using ProcSetMap = std::map<std::uint64_t, ProcessSet>;
 
+/**
+ *
+ * @tparam VertexDescriptor must be an integral type
+ */
 template<typename VertexDescriptor>
 class CIO_Set
 {
+    public:
     using value_type = VertexDescriptor;
     //using set_t = std::unordered_set<value_type>;
     using set_t = std::set<value_type>;
@@ -47,12 +52,10 @@ class CIO_Set
     using iterator = typename set_t::iterator;
     using const_iterator = typename set_t::const_iterator;
 
-    public:
-
     CIO_Set() = default;
 
-    CIO_Set(std::uint64_t proc_id, const value_type& start_event) 
-        : process_id_(proc_id), start_evt_(start_event), state_(Set_State::Open)
+    CIO_Set(const value_type& start_event) 
+        : start_evt_(start_event), state_(Set_State::Open)
     {
     }
 
@@ -71,13 +74,6 @@ class CIO_Set
 
         std::copy(other_set.begin(), other_set.end(),
                 std::inserter(set_, set_.begin()));
-        //logging::debug() << "finish copy";
-    }
-
-
-    std::uint64_t id() const noexcept
-    {
-        return process_id_;
     }
 
     Set_State state() const noexcept
@@ -156,18 +152,16 @@ class CIO_Set
     }
 
     private:
-    std::uint64_t process_id_;
-    value_type start_evt_;
-    Set_State state_;
-    boost::optional<value_type> end_evt_;
-    set_t set_;
+    value_type start_evt_ = std::numeric_limits<value_type>::max();
+    Set_State state_ = Set_State::Open;
+    boost::optional<value_type> end_evt_ = boost::none;
+    set_t set_ {};
 };
 
 template<typename DescriptorType>
 inline std::ostream& operator<<(std::ostream& os, const CIO_Set<DescriptorType>& set)
 {
     os << "CIO_Set {\n"
-        << "\t[PID] " << set.id() << "\n"
         << "\t[State] " << set.state() << "\n"
         << "\t[Start Evt] " << set.start_event() << "\n";
     if (boost::optional<DescriptorType> end_evt = set.end_event()) {
@@ -354,7 +348,7 @@ template<typename Cont>
 class CIO_Visitor : public boost::default_dfs_visitor
 {
     public:
-        CIO_Visitor(std::shared_ptr<Cont>& sp, std::uint64_t np) : set_cnt_ptr_(sp), num_procs_(np)
+        CIO_Visitor(std::shared_ptr<Cont>& sp) : set_cnt_ptr_(sp)
         {
         }
 
@@ -472,7 +466,8 @@ class CIO_Visitor : public boost::default_dfs_visitor
         template<typename Vertex>
         void create_new_set(const std::uint64_t pid, Vertex v)
         {
-            set_cnt_ptr_->operator[](pid).emplace_back(pid, v);
+            //set_cnt_ptr_->operator[](pid).emplace_back(pid, v);
+            set_cnt_ptr_->operator[](pid).emplace_back(v);
         }
 
         //template<typename Set>
@@ -497,7 +492,6 @@ class CIO_Visitor : public boost::default_dfs_visitor
 
     private:
         std::shared_ptr<Cont> set_cnt_ptr_;
-        std::uint64_t num_procs_;
 };
 
 template<typename SetMap>
@@ -712,9 +706,8 @@ auto collect_concurrent_io_sets(Graph& graph)
 
     auto root = find_root(graph);
     assert(graph[root].type == vertex_kind::synthetic);
-    const auto np = num_procs(graph);
     auto shared_set_container(std::make_shared<set_container_t>());
-    CIO_Visitor<set_container_t> vis(shared_set_container, np);
+    CIO_Visitor<set_container_t> vis(shared_set_container);
     std::vector<boost::default_color_type> color_map(graph.num_vertices());
     boost::depth_first_visit(*graph.get(), root, vis,
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
