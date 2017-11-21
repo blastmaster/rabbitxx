@@ -61,16 +61,13 @@ class CIO_Set
 
     CIO_Set(const CIO_Set<value_type>& other) = default;
 
-
-    //TODO: const?!?
     void merge(const CIO_Set<value_type>& other_set)
     {
-        //TODO: start event!
         // choose earliest start_evt_ of all sets merged into the current.
         start_evt_ = other_set.start_event() < start_evt_ ? other_set.start_event() : start_evt_;
         if (other_set.empty()) {
             logging::debug() << "in merge, other set is empty... skip!";
-            return ;
+            return;
         }
 
         std::copy(other_set.begin(), other_set.end(),
@@ -320,18 +317,19 @@ std::uint64_t num_procs_in_sync_involved(const sync_event_property& sevt)
     return procs_in_sync_involved(sevt).size();
 }
 
-//template<typename Graph, typename Vertex, typename Visitor>
-//void traverse_adjacent_vertices(Graph& graph, Vertex v, Visitor& vis)
-//{
-    //typename Graph::adjacency_iterator adj_begin, adj_end;
-    //for (std::tie(adj_begin, adj_end) = boost::adjacent_vertices(v, *graph.get());
-         //adj_begin != adj_end;
-        //++adj_begin)
-    //{
-       ////vis(graph, *adj_begin);
-       //traverse_adjacent_vertices(graph, *adj_begin, vis);
-    //}
-//}
+
+template<typename Graph, typename Vertex, typename Visitor>
+void traverse_adjacent_vertices(Graph& graph, Vertex v, Visitor& vis)
+{
+    typename Graph::adjacency_iterator adj_begin, adj_end;
+    for (std::tie(adj_begin, adj_end) = boost::adjacent_vertices(v, *graph.get());
+         adj_begin != adj_end;
+        ++adj_begin)
+    {
+       vis(graph, *adj_begin);
+       traverse_adjacent_vertices(graph, *adj_begin, vis);
+    }
+}
 
 /**
 * Checks if the start event of a set `of_v` is an adjacent vertex of the current
@@ -373,7 +371,6 @@ class CIO_Visitor : public boost::default_dfs_visitor
                     logging::debug() << "Sync Event " << v << " ... create a new set";
                     const auto sync_root = root_of_sync(v, g);
                     // create a new set
-                    //set_cnt_ptr_->operator[](cur_pid).emplace_back(cur_pid, sync_root);
                     create_new_set(cur_pid, sync_root);
                 }
             }
@@ -399,7 +396,6 @@ class CIO_Visitor : public boost::default_dfs_visitor
                     const auto out_dgr = boost::out_degree(v, g);
                     if (out_dgr > 0) { // just create a new set if we are not the last event, here it could be maybe better to have a look at our adjacent vertices
                         logging::debug() << "create a new set for pid: " << cur_pid;
-                        //set_cnt_ptr_->operator[](cur_pid).emplace_back(cur_pid, sync_root);
                         create_new_set(cur_pid, sync_root);
                     }
                 }
@@ -465,9 +461,9 @@ class CIO_Visitor : public boost::default_dfs_visitor
     private:
 
         template<typename Vertex>
+        inline
         void create_new_set(const std::uint64_t pid, Vertex v)
         {
-            //set_cnt_ptr_->operator[](pid).emplace_back(pid, v);
             set_cnt_ptr_->operator[](pid).emplace_back(v);
         }
 
@@ -517,20 +513,6 @@ void remove_empty_sets(std::vector<Set>& sets)
 }
 
 
-//template<typename Graph>
-//std::vector<typename Graph::vertex_descriptor>
-//get_sync_events(Graph& g)
-//{
-    //using vertex_descriptor = typename Graph::vertex_descriptor;
-    //const auto vip = g.vertices();
-    //std::vector<vertex_descriptor> sync_events;
-    //std::copy_if(vip.first, vip.second, std::back_inserter(sync_events),
-            //[&g](const vertex_descriptor& vd) {
-                //return g[vd].type == rabbitxx::vertex_kind::sync_event;
-            //});
-    //return sync_events;
-//}
-
 // should maybe a variadic template
 template<typename Graph>
 std::vector<typename Graph::vertex_descriptor>
@@ -564,7 +546,8 @@ template<typename SetMap>
 void sort_sets_by_descriptor(SetMap& cio_sets)
 {
     std::for_each(cio_sets.begin(), cio_sets.end(),
-            [](auto& kvp_ps) {
+            [](auto& kvp_ps)
+            {
                 bool sorted = std::is_sorted(
                         std::begin(kvp_ps.second),
                         std::end(kvp_ps.second),
@@ -590,8 +573,7 @@ collect_root_sync_events(Graph& graph)
 {
     using vertex_descriptor = typename Graph::vertex_descriptor;
     std::vector<vertex_descriptor> result;
-    // get all sync events in the graph
-    //const auto sync_events = get_sync_events(graph);
+    // get all sync and synthetic events in the graph
     const auto sync_events = get_events_by_kind(graph, {vertex_kind::sync_event, vertex_kind::synthetic});
     // store the root-sync-event in result vector
     std::transform(sync_events.begin(), sync_events.end(),

@@ -44,7 +44,7 @@ namespace rabbitxx { namespace graph {
         }
 
         /**
-         * Return the mapping object. This is mainly used for debugging.
+         * @brief Return the mapping object. This is mainly used for debugging.
          */
         mapping_type& get_mapping()
         {
