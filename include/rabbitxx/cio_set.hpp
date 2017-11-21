@@ -62,11 +62,12 @@ class CIO_Set
     CIO_Set(const CIO_Set<value_type>& other) = default;
 
 
-    void merge(CIO_Set<value_type>& other_set)
+    //TODO: const?!?
+    void merge(const CIO_Set<value_type>& other_set)
     {
         //TODO: start event!
-        //logging::debug() << "in merge";
-        //assert(!other_set.empty());
+        // choose earliest start_evt_ of all sets merged into the current.
+        start_evt_ = other_set.start_event() < start_evt_ ? other_set.start_event() : start_evt_;
         if (other_set.empty()) {
             logging::debug() << "in merge, other set is empty... skip!";
             return ;
@@ -646,25 +647,16 @@ merge_sets(SetMap& set_map, const std::vector<Vertex>& sorted_sync_evts)
     {
         std::vector<Vertex> end_evts;
         CIO_Set<Vertex> cur_set;
-        //std::transform(set_map.begin(), set_map.end(),
-                //std::back_inserter(end_evts),
-                //[&cur_set](auto& proc_sets) {
-                    //auto& first_set = proc_sets.second.front();
-                    //cur_set.merge(first_set);
-                    //return first_set.end_event().value();
-                //});
-        //logging::debug() << "set map size: " << set_map.size();
-        for (auto& proc_set : set_map)
-        {
-            if (!proc_set.second.empty()) {
-                auto& first_set = proc_set.second.front();
-                cur_set.merge(first_set); // TODO: const-correctness
-                end_evts.push_back(first_set.end_event().value());
-            }
-            else {
-                logging::fatal() << "proc: " << proc_set.first << " is empty!";
-            }
-        }
+        std::transform(set_map.begin(), set_map.end(),
+                std::back_inserter(end_evts),
+                [&cur_set](const auto& proc_sets)
+                {
+                    if (!proc_sets.second.empty()) {
+                        const auto& first_set = proc_sets.second.front();
+                        cur_set.merge(first_set);
+                        return first_set.end_event().value();
+                    }
+                });
 
         std::cout << "End-Events in iteration: " << count << "\n";
         std::copy(end_evts.begin(), end_evts.end(),
