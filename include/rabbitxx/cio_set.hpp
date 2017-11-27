@@ -613,6 +613,52 @@ void sort_events_chronological(Graph& graph, std::vector<Vertex>& events)
 }
 
 template<typename SetMap, typename Vertex>
+enum class sync_scope
+{
+    Local,
+    Global
+};
+
+inline std::ostream& operator<<(std::ostream& os, const sync_scope& scope)
+{
+    switch (scope)
+    {
+        case sync_scope::Local:
+            os << "Local"; break;
+        case sync_scope::Global:
+            os << "Global"; break;
+        default:
+            os << "NONE"; break;
+    }
+    return os;
+}
+
+template<typename Graph>
+sync_scope classify_sync(Graph& g, const sync_event_property& sevt)
+{
+    const auto np = rabbitxx::num_procs(g);
+    const auto inv = rabbitxx::num_procs_in_sync_involved(sevt);
+    return np == inv ? sync_scope::Global : sync_scope::Local;
+}
+
+template<typename Graph, typename Vertex>
+sync_scope classify_sync(Graph& g, const Vertex& v)
+{
+    const auto& sync_evt_p = boost::get<sync_event_property>(g[v].property);
+    return classify_sync(g, sync_evt_p);
+}
+
+/**
+ *
+ * P1(0,1) [ r1, r4 ]
+ * P2(0,2) [ r3 ]
+ * P3(2,3) [ r2, r4 ]
+ * E.g. mapping from r1 -> (0, 1)
+ */
+using ProcessGroup = std::set<std::uint64_t>;
+
+template<typename VertexDescriptor>
+using SPGMap = std::map<VertexDescriptor, ProcessGroup>;
 //TODO: some sort of set_type should be encoded in the SetMap type or provided
 //as general type-alias
 std::vector<CIO_Set<Vertex>>
