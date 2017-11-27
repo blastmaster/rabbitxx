@@ -442,7 +442,6 @@ class CIO_Visitor : public boost::default_dfs_visitor
             // create new set if we come from synthetic root event.
             if (g[src_vd].type == vertex_kind::synthetic) {
                 logging::debug() << "source is synthetic ...";
-                //set_cnt_ptr_->operator[](trg_pid).emplace_back(trg_pid, src_vd);
                 create_new_set(trg_pid, src_vd);
                 if (g[trg_vd].type == vertex_kind::sync_event) {
                     logging::debug() << "target is sync event ... close!";
@@ -687,6 +686,31 @@ auto collect_concurrent_io_sets(Graph& graph)
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
 
     return shared_set_container;
+}
+
+// all-in-one version of the alorithm above! needs refactoring
+template<typename Graph>
+auto gather_concurrent_io_sets(Graph& graph)
+{
+    using set_container_t = ProcSetMap<
+                                ProcSet<
+                                    CIO_Set<
+                                        typename Graph::vertex_descriptor>>>;
+
+    auto root = find_root(graph);
+    assert(graph[root].type == vertex_kind::synthetic);
+    auto shared_set_container(std::make_shared<set_container_t>());
+    CIO_Visitor<set_container_t> vis(shared_set_container);
+    std::vector<boost::default_color_type> color_map(graph.num_vertices());
+    boost::depth_first_visit(*graph.get(), root, vis,
+            make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
+    sort_sets_by_descriptor(*shared_set_container.get());
+    auto sync_evts_v = collect_root_sync_events(graph);
+    sort_events_chronological(graph, sync_evts_v);
+    auto merged_sets = merge_sets(graph, *shared_set_container.get(), sync_evts_v);
+    remove_empty_sets(merged_sets);
+
+    return merged_sets;
 }
 
 } // namespace rabbitxx
