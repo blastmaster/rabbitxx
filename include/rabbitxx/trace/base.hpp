@@ -16,8 +16,9 @@ namespace rabbitxx { namespace trace {
             using otf2::reader::callback::event;
             using otf2::reader::callback::definition;
 
+            base() noexcept = default;
             base(boost::mpi::communicator comm) noexcept
-            : comm_(comm)
+            : rank_(comm.rank()), comm_(comm)
             {
             }
 
@@ -27,16 +28,17 @@ namespace rabbitxx { namespace trace {
 
             boost::mpi::communicator& comm()
             {
-                return comm_;
+                return comm_.value();
             }
 
             bool is_master() const noexcept
             {
-                return (0 == comm_.rank());
+                return 0 == rank_;
             }
 
         private:
-            boost::mpi::communicator comm_;
+            int rank_ = 0;
+            boost::optional<boost::mpi::communicator> comm_;
     };
 
     inline base::~base()

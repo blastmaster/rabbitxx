@@ -33,7 +33,14 @@ namespace rabbitxx { namespace graph {
 
         simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
         : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
-          edge_points_(), region_name_queue_(), events_(), graph_(std::make_unique<Graph>(comm)),
+          edge_points_(), region_name_queue_(), events_(), graph_(std::make_unique<Graph>()),
+          root_(create_synthetic_root())
+        {
+        }
+
+        simple_graph_builder(int num_locations)
+        : base(), io_ops_started_(), mpi_coll_started_(), mapping_(num_locations),
+          edge_points_(), region_name_queue_(), events_(), graph_(std::make_unique<Graph>()),
           root_(create_synthetic_root())
         {
         }
@@ -750,6 +757,20 @@ namespace rabbitxx { namespace graph {
 
             return std::move(builder.graph());
         }
+
+        // non-mpi version, overload without communicatior
+        auto operator()(const std::string trace_file) const
+        {
+            otf2::reader::reader trc_reader(trace_file);
+            auto num_locations = trc_reader.num_locations();
+            simple_graph_builder<graph_type> builder(num_locations);
+            trc_reader.set_callback(builder);
+            trc_reader.read_definitions();
+            trc_reader.read_events();
+
+            return std::move(builder.graph());
+        }
+
     };
 
 }} // namespace rabbitxx::graph

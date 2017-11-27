@@ -2,7 +2,6 @@
 #define RABBITXX_GRAPH_BGL_BASE_GRAPH_HPP
 
 #include <boost/graph/adjacency_list.hpp>
-#include <boost/mpi.hpp>
 
 #include <string>
 #include <algorithm>
@@ -29,21 +28,6 @@ namespace rabbitxx { namespace graph {
             graph() noexcept : graph_(std::make_unique<GraphImpl>())
             {
             }
-
-            graph(boost::mpi::communicator& comm) noexcept 
-            : graph_(std::make_unique<GraphImpl>())
-            {
-            }
-
-//             graph(const graph& other) = delete;
-//             graph& operator=(const graph& other) = delete;
-// 
-//             graph(graph&& other) = default;
-//             graph&& operator=(graph&& other) = default;
-// 
-//             ~graph()
-//             {
-//             }
 
             GraphImpl* get() noexcept
             {

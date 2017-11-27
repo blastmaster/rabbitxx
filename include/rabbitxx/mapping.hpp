@@ -66,6 +66,12 @@ namespace rabbitxx {
             {
             }
 
+            // without an explicit amount of ranks, we propably running
+            // single-threaded.
+            mapping(int num_locations) noexcept : mapping(1, num_locations)
+            {
+            }
+
             // should we return the rank we assign the location to?
             void register_location(const otf2::definition::location& location)
             {
