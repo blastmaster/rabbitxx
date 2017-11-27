@@ -11,3 +11,7 @@ add_subdirectory(graph_builder_test)
 add_subdirectory(cio_set_test)
 add_subdirectory(sync_root_test)
 add_subdirectory(sets_to_dot_test)
+# catch
+add_subdirectory(sets_per_process_test)
+add_subdirectory(root_synchronization_test)
+add_subdirectory(concurrent_io_sets_test)
