@@ -117,6 +117,67 @@ TEST_CASE("trace-own", "[create sets per process]")
     }
 }
 
+TEST_CASE("[ec]", "[create sets per process]")
+{
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-edgecase/traces.otf2"};
+    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
+    auto io_sets_pp = rabbitxx::collect_concurrent_io_sets(*graph.get());
+
+    REQUIRE(!io_sets_pp->empty());
+    REQUIRE(io_sets_pp->size() == 4); // size of map is 4, because we have 4 processes
+
+    rabbitxx::remove_empty_sets(*io_sets_pp);
+
+    SECTION("remove empty sets and count sets per process")
+    {
+        for (std::size_t proc = 0; proc < io_sets_pp->size(); ++proc)
+        {
+            switch (proc)
+            {
+                case 0:
+                    REQUIRE(io_sets_pp->operator[](proc).size() == 3);
+                    break;
+                case 1:
+                    REQUIRE(io_sets_pp->operator[](proc).size() == 3);
+                    break;
+                case 2:
+                    REQUIRE(io_sets_pp->operator[](proc).size() == 3);
+                    break;
+                case 3:
+                    REQUIRE(io_sets_pp->operator[](proc).size() == 3);
+                    break;
+            }
+        }
+    }
+
+    SECTION("set event ids")
+    {
+        for (std::size_t proc = 0; proc < io_sets_pp->size(); ++proc)
+        {
+            switch (proc)
+            {
+                case 0:
+                    REQUIRE(has_events(io_sets_pp->operator[](proc),
+                                { {5}, {20}, {23, 24} }));
+                    break;
+                case 1:
+                    REQUIRE(has_events(io_sets_pp->operator[](proc),
+                                { {7}, {11}, {13, 14} }));
+                    break;
+                case 2:
+                    REQUIRE(has_events(io_sets_pp->operator[](proc),
+                                { {6}, {25}, {27} }));
+                    break;
+                case 3:
+                    REQUIRE(has_events(io_sets_pp->operator[](proc),
+                                { {8}, {15}, {17, 18} }));
+                    break;
+            }
+        }
+    }
+
+}
+
 TEST_CASE("[ech]", "[create sets per process]")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/edge_case_hard/traces.otf2"};
