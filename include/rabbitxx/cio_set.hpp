@@ -657,8 +657,42 @@ sync_scope classify_sync(Graph& g, const Vertex& v)
  */
 using ProcessGroup = std::set<std::uint64_t>;
 
+/**
+ * Process Group Map
+ * Mapping vertex descriptors of events to groups (sets) of processes.
+ */
 template<typename VertexDescriptor>
-using SPGMap = std::map<VertexDescriptor, ProcessGroup>;
+using PGMap = std::map<VertexDescriptor, ProcessGroup>;
+
+template<typename Graph>
+PGMap<typename Graph::vertex_descriptor>
+make_local_pgmap(Graph& graph)
+{
+    using vertex_descriptor = typename Graph::vertex_descriptor;
+    PGMap<vertex_descriptor> pg_map;
+    const auto sync_evt_roots_v = collect_root_sync_events(graph);
+    // needs to be sorted?!?
+    for (const auto& vd : sync_evt_roots_v)
+    {
+        if (graph[vd].type == vertex_kind::sync_event) {
+            const auto evt_property = boost::get<sync_event_property>(graph[vd].property);
+            const auto inv_proc_v = procs_in_sync_involved(evt_property);
+            const auto s_scope = classify_sync(graph, evt_property);
+            if (s_scope == sync_scope::Local) {
+                pg_map.insert(std::make_pair(vd,
+                        ProcessGroup(inv_proc_v.begin(), inv_proc_v.end())));
+            }
+        }
+        else {
+            logging::fatal() << "not a sync event: " << vd << " in make_local_pg_map";
+        }
+    }
+
+    return pg_map;
+}
+
+// TODO: process group from a given event?!?!?
+
 //TODO: some sort of set_type should be encoded in the SetMap type or provided
 //as general type-alias
 std::vector<CIO_Set<Vertex>>
