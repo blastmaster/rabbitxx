@@ -10,9 +10,12 @@
 #include <unordered_set>
 #include <vector>
 #include <algorithm>
+#include <numeric>
 
 namespace rabbitxx {
 
+
+//XXX: Set_State should be a private member of CIO_Set
 enum class Set_State
 {
     Open,
@@ -31,12 +34,6 @@ std::ostream& operator<<(std::ostream& os, const Set_State state)
     return os;
 }
 
-template<typename Set>
-using ProcSet = std::vector<Set>;
-
-template<typename ProcessSet>
-using ProcSetMap = std::map<std::uint64_t, ProcessSet>;
-
 /**
  *
  * @tparam VertexDescriptor must be an integral type
@@ -46,7 +43,6 @@ class CIO_Set
 {
     public:
     using value_type = VertexDescriptor;
-    //using set_t = std::unordered_set<value_type>;
     using set_t = std::set<value_type>;
     using size_type = typename set_t::size_type;
     using iterator = typename set_t::iterator;
@@ -60,6 +56,23 @@ class CIO_Set
     }
 
     CIO_Set(const CIO_Set<value_type>& other) = default;
+
+    // needed for std::unique
+    bool operator==(const CIO_Set<value_type>& other)
+    {
+        return set_ == other.set();
+    }
+
+    bool operator!=(const CIO_Set<value_type>& other)
+    {
+        return set_ != other.set();
+    }
+
+    // needed for std::sort
+    bool operator<(const CIO_Set<value_type>& other)
+    {
+        return set_ < other.set();
+    }
 
     void merge(const CIO_Set<value_type>& other_set)
     {
@@ -175,6 +188,39 @@ inline std::ostream& operator<<(std::ostream& os, const CIO_Set<DescriptorType>&
     return os;
 }
 
+// define set-type
+template<typename VD>
+using set_t = CIO_Set<VD>;
+
+// define vector of sets type
+template<typename VD>
+using set_container_t = std::vector<set_t<VD>>;
+
+// define set-iterator
+template<typename VD>
+using set_iter_t = typename set_container_t<VD>::iterator;
+
+template<typename V>
+using proc_map_t = std::map<std::uint64_t, V>;
+
+// define map type for sets, mapping proc_id -> [ sets ]
+template<typename VD>
+using set_map_t = proc_map_t<set_container_t<VD>>;
+
+// define map-view-type
+template<typename VD>
+using map_view_t = proc_map_t<std::pair<set_iter_t<VD>, set_iter_t<VD>>>;
+
+// define process group type as set from uints
+using process_group_t = std::set<std::uint64_t>;
+
+/**
+ * Process Group Map
+ * Mapping vertex descriptors of events to groups (sets) of processes.
+ */
+template<typename VertexDescriptor>
+using pg_map_t = std::map<VertexDescriptor, process_group_t>;
+
 /**
  * @brief Get all in-going synchronization-events of a given vertex.
  *
@@ -218,7 +264,7 @@ Vertex root_of_sync(Vertex v, Graph& g)
     const auto sync_evt = boost::get<sync_event_property>(g[v].property);
     // if p2p event get remote proc
     if (sync_evt.comm_kind == sync_event_kind::p2p) {
-        const auto p2p_evt = boost::get<rabbitxx::peer2peer>(sync_evt.op_data);
+        const auto p2p_evt = boost::get<peer2peer>(sync_evt.op_data);
         const auto r_proc = p2p_evt.remote_process();
         // look at in_edges
         const auto in_syncs = get_in_going_syncs(v, g);
@@ -309,6 +355,26 @@ procs_in_sync_involved(const sync_event_property& sevt)
     }
 }
 
+//template<typename Graph, typename VertexDescriptor>
+//std::vector<std::uint64_t>
+//procs_in_sync_involved(Graph& graph, const VertexDescriptor& vd)
+//{
+    //const auto type = graph[vd].type;
+    //switch (type)
+    //{
+        //case vertex_kind::sync_event:
+            //const auto s_evt = boost::get<sync_event_property>(graph[vd].property);
+            //return procs_in_sync_involved(s_evt);
+        //case vertex_kind::synthetic:
+           //const auto np = num_procs(graph);
+           //std::vector<std::uint64_t> all_procs(np);
+           //std::iota(all_procs.begin(), all_procs.end(), 0);
+           //return all_procs;
+        //default:
+           //logging::fatal() << "ERROR in procs_in_sync_involved, invalid synhronization event!";
+    //}
+//}
+
 /**
  * Return the number of processes involved in a given synchronization routine.
  */
@@ -318,6 +384,7 @@ std::uint64_t num_procs_in_sync_involved(const sync_event_property& sevt)
 }
 
 
+// TODO: unused!
 template<typename Graph, typename Vertex, typename Visitor>
 void traverse_adjacent_vertices(Graph& graph, Vertex v, Visitor& vis)
 {
@@ -490,8 +557,8 @@ class CIO_Visitor : public boost::default_dfs_visitor
         std::shared_ptr<Cont> set_cnt_ptr_;
 };
 
-template<typename SetMap>
-void remove_empty_sets(SetMap& sets)
+template<typename VertexDescriptor>
+void remove_empty_sets(set_map_t<VertexDescriptor>& sets)
 {
     std::for_each(sets.begin(), sets.end(),
             [](auto& proc_sets) {
@@ -499,8 +566,9 @@ void remove_empty_sets(SetMap& sets)
             });
 }
 
-template<typename Set>
-void remove_empty_sets(std::vector<Set>& sets)
+template<typename VertexDescriptor>
+void remove_empty_sets(
+        std::vector<set_t<VertexDescriptor>>& sets)
 {
     sets.erase(std::remove_if(
                 sets.begin(),
@@ -541,8 +609,8 @@ get_events_by_kind(Graph& graph, const std::vector<vertex_kind>& kinds)
  * Reversing the vector maybe enough if the only reason for sorting
  * is the reverse order of sets through the backtracking during the DFS.
  */
-template<typename SetMap>
-void sort_sets_by_descriptor(SetMap& cio_sets)
+template<typename VertexDescriptor>
+void sort_sets_by_descriptor(set_map_t<VertexDescriptor>& cio_sets)
 {
     std::for_each(cio_sets.begin(), cio_sets.end(),
             [](auto& kvp_ps)
@@ -612,7 +680,6 @@ void sort_events_chronological(Graph& graph, std::vector<Vertex>& events)
     }
 }
 
-template<typename SetMap, typename Vertex>
 enum class sync_scope
 {
     Local,
@@ -636,40 +703,61 @@ inline std::ostream& operator<<(std::ostream& os, const sync_scope& scope)
 template<typename Graph>
 sync_scope classify_sync(Graph& g, const sync_event_property& sevt)
 {
-    const auto np = rabbitxx::num_procs(g);
-    const auto inv = rabbitxx::num_procs_in_sync_involved(sevt);
+    const auto np = num_procs(g);
+    const auto inv = num_procs_in_sync_involved(sevt);
     return np == inv ? sync_scope::Global : sync_scope::Local;
 }
 
 template<typename Graph, typename Vertex>
 sync_scope classify_sync(Graph& g, const Vertex& v)
 {
+    if (g[v].type == vertex_kind::synthetic) {
+        return sync_scope::Global;
+    }
     const auto& sync_evt_p = boost::get<sync_event_property>(g[v].property);
     return classify_sync(g, sync_evt_p);
 }
 
-/**
- *
- * P1(0,1) [ r1, r4 ]
- * P2(0,2) [ r3 ]
- * P3(2,3) [ r2, r4 ]
- * E.g. mapping from r1 -> (0, 1)
- */
-using ProcessGroup = std::set<std::uint64_t>;
 
-/**
- * Process Group Map
- * Mapping vertex descriptors of events to groups (sets) of processes.
- */
 template<typename VertexDescriptor>
-using PGMap = std::map<VertexDescriptor, ProcessGroup>;
+template<typename VertexDescriptor>
+map_view_t<VertexDescriptor>
+make_mapview(set_map_t<VertexDescriptor>& smap)
+{
+    using vertex_descriptor = VertexDescriptor;
+    map_view_t<vertex_descriptor> m_v;
+    for (auto& setmap_kvp : smap)
+    {
+        auto iter_p = std::make_pair(setmap_kvp.second.begin(),
+                                    setmap_kvp.second.end());
+        m_v.insert(std::make_pair(setmap_kvp.first, iter_p));
+    }
+
+    return m_v;
+}
+
+template<typename VertexDescriptor>
+map_view_t<VertexDescriptor>
+update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view)
+{
+    for (const auto& proc : pg)
+    {
+        const auto& dbg_cached_value = map_view[proc].first->end_event();
+        map_view[proc].first = std::next(map_view[proc].first);
+        logging::debug() << "process: " << proc
+            << " increment iterator from " << dbg_cached_value
+            << " to " << map_view[proc].first->end_event();
+    }
+
+    return map_view;
+}
 
 template<typename Graph>
-PGMap<typename Graph::vertex_descriptor>
+pg_map_t<typename Graph::vertex_descriptor>
 make_local_pgmap(Graph& graph)
 {
     using vertex_descriptor = typename Graph::vertex_descriptor;
-    PGMap<vertex_descriptor> pg_map;
+    pg_map_t<vertex_descriptor> pg_map;
     const auto sync_evt_roots_v = collect_root_sync_events(graph);
     // needs to be sorted?!?
     for (const auto& vd : sync_evt_roots_v)
@@ -680,7 +768,7 @@ make_local_pgmap(Graph& graph)
             const auto s_scope = classify_sync(graph, evt_property);
             if (s_scope == sync_scope::Local) {
                 pg_map.insert(std::make_pair(vd,
-                        ProcessGroup(inv_proc_v.begin(), inv_proc_v.end())));
+                        process_group_t(inv_proc_v.begin(), inv_proc_v.end())));
             }
         }
         else {
@@ -692,13 +780,238 @@ make_local_pgmap(Graph& graph)
 }
 
 // TODO: process group from a given event?!?!?
-
-//TODO: some sort of set_type should be encoded in the SetMap type or provided
-//as general type-alias
-std::vector<CIO_Set<Vertex>>
-merge_sets(SetMap& set_map, const std::vector<Vertex>& sorted_sync_evts)
+template<typename Graph, typename Vertex>
+process_group_t pg_group(Graph& graph, const Vertex& vd)
 {
-    std::vector<CIO_Set<Vertex>> merged_sets;
+    if (graph[vd].type == vertex_kind::sync_event) {
+        const auto& evt_property = boost::get<sync_event_property>(graph[vd].property);
+        const auto& inv_proc_v = procs_in_sync_involved(evt_property);
+        const auto& scope = classify_sync(graph, evt_property);
+        if (scope == sync_scope::Local) {
+            logging::debug() << "Retrun process_group_t of LOCAL sync-event: " << vd;
+            return process_group_t(inv_proc_v.begin(), inv_proc_v.end());
+        }
+        else if (scope == sync_scope::Global) {
+            logging::debug() << "Retrun process_group_t of GLOBAL sync-event: " << vd;
+            return process_group_t(inv_proc_v.begin(), inv_proc_v.end());
+        }
+        else {
+            logging::fatal() << "undefined sync_scope not handled! Event: " << vd;
+            throw -1;
+        }
+    }
+    else if (graph[vd].type == vertex_kind::synthetic) {
+        logging::debug() << "Retrun process_group_t of GLOBAL synthetic-event: " << vd;
+        const auto np = num_procs(graph);
+        std::vector<std::uint64_t> all_procs(np);
+        std::iota(all_procs.begin(), all_procs.end(), 0);
+        return process_group_t(all_procs.begin(), all_procs.end());
+    }
+    // TODO FIXME XXX synthetic event should return all processes to update map
+    // properly otherwise we never found an end!
+
+    return {};
+}
+
+template<typename VertexDescriptor>
+std::vector<VertexDescriptor>
+do_merge(const map_view_t<VertexDescriptor>& map_view,
+        const std::vector<VertexDescriptor>& sorted_syncs,
+        std::vector<set_t<VertexDescriptor>>& merged_sets)
+{
+    std::vector<VertexDescriptor> end_evts;
+    set_t<VertexDescriptor> cur_s;
+    for (const auto& mv_kvp : map_view)
+    {
+        const auto& first_set = *mv_kvp.second.first;
+        cur_s.merge(first_set);
+        end_evts.push_back(first_set.end_event().value());
+    }
+
+    auto first = std::find_first_of(sorted_syncs.begin(), sorted_syncs.end(),
+            end_evts.begin(), end_evts.end());
+    cur_s.close();
+    cur_s.set_end_event(*first);
+    logging::debug() << "create new set:\n" << cur_s;
+    merged_sets.push_back(cur_s);
+
+    return end_evts;
+}
+
+//TODO: Test!!!! FIXME: we find a lot of duplicates through the permutations
+template<typename Graph, typename VertexDescriptor>
+std::vector<std::pair<VertexDescriptor, VertexDescriptor>>
+independent_end_evts(Graph& graph, std::vector<VertexDescriptor> end_evts)
+{
+    std::sort(end_evts.begin(), end_evts.end());
+    // remove duplicates
+    end_evts.erase(std::unique(end_evts.begin(), end_evts.end()),
+            end_evts.end());
+
+    // remove global end evts
+    end_evts.erase(std::remove_if(end_evts.begin(), end_evts.end(),
+                [&graph](const auto& evt) {
+                    const auto scope = classify_sync(graph, evt);
+                    return scope == sync_scope::Global;
+                }),
+                end_evts.end());
+
+    if (end_evts.size() < 2) {
+        return {};
+    }
+
+    std::vector<std::pair<VertexDescriptor, VertexDescriptor>> independent_syncs;
+    std::vector<std::uint64_t> overlapping_procs;;
+    do
+    {
+        auto first = end_evts[0];
+        auto second = end_evts[1];
+        auto pg1 = pg_group(graph, first);
+        auto pg2 = pg_group(graph, second);
+
+        std::set_intersection(pg1.begin(), pg1.end(),
+                pg2.begin(), pg2.end(),
+                std::back_inserter(overlapping_procs));
+
+        if (overlapping_procs.empty()) {
+            //independent case
+            logging::debug() << "first: " << first << " and second: " << second << " are independent";
+            independent_syncs.push_back(std::make_pair(first, second));
+        }
+        else {
+            // dependent case
+            logging::debug() << "first: "  << first << " and second: " << second << " are dependent";
+            std::cout << "Processes overlapping:\n";
+            std::copy(overlapping_procs.begin(), overlapping_procs.end(),
+                    std::ostream_iterator<std::uint64_t>(std::cout, ", "));
+            std::cout << "\n";
+        }
+    } while (std::next_permutation(end_evts.begin(), end_evts.end()));
+
+    return independent_syncs;
+    //return overlapping_procs;
+}
+
+template<typename Graph, typename VertexDescriptor>
+void
+process_sets(Graph& graph,
+        map_view_t<VertexDescriptor> map_view,
+        std::vector<set_t<VertexDescriptor>>& merged_sets,
+        const std::vector<VertexDescriptor>& sorted_syncs)
+{
+    using vertex_descriptor = VertexDescriptor;
+
+    bool on_end = std::all_of(map_view.begin(), map_view.end(),
+            [](const auto& p_iters) {
+                return p_iters.second.first == p_iters.second.second;
+            });
+    if (on_end) {
+        logging::debug() << "on end return!";
+        return;
+    }
+
+    const auto end_evts = do_merge(map_view, sorted_syncs, merged_sets);
+    assert(map_view.size() == end_evts.size());
+
+    std::cout << "End-events:\n";
+    std::copy(end_evts.begin(), end_evts.end(),
+            std::ostream_iterator<vertex_descriptor>(std::cout, ", "));
+    std::cout << "\n";
+
+    //classify end_evts
+    logging::debug() << "Global-Sync-Event in end evts vector: "
+        << std::boolalpha << std::any_of(end_evts.begin(), end_evts.end(),
+            [&graph](const auto& evt) {
+                const auto scope = classify_sync(graph, evt);
+                if (sync_scope::Global == scope) {
+                    return true;
+                }
+                return false;
+            });
+
+
+    const auto independent_syncs = independent_end_evts(graph, end_evts);
+    if (independent_syncs.empty()) {
+        logging::debug() << "independent syncs empty!";
+        // search end event to kick!
+        // here, take the chronologically first.
+        auto first = std::find_first_of(sorted_syncs.begin(), sorted_syncs.end(),
+                end_evts.begin(), end_evts.end());
+        // get process group of end event
+        const auto lpg = pg_group(graph, *first);
+       // update map_view and call recursively
+        logging::debug() << "update for : " << *first << " -> recursive call";
+        process_sets(graph,
+                update_view<vertex_descriptor>(lpg, map_view),
+                merged_sets, sorted_syncs);
+    }
+    else {
+        logging::debug() << "independent syncs not empty!";
+        //TODO
+        for (const auto& isp : independent_syncs)
+        {
+            std::cout << "first: " << isp.first << " second: " << isp.second << "\n";
+            // recursive call for first
+            const auto lpg1 = pg_group(graph, isp.first);
+            logging::debug() << "update for first: " << isp.first << " -> recursive call";
+            process_sets(graph,
+                    update_view<vertex_descriptor>(lpg1, map_view),
+                    merged_sets, sorted_syncs);
+
+            // recursive call for second
+            const auto lpg2 = pg_group(graph, isp.second);
+            logging::debug() << "update for second: " << isp.second << " -> recursive call";
+            process_sets(graph,
+                    update_view<vertex_descriptor>(lpg2, map_view),
+                    merged_sets, sorted_syncs);
+        }
+    }
+    logging::debug() << "return";
+    return;
+}
+
+namespace detail {
+
+template<typename Graph, typename VertexDescriptor>
+inline
+set_container_t<VertexDescriptor>
+merge_sets_impl(Graph& graph,
+        set_map_t<VertexDescriptor>& set_map,
+        const std::vector<VertexDescriptor>& sorted_sync_evts)
+{
+    set_container_t<VertexDescriptor> merged_sets;
+    auto map_view = make_mapview(set_map);
+
+    assert(map_view.size() == set_map.size());
+
+    process_sets(graph, map_view, merged_sets, sorted_sync_evts);
+
+    logging::debug() << "Resulting Sets:\n"
+        << "expected size: 9\n"
+        << "raw size: " << merged_sets.size();
+
+    // remove empty sets
+    remove_empty_sets(merged_sets);
+
+    logging::debug() << "w/o empty sets: " << merged_sets.size();
+
+    // sort and remove duplicates
+    std::sort(merged_sets.begin(), merged_sets.end());
+    merged_sets.erase(std::unique(merged_sets.begin(), merged_sets.end()), merged_sets.end());
+
+    logging::debug() << "unique sets: " << merged_sets.size();
+
+    return merged_sets;
+}
+
+template<typename Graph, typename VertexDescriptor>
+inline
+set_container_t<VertexDescriptor>
+merge_sets_impl_old(Graph& graph,
+        set_map_t<VertexDescriptor>& set_map,
+        const std::vector<VertexDescriptor>& sorted_sync_evts)
+{
+    set_container_t<VertexDescriptor> merged_sets;
     unsigned int count {0};
 
     while (!std::all_of(set_map.begin(), set_map.end(),
@@ -706,8 +1019,10 @@ merge_sets(SetMap& set_map, const std::vector<Vertex>& sorted_sync_evts)
                     return proc_sets.second.empty();
                 }))
     {
-        std::vector<Vertex> end_evts;
-        CIO_Set<Vertex> cur_set;
+        std::vector<VertexDescriptor> end_evts;
+        set_t<VertexDescriptor> cur_set;
+        //TODO: not sure if this is safe! Because we operating on a sequence but
+        //for empty sets ther is no return! Maybe for-loop is better.
         std::transform(set_map.begin(), set_map.end(),
                 std::back_inserter(end_evts),
                 [&cur_set](const auto& proc_sets)
@@ -721,7 +1036,7 @@ merge_sets(SetMap& set_map, const std::vector<Vertex>& sorted_sync_evts)
 
         std::cout << "End-Events in iteration: " << count << "\n";
         std::copy(end_evts.begin(), end_evts.end(),
-                std::ostream_iterator<Vertex>(std::cout, ", "));
+                std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
         std::cout << "\n";
 
         assert(set_map.size() == end_evts.size());
@@ -749,38 +1064,50 @@ merge_sets(SetMap& set_map, const std::vector<Vertex>& sorted_sync_evts)
     return merged_sets;
 }
 
-template<typename Graph>
+} // namespace rabbitxx::detail
+
+template<typename Graph, typename VertexDescriptor>
+//TODO: some sort of set_type should be encoded in the SetMap type or provided
+//as general type-alias
+set_container_t<VertexDescriptor>
+merge_sets(Graph& graph,
+        set_map_t<VertexDescriptor>& set_map,
+        const std::vector<VertexDescriptor>& sorted_sync_evts)
+{
+    using vertex_descriptor = VertexDescriptor;
+    return detail::merge_sets_impl(graph, set_map, sorted_sync_evts);
+}
+
+/**
+ * Here we get the Sets per process - nothing is merged together!
+ */
+template<typename Graph> //XXX: returns a shared_ptr to a map-style type
 auto collect_concurrent_io_sets(Graph& graph)
 {
-    using set_container_t = ProcSetMap<
-                                ProcSet<
-                                    CIO_Set<
-                                        typename Graph::vertex_descriptor>>>;
+    using map_t = set_map_t<typename Graph::vertex_descriptor>;
 
     auto root = find_root(graph);
     assert(graph[root].type == vertex_kind::synthetic);
-    auto shared_set_container(std::make_shared<set_container_t>());
-    CIO_Visitor<set_container_t> vis(shared_set_container);
+    auto shared_set_container(std::make_shared<map_t>());
+    CIO_Visitor<map_t> vis(shared_set_container);
     std::vector<boost::default_color_type> color_map(graph.num_vertices());
     boost::depth_first_visit(*graph.get(), root, vis,
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
+    sort_sets_by_descriptor(*shared_set_container.get());
 
     return shared_set_container;
 }
 
 // all-in-one version of the alorithm above! needs refactoring
-template<typename Graph>
+template<typename Graph> //XXX: returns a vector of sets
 auto gather_concurrent_io_sets(Graph& graph)
 {
-    using set_container_t = ProcSetMap<
-                                ProcSet<
-                                    CIO_Set<
-                                        typename Graph::vertex_descriptor>>>;
+    using map_t = set_map_t<typename Graph::vertex_descriptor>;
 
     auto root = find_root(graph);
     assert(graph[root].type == vertex_kind::synthetic);
-    auto shared_set_container(std::make_shared<set_container_t>());
-    CIO_Visitor<set_container_t> vis(shared_set_container);
+    auto shared_set_container(std::make_shared<map_t>());
+    CIO_Visitor<map_t> vis(shared_set_container);
     std::vector<boost::default_color_type> color_map(graph.num_vertices());
     boost::depth_first_visit(*graph.get(), root, vis,
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
