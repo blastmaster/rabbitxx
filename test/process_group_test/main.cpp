@@ -19,7 +19,7 @@ TEST_CASE("[trace-simple]", "Find local Process Groups of Synchronization Events
 
     // here we have just two processes therefore every synchronization is
     // global! so for *local* process groups we get the empty set!
-    rabbitxx::PGMap<vertex_descriptor> exp_local_pgmap { };
+    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap { };
 
     REQUIRE(exp_local_pgmap == lpgs);
 }
@@ -32,7 +32,7 @@ TEST_CASE("[trace-own]", "Find local Process Groups of Synchronization Events")
 
     using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
 
-    rabbitxx::PGMap<vertex_descriptor> exp_local_pgmap {
+    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap {
         { 12, { 0, 2 } },
         { 17, { 0, 3 } },
         { 18, { 0, 1 } }
@@ -49,14 +49,14 @@ TEST_CASE("[ec]", "Find local Process Groups of Synchronization Events")
 
     using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
 
-    rabbitxx::PGMap<vertex_descriptor> exp_local_pgmap {
+    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap {
         { 19, { 0, 1 } },
         { 21, { 2, 3 } },
         { 22, { 0, 1 } },
         { 26, { 2, 3 } }
     };
 
-    std::cout << "local PGmap: " << std::endl;
+    std::cout << "local pg_map_t: " << std::endl;
     for (const auto& pg : lpgs)
     {
         std::cout << "[" << pg.first << "] ";
@@ -76,7 +76,7 @@ TEST_CASE("[ech]", "Find local Process Groups of Synchronization Events")
 
     using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
 
-    rabbitxx::PGMap<vertex_descriptor> exp_local_pgmap {
+    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap {
         { 21, { 0, 1 } },
         { 22, { 2, 3 } },
         { 26, { 0, 2 } },

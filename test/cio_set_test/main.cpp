@@ -5,21 +5,22 @@
 #include <rabbitxx/cio_set.hpp>
 #include <rabbitxx/log.hpp>
 
-#include <boost/mpi.hpp>
-
 #include <iostream>
 
 using rabbitxx::logging;
 
-//TEST_CASE("create empty cio_set", "[constructor]")
-//{
-
-//}
+/**
+ * madbench2
+ * Process 0
+ * Set 1
+ * start: 1
+ * end: 11
+ * events 10, 9, 8, 7, 5, 6
+ *
+ */
 
 int main(int argc, char** argv)
 {
-    boost::mpi::environment env(argc, argv);
-    boost::mpi::communicator world;
 
     if (argc < 2)
     {
@@ -29,17 +30,16 @@ int main(int argc, char** argv)
     }
 
     // create graph
-    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
+    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
+    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
     // find concurrent I/O-Sets
-    auto io_sets = rabbitxx::collect_concurrent_io_sets(*graph.get());
+    auto io_sets = rabbitxx::gather_concurrent_io_sets(*graph.get());
 
-    std::cout << "Print Sets per Process!\n";
-    for (const auto psets : *io_sets) {
-        std::cout << "[Process] " << psets.first << " has " << psets.second.size() << " sets!\n";
-        for (const auto set : psets.second) {
-            std::cout << set;
-        }
-        std::cout << "\n";
+    std::cout << "FINAL SETS!!!\o/1\n";
+    for (const auto& set : io_sets)
+    {
+        std::cout << set;
+        std::cout << "\n\n";
     }
 
     return 0;

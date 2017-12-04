@@ -91,7 +91,7 @@ TEST_CASE("[ec]", "Find concurrent I/O sets")
         std::set<typename decltype(graph)::element_type::vertex_descriptor>>
         exp_sets {
             { 5, 6, 7, 8 },
-            { 5, 7, 25, 15 },
+            { 5, 7, 15, 25 },
             { 5, 7, 17, 18, 27 },
             { 6, 8, 11, 20 },
             { 6, 8, 13, 14, 23, 24 },
@@ -132,7 +132,7 @@ TEST_CASE("[ech]", "Find concurrent I/O sets")
             { 11, 12, 14, 16, 23, 24 },
             { 11, 12, 14, 16, 28, 27 },
             { 11, 12, 19, 20, 28, 32 },
-            { 14, 16, 15, 17, 27, 31, 33 },
+            { 14, 15, 16, 17, 27, 31, 33 },
             { 15, 17, 19, 20, 31, 32, 33 }
         };
 

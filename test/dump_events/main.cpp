@@ -1,8 +1,6 @@
 #include <rabbitxx/graph.hpp>
 #include <rabbitxx/log.hpp>
 
-#include <boost/mpi.hpp>
-
 using rabbitxx::logging;
 
 template<typename Graph>
@@ -33,16 +31,13 @@ get_io_events(Graph& g)
 
 int main(int argc, char** argv)
 {
-    boost::mpi::environment env(argc, argv);
-    boost::mpi::communicator world;
-
     if (argc < 2) {
         logging::fatal() << "usage: ./" << argv[0] << " <input-trace> [<filter=[io|sync]>]";
         env.abort(1);
         return 1;
     }
 
-    auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
+    auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
     auto print = [&g](const auto& evt_vec)
     {
         for (const auto evt : evt_vec) {
