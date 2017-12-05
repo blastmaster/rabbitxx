@@ -860,6 +860,7 @@ independent_end_evts(Graph& graph, std::vector<VertexDescriptor> end_evts)
         return {};
     }
 
+    // number of combinations of unique end-evt-pairs n(n-1)/2
     std::vector<std::pair<VertexDescriptor, VertexDescriptor>> independent_syncs;
     std::vector<std::uint64_t> overlapping_procs;;
     do
