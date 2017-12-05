@@ -7,7 +7,6 @@ int main(int argc, char** argv)
 {
     if (argc < 2) {
         logging::fatal() << "usage: ./" << argv[0] << " <input-trace>";
-        env.abort(1);
         return 1;
     }
 

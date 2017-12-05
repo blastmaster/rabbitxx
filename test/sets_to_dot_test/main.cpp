@@ -20,7 +20,6 @@ int main(int argc, char** argv)
             break;
         default:
             logging::fatal() << "usage: ./" << argv[0] << " <input-trace>" << " [outfile]";
-            env.abort(1);
             return 1;
     }
 
