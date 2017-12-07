@@ -1,0 +1,20 @@
+<?xml version = '1.0' encoding = 'ISO-8859-1'?>
+<!DOCTYPE iotest SYSTEM "../../../../dios.dtd">
+<iotest>
+    <task bufsize="10M" check="1">
+        <eventset>
+          <fopen mode="w+" name="testfile" />
+          <buf_write size="5M" block="5M" file="0" />
+          <fclose file="0" />
+          <barrier />
+        </eventset>
+        <eventset>
+          <fopen mode="r" name="testfile" />
+          <buf_read size="5M" block="5M" file="0" />
+          <fclose file="0" />
+        </eventset>
+        <eventset>
+          <unlink name="testfile"/>
+        </eventset>
+    </task>
+</iotest>
