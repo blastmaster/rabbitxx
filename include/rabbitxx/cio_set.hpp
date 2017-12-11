@@ -112,9 +112,20 @@ class CIO_Set
         return end_evt_;
     }
 
-    void set_end_event(const value_type& end_event)
+    value_type origin() const noexcept
     {
-        end_evt_ = end_event;
+        return origin_end_;
+    }
+
+    void set_end_event(const value_type& root_end_event)
+    {
+        end_evt_ = root_end_event;
+    }
+
+    void set_end_event(const value_type& root_end_event, const value_type& origin)
+    {
+        end_evt_ = root_end_event;
+        origin_end_ = origin;
     }
 
     size_type size() const noexcept
@@ -166,6 +177,7 @@ class CIO_Set
     value_type start_evt_ = std::numeric_limits<value_type>::max();
     Set_State state_ = Set_State::Open;
     boost::optional<value_type> end_evt_ = boost::none;
+    value_type origin_end_ = std::numeric_limits<value_type>::max();
     set_t set_ {};
 };
 
@@ -177,6 +189,7 @@ inline std::ostream& operator<<(std::ostream& os, const CIO_Set<DescriptorType>&
         << "\t[Start Evt] " << set.start_event() << "\n";
     if (boost::optional<DescriptorType> end_evt = set.end_event()) {
         os << "\t[End Evt] " << *end_evt << "\n";
+        os << "\t[Origin] " << set.origin() << "\n";
     }
     else {
         os << "\t[End Evt] " << "NONE\n";
@@ -459,7 +472,7 @@ class CIO_Visitor : public boost::default_dfs_visitor
                         << " ... close current set @" << g[v].id();
                     set_ptr->close();
                     const auto sync_root = root_of_sync(v, g);
-                    set_ptr->set_end_event(sync_root);
+                    set_ptr->set_end_event(sync_root, v);
                     const auto out_dgr = boost::out_degree(v, g);
                     if (out_dgr > 0) { // just create a new set if we are not the last event, here it could be maybe better to have a look at our adjacent vertices
                         logging::debug() << "create a new set for pid: " << cur_pid;
@@ -488,7 +501,7 @@ class CIO_Visitor : public boost::default_dfs_visitor
                 else {
                     logging::debug() << "on end for pid: " << src_pid << " close set";
                     set_ptr->close();
-                    set_ptr->set_end_event(trg_vd);
+                    set_ptr->set_end_event(trg_vd, trg_vd);
                 }
             }
 
@@ -502,7 +515,7 @@ class CIO_Visitor : public boost::default_dfs_visitor
                 if (g[trg_vd].type == vertex_kind::sync_event) {
                     set_ptr->close();
                     const auto sync_root = root_of_sync(trg_vd, g);
-                    set_ptr->set_end_event(sync_root);
+                    set_ptr->set_end_event(sync_root, trg_vd);
                 }
             }
 
@@ -519,7 +532,7 @@ class CIO_Visitor : public boost::default_dfs_visitor
                     }
                     set_ptr->close();
                     const auto sync_root = root_of_sync(trg_vd, g);
-                    set_ptr->set_end_event(sync_root);
+                    set_ptr->set_end_event(sync_root, trg_vd);
                 }
             }
         }
@@ -632,6 +645,33 @@ void sort_sets_by_descriptor(set_map_t<VertexDescriptor>& cio_sets)
                             });
                 }
             });
+}
+
+/**
+ * This is not a final solution, it should work since events of the same rank
+ * can not overhaul themselve.
+ * TODO: Nevertheless, sorting the sets using a adjacency relation might be better.
+ */
+template<typename Graph, typename VertexDescriptor>
+void sort_set_map_chrono(Graph& graph, rabbitxx::set_map_t<VertexDescriptor>& set_map)
+{
+    auto chrono_cmp = [&graph](const rabbitxx::set_t<VertexDescriptor>& set_a, const rabbitxx::set_t<VertexDescriptor>& set_b)
+        {
+            const auto vd_a = set_a.origin();
+            const auto vd_b = set_b.origin();
+            assert(vd_a != std::numeric_limits<decltype(vd_a)>::max());
+            assert(vd_b != std::numeric_limits<decltype(vd_b)>::max());
+            const auto t_a = graph[vd_a].timestamp();
+            const auto t_b = graph[vd_b].timestamp();
+            return t_a < t_b;
+        };
+
+    for (auto& proc_sets : set_map)// std::for_each
+    {
+        std::sort(proc_sets.second.begin(),
+                proc_sets.second.end(),
+                chrono_cmp);
+    }
 }
 
 template<typename Graph>
@@ -812,6 +852,21 @@ process_group_t pg_group(Graph& graph, const Vertex& vd)
     return {};
 }
 
+/**
+ * TODO: Here, we do two things, we merge the current view of the per process
+ * set_map into a new set. Afterwards we need to close the new set and setting a
+ * new `end_evt` before. Therefore we also need to find the new `end_event` to
+ * set.
+ *
+ * The problem is that we need this `end_event` also later, to decide how to
+ * update the map. But we also need the end_event vector, we already return.
+ * One option is to return a pair of end_event and vector.
+ * A Second could be the creation of a separat type.
+ *
+ * If I Implement a `find_end_event` function it need to find the indendent sync
+ * pairs anyway so it could be possible that the end_event later is no longer
+ * needed.
+ */
 template<typename VertexDescriptor>
 std::vector<VertexDescriptor>
 do_merge(const map_view_t<VertexDescriptor>& map_view,
@@ -838,10 +893,34 @@ do_merge(const map_view_t<VertexDescriptor>& map_view,
     return end_evts;
 }
 
+std::size_t num_unique_pairs(const std::size_t n)
+{
+    return n * (n-1) / 2;
+}
+
+// O(n^2)
+template<typename VertexDescriptor>
+std::vector<std::pair<VertexDescriptor, VertexDescriptor>>
+generate_unique_pairs(const std::vector<VertexDescriptor>& v)
+{
+    using vd_t = VertexDescriptor;
+    std::vector<std::pair<vd_t,vd_t>> res;
+    for (vd_t i = 0; i < v.size(); ++i)
+    {
+        vd_t t1 = v[i];
+        for (vd_t j = i+1; j < v.size(); ++j)
+        {
+            vd_t t2 = v[j];
+            res.push_back(std::make_pair(t1, t2));
+        }
+    }
+
+    return res;
+}
 //TODO: Test!!!! FIXME: we find a lot of duplicates through the permutations
 template<typename Graph, typename VertexDescriptor>
 std::vector<std::pair<VertexDescriptor, VertexDescriptor>>
-independent_end_evts(Graph& graph, std::vector<VertexDescriptor> end_evts)
+independent_sync_pairs(Graph& graph, std::vector<VertexDescriptor> end_evts)
 {
     std::sort(end_evts.begin(), end_evts.end());
     // remove duplicates
@@ -860,39 +939,44 @@ independent_end_evts(Graph& graph, std::vector<VertexDescriptor> end_evts)
         return {};
     }
 
-    // number of combinations of unique end-evt-pairs n(n-1)/2
-    std::vector<std::pair<VertexDescriptor, VertexDescriptor>> independent_syncs;
-    std::vector<std::uint64_t> overlapping_procs;;
-    do
+    const auto up_v = generate_unique_pairs(end_evts);
+    assert(up_v.size() == num_unique_pairs(end_evts.size()));
+    std::vector<std::pair<VertexDescriptor, VertexDescriptor>> in_s;
+    std::vector<std::uint64_t> overlapping_procs;
+    for (const auto& sync_p : up_v)
     {
-        auto first = end_evts[0];
-        auto second = end_evts[1];
-        auto pg1 = pg_group(graph, first);
-        auto pg2 = pg_group(graph, second);
+        const auto pg1 = pg_group(graph, sync_p.first);
+        const auto pg2 = pg_group(graph, sync_p.second);
 
+        std::vector<std::uint64_t> intersection_procs;
         std::set_intersection(pg1.begin(), pg1.end(),
                 pg2.begin(), pg2.end(),
-                std::back_inserter(overlapping_procs));
+                std::back_inserter(intersection_procs));
 
-        if (overlapping_procs.empty()) {
-            //independent case
-            logging::debug() << "first: " << first << " and second: " << second << " are independent";
-            independent_syncs.push_back(std::make_pair(first, second));
+        if (intersection_procs.empty()) {
+            logging::debug() << "independent sync pair: (" << sync_p.first
+                << ", " << sync_p.second << ")";
+            in_s.push_back(sync_p);
         }
         else {
-            // dependent case
-            logging::debug() << "first: "  << first << " and second: " << second << " are dependent";
-            std::cout << "Processes overlapping:\n";
-            std::copy(overlapping_procs.begin(), overlapping_procs.end(),
-                    std::ostream_iterator<std::uint64_t>(std::cout, ", "));
-            std::cout << "\n";
+            logging::debug() << "overlapping procs from: " << sync_p.first << " and " << sync_p.second;
+            std::copy(intersection_procs.begin(), intersection_procs.end(),
+                    std::back_inserter(overlapping_procs));
         }
-    } while (std::next_permutation(end_evts.begin(), end_evts.end()));
+    }
+    logging::debug() << "OVERLAPPING PROCS:";
+    std::copy(overlapping_procs.begin(), overlapping_procs.end(),
+            std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
+    std::cout << "\n";
 
-    return independent_syncs;
-    //return overlapping_procs;
+    return in_s;
 }
 
+// number of combinations of unique end-evt-pairs n(n-1)/2
+/**
+ * TODO: Implement some kind of `find_end_event` function
+ * to find the end_event we can eliminate from our view.
+ */
 template<typename Graph, typename VertexDescriptor>
 void
 process_sets(Graph& graph,
@@ -931,16 +1015,24 @@ process_sets(Graph& graph,
             });
 
 
-    const auto independent_syncs = independent_end_evts(graph, end_evts);
+    const auto independent_syncs = independent_sync_pairs(graph, end_evts);
     if (independent_syncs.empty()) {
         logging::debug() << "independent syncs empty!";
         // search end event to kick!
         // here, take the chronologically first.
+        // TODO this is false!
         auto first = std::find_first_of(sorted_syncs.begin(), sorted_syncs.end(),
                 end_evts.begin(), end_evts.end());
         // get process group of end event
         const auto lpg = pg_group(graph, *first);
-       // update map_view and call recursively
+        // satisfy that for each process `p` in `lpg` has `end_evts[p] == *first`
+        bool can_update_end_evt = std::all_of(lpg.begin(), lpg.end(),
+                [&end_evts, &first](const std::uint64_t pid) {
+                    return end_evts[pid] == *first;
+                });
+        logging::debug() << "Can update " << *first << "? " << std::boolalpha << can_update_end_evt;
+        //FIXME we update in everyway indifferent if we can!
+        // update map_view and call recursively
         logging::debug() << "update for : " << *first << " -> recursive call";
         process_sets(graph,
                 update_view<vertex_descriptor>(lpg, map_view),
@@ -954,6 +1046,16 @@ process_sets(Graph& graph,
             std::cout << "first: " << isp.first << " second: " << isp.second << "\n";
             // recursive call for first
             const auto lpg1 = pg_group(graph, isp.first);
+            bool can_update_end_evt = std::all_of(lpg1.begin(), lpg1.end(),
+                [&end_evts, &isp](const std::uint64_t pid) {
+                    return end_evts[pid] == isp.first;
+                });
+            logging::debug() << "Can update " << isp.first <<  "? " << std::boolalpha << can_update_end_evt;
+            if (!can_update_end_evt)
+            {
+                logging::debug() << "CONTINUE ... ";
+                continue;
+            }
             logging::debug() << "update for first: " << isp.first << " -> recursive call";
             process_sets(graph,
                     update_view<vertex_descriptor>(lpg1, map_view),
@@ -961,6 +1063,16 @@ process_sets(Graph& graph,
 
             // recursive call for second
             const auto lpg2 = pg_group(graph, isp.second);
+            can_update_end_evt = std::all_of(lpg2.begin(), lpg2.end(),
+                [&end_evts, &isp](const std::uint64_t pid) {
+                    return end_evts[pid] == isp.second;
+                });
+            logging::debug() << "Can update " << isp.second <<  "? " << std::boolalpha << can_update_end_evt;
+            if (!can_update_end_evt)
+            {
+                logging::debug() << "CONTINUE ... ";
+                continue;
+            }
             logging::debug() << "update for second: " << isp.second << " -> recursive call";
             process_sets(graph,
                     update_view<vertex_descriptor>(lpg2, map_view),
