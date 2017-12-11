@@ -665,7 +665,7 @@ collect_root_sync_events(Graph& graph)
 }
 
 template<typename Graph, typename Vertex>
-void sort_events_chronological(Graph& graph, std::vector<Vertex>& events)
+void sort_events_chrono(Graph& graph, std::vector<Vertex>& events)
 {
     auto chrono_cmp = [&graph](const Vertex& vd_a, const Vertex& vd_b)
         {
@@ -779,7 +779,6 @@ make_local_pgmap(Graph& graph)
     return pg_map;
 }
 
-// TODO: process group from a given event?!?!?
 template<typename Graph, typename Vertex>
 process_group_t pg_group(Graph& graph, const Vertex& vd)
 {
@@ -828,6 +827,7 @@ do_merge(const map_view_t<VertexDescriptor>& map_view,
         end_evts.push_back(first_set.end_event().value());
     }
 
+    //TODO this is false!
     auto first = std::find_first_of(sorted_syncs.begin(), sorted_syncs.end(),
             end_evts.begin(), end_evts.end());
     cur_s.close();
@@ -988,7 +988,6 @@ merge_sets_impl(Graph& graph,
     process_sets(graph, map_view, merged_sets, sorted_sync_evts);
 
     logging::debug() << "Resulting Sets:\n"
-        << "expected size: 9\n"
         << "raw size: " << merged_sets.size();
 
     // remove empty sets
@@ -1114,7 +1113,7 @@ auto gather_concurrent_io_sets(Graph& graph)
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
     sort_sets_by_descriptor(*shared_set_container.get());
     auto sync_evts_v = collect_root_sync_events(graph);
-    sort_events_chronological(graph, sync_evts_v);
+    sort_events_chrono(graph, sync_evts_v);
     auto merged_sets = merge_sets(graph, *shared_set_container.get(), sync_evts_v);
     remove_empty_sets(merged_sets);
 
