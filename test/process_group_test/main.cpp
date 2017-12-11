@@ -86,3 +86,24 @@ TEST_CASE("[ech]", "Find local Process Groups of Synchronization Events")
 
     REQUIRE(exp_local_pgmap == lpgs);
 }
+
+TEST_CASE("[trace-own-advanced6]", "Find local Process Groups of Synchronization Events")
+{
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
+    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
+    auto lpgs = rabbitxx::make_local_pgmap(*graph.get());
+
+    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
+
+    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap {
+        { 25, { 4, 5 } },
+        { 29, { 0, 1 } },
+        { 30, { 2, 3 } },
+        { 36, { 2, 3 } },
+        { 39, { 4, 5 } },
+        { 42, { 1, 4 } },
+        { 47, { 0, 1 } }
+    };
+
+    REQUIRE(exp_local_pgmap == lpgs);
+}

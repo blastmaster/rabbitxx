@@ -151,3 +151,55 @@ TEST_CASE("[ech]", "Find concurrent I/O sets")
                 }));
     }
 }
+
+TEST_CASE("[trace-own-advanced6]", "Find concurrent I/O sets")
+{
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
+    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
+    auto cio_sets = rabbitxx::gather_concurrent_io_sets(*graph.get());
+
+    const std::vector<
+        std::set<typename decltype(graph)::element_type::vertex_descriptor>>
+        exp_sets {
+            { 7, 8, 9, 10, 11, 12 },
+            { 7, 8, 9, 10, 22, 23, 33, 34 },
+            { 7, 8, 9, 10, 26, 27, 37 },
+            { 7, 9, 11, 12, 20, 32, 35 },
+            { 7, 9, 20, 22, 23, 32, 33, 34, 35 },
+            { 7, 9, 20, 26, 27, 32, 35, 37 },
+            { 8, 10, 11, 12, 14, 16, 28 },
+            { 8, 10, 14, 16, 22, 23, 28, 33, 34 },
+            { 8, 10, 14, 16, 26, 27, 28, 37 },
+            { 11, 12, 14, 16, 20, 28, 32, 35 },
+            { 14, 16, 20, 22, 23, 28, 32, 33, 34, 35 },
+            { 14, 16, 20, 26, 27, 28, 32, 35, 37 },
+            { 11, 12, 14, 16, 32, 35, 38, 43 },
+            { 14, 16, 22, 23, 32, 33, 34, 35, 38, 43 },
+            { 14, 16, 26, 27, 32, 35, 37, 38, 43 },
+            { 11, 12, 18, 19, 32, 35, 40, 41, 43 },
+            { 18, 19, 22, 23, 32, 33, 34, 35, 40, 41, 43 },
+            { 18, 19, 26, 27, 32, 35, 37, 40, 41, 43 },
+            { 11, 12, 18, 19, 40, 41, 45, 46, 48, 49 },
+            { 18, 19, 22, 23, 33, 34, 40, 41, 45, 46, 48, 49 },
+            { 18, 19, 26, 27, 37, 40, 41, 45, 46, 48, 49 },
+            { 11, 12, 14, 16, 38, 45, 46, 48, 49 },
+            { 14, 16, 22, 23, 33, 34, 38, 45, 46, 48, 49 },
+            { 14, 16, 26, 27, 37, 38, 45, 46, 48, 49 },
+        };
+
+    REQUIRE(cio_sets.size() == exp_sets.size());
+
+    for (std::size_t i = 0; i < cio_sets.size(); ++i)
+    {
+        REQUIRE(std::all_of(cio_sets[i].begin(),
+                cio_sets[i].end(),
+                [&exp_sets, &i](const auto& evt) {
+                    return std::any_of(exp_sets[i].begin(),
+                            exp_sets[i].end(),
+                            [&evt](const auto& e_evt) {
+                                return evt == e_evt;
+                            });
+                }));
+    }
+}
+

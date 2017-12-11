@@ -106,3 +106,27 @@ TEST_CASE("[ech]", "Find correct root of synchronization events")
                                             });
                         }));
 }
+
+TEST_CASE("[trace-own-advanced6]", "Find correct root of synchronization events")
+{
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
+    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
+    auto root_sync_evts = rabbitxx::collect_root_sync_events(*graph.get());
+
+    const std::vector<typename decltype(graph)::element_type::vertex_descriptor> exp_evts {
+        0, 2, 25, 29, 30, 36, 39, 42, 47, 50, 56 };
+
+    // Same amount?
+    REQUIRE(root_sync_evts.size() == exp_evts.size());
+
+    // each event in the root_sync_evts vector has to be in the exp_evts vector too!
+    REQUIRE(std::all_of(root_sync_evts.begin(),
+                      root_sync_evts.end(),
+                      [&exp_evts](const auto& evt) {
+                        return std::any_of(exp_evts.begin(),
+                                           exp_evts.end(),
+                                           [&evt](const auto& e_evt) {
+                                                return e_evt == evt;
+                                            });
+                        }));
+}
