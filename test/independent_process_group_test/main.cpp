@@ -19,7 +19,7 @@ TEST_CASE("[unqiue pairs]", "Generate all unqiue pairs of a sequence of numbers"
 
     auto pair_v = rabbitxx::generate_unique_pairs(numbers);
 
-    REQUIRE(pair_v.size() == num_unique_pairs(numbers));
+    REQUIRE(pair_v.size() == rabbitxx::num_unique_pairs(numbers.size()));
 
     for (const auto& pair : pair_v)
     {
