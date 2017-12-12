@@ -972,10 +972,32 @@ independent_sync_pairs(Graph& graph, std::vector<VertexDescriptor> end_evts)
     return in_s;
 }
 
-// number of combinations of unique end-evt-pairs n(n-1)/2
+template<typename Graph, typename VertexDescriptor>
+// inline?
+bool can_update_end_event(const Graph& graph,
+        const std::vector<VertexDescriptor>& end_evts,
+        const VertexDescriptor& pivot)
+{
+    const auto pgroup = pg_group(graph, pivot);
+    return can_update_end_event(pgroup, end_evts, pivot);
+}
+
+template<typename VertexDescriptor>
+// inline?
+bool can_update_end_event(const process_group_t& pgroup,
+        const std::vector<VertexDescriptor>& end_evts,
+        const VertexDescriptor& pivot)
+{
+    return std::all_of(pgroup.begin(), pgroup.end(),
+            [&end_evts, &pivot](const std::uint64_t pid) {
+                return end_evts[pid] == pivot;
+            });
+}
+
 /**
  * TODO: Implement some kind of `find_end_event` function
  * to find the end_event we can eliminate from our view.
+ * This also makes the existence of the `sorted_syncs` vector waste.
  */
 template<typename Graph, typename VertexDescriptor>
 void
@@ -1026,11 +1048,8 @@ process_sets(Graph& graph,
         // get process group of end event
         const auto lpg = pg_group(graph, *first);
         // satisfy that for each process `p` in `lpg` has `end_evts[p] == *first`
-        bool can_update_end_evt = std::all_of(lpg.begin(), lpg.end(),
-                [&end_evts, &first](const std::uint64_t pid) {
-                    return end_evts[pid] == *first;
-                });
-        logging::debug() << "Can update " << *first << "? " << std::boolalpha << can_update_end_evt;
+        bool can_update = can_update_end_event(lpg, end_evts, *first);
+        logging::debug() << "Can update " << *first << "? " << std::boolalpha << can_update;
         //FIXME we update in everyway indifferent if we can!
         // update map_view and call recursively
         logging::debug() << "update for : " << *first << " -> recursive call";
@@ -1046,12 +1065,9 @@ process_sets(Graph& graph,
             std::cout << "first: " << isp.first << " second: " << isp.second << "\n";
             // recursive call for first
             const auto lpg1 = pg_group(graph, isp.first);
-            bool can_update_end_evt = std::all_of(lpg1.begin(), lpg1.end(),
-                [&end_evts, &isp](const std::uint64_t pid) {
-                    return end_evts[pid] == isp.first;
-                });
-            logging::debug() << "Can update " << isp.first <<  "? " << std::boolalpha << can_update_end_evt;
-            if (!can_update_end_evt)
+            bool can_update = can_update_end_event(lpg1, end_evts, isp.first);
+            logging::debug() << "Can update " << isp.first <<  "? " << std::boolalpha << can_update;
+            if (!can_update)
             {
                 logging::debug() << "CONTINUE ... ";
                 continue;
@@ -1063,12 +1079,9 @@ process_sets(Graph& graph,
 
             // recursive call for second
             const auto lpg2 = pg_group(graph, isp.second);
-            can_update_end_evt = std::all_of(lpg2.begin(), lpg2.end(),
-                [&end_evts, &isp](const std::uint64_t pid) {
-                    return end_evts[pid] == isp.second;
-                });
-            logging::debug() << "Can update " << isp.second <<  "? " << std::boolalpha << can_update_end_evt;
-            if (!can_update_end_evt)
+            can_update = can_update_end_event(lpg2, end_evts, isp.second);
+            logging::debug() << "Can update " << isp.second <<  "? " << std::boolalpha << can_update;
+            if (!can_update)
             {
                 logging::debug() << "CONTINUE ... ";
                 continue;
