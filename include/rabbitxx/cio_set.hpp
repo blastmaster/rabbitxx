@@ -867,10 +867,10 @@ process_group_t pg_group(Graph& graph, const Vertex& vd)
  * pairs anyway so it could be possible that the end_event later is no longer
  * needed.
  */
-template<typename VertexDescriptor>
+template<typename Graph, typename VertexDescriptor>
 std::vector<VertexDescriptor>
-do_merge(const map_view_t<VertexDescriptor>& map_view,
-        const std::vector<VertexDescriptor>& sorted_syncs,
+do_merge(Graph& graph,
+        const map_view_t<VertexDescriptor>& map_view,
         std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
     std::vector<VertexDescriptor> end_evts;
@@ -882,17 +882,22 @@ do_merge(const map_view_t<VertexDescriptor>& map_view,
         end_evts.push_back(first_set.end_event().value());
     }
 
-    //TODO this is false!
-    auto first = std::find_first_of(sorted_syncs.begin(), sorted_syncs.end(),
-            end_evts.begin(), end_evts.end());
+    //JUST FOR DEBUGGING
+    std::cout << "END-EVENTS:\n";
+    std::copy(end_evts.begin(), end_evts.end(),
+            std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
+    std::cout << "\n";
+
+    const auto e_evts = find_end_events_to_update(graph, end_evts);
     cur_s.close();
-    cur_s.set_end_event(*first);
+    cur_s.set_end_event(e_evts.back()); // FIXME referenceing back without check is UB!
     logging::debug() << "create new set:\n" << cur_s;
     merged_sets.push_back(cur_s);
 
-    return end_evts;
+    return e_evts;
 }
 
+// number of combinations of unique end-evt-pairs n(n-1)/2
 std::size_t num_unique_pairs(const std::size_t n)
 {
     return n * (n-1) / 2;
@@ -917,17 +922,41 @@ generate_unique_pairs(const std::vector<VertexDescriptor>& v)
 
     return res;
 }
-//TODO: Test!!!! FIXME: we find a lot of duplicates through the permutations
+
 template<typename Graph, typename VertexDescriptor>
-std::vector<std::pair<VertexDescriptor, VertexDescriptor>>
-independent_sync_pairs(Graph& graph, std::vector<VertexDescriptor> end_evts)
+std::vector<VertexDescriptor> // maybe set or vector? there could be more than one
+find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
 {
+    auto check_update_func = [end_evts](Graph& graph, const std::set<VertexDescriptor>& try_s)
+    {
+        for (const VertexDescriptor& vd : try_s)
+        {
+            bool update = can_update_end_event(graph, end_evts, vd);
+            if (update) {
+                return vd;
+            }
+        }
+    };
+
+    auto check_update_func_single = [end_evts](Graph& graph, const VertexDescriptor& vd)
+    {
+            return can_update_end_event(graph, end_evts, vd);
+    };
+
+    // sort
     std::sort(end_evts.begin(), end_evts.end());
     // remove duplicates
     end_evts.erase(std::unique(end_evts.begin(), end_evts.end()),
             end_evts.end());
 
-    // remove global end evts
+    // just one unique sync-event need to be global! Return it!
+    if (end_evts.size() == 1) {
+        assert(sync_scope::Global == classify_sync(graph, end_evts.back()));
+        //return end_evts.back();
+        return end_evts;
+    }
+
+    // not global case! Remove all global syncs;
     end_evts.erase(std::remove_if(end_evts.begin(), end_evts.end(),
                 [&graph](const auto& evt) {
                     const auto scope = classify_sync(graph, evt);
@@ -935,15 +964,18 @@ independent_sync_pairs(Graph& graph, std::vector<VertexDescriptor> end_evts)
                 }),
                 end_evts.end());
 
-    if (end_evts.size() < 2) {
-        return {};
+    if (end_evts.size() == 1) {
+        assert(sync_scope::Local == classify_sync(graph, end_evts.back()));
+        logging::debug() << "JUST ONE LOCAL EVENT SO JUST RETURN!";
+        //return end_evts.back();
+        return end_evts;
     }
 
-    const auto up_v = generate_unique_pairs(end_evts);
-    assert(up_v.size() == num_unique_pairs(end_evts.size()));
-    std::vector<std::pair<VertexDescriptor, VertexDescriptor>> in_s;
+    const auto upairs_v = generate_unique_pairs(end_evts);
+    assert(upairs_v.size() == num_unique_pairs(end_evts.size()));
+    std::set<VertexDescriptor> independent_syncs, dependent_syncs;
     std::vector<std::uint64_t> overlapping_procs;
-    for (const auto& sync_p : up_v)
+    for (const auto& sync_p : upairs_v)
     {
         const auto pg1 = pg_group(graph, sync_p.first);
         const auto pg2 = pg_group(graph, sync_p.second);
@@ -956,10 +988,14 @@ independent_sync_pairs(Graph& graph, std::vector<VertexDescriptor> end_evts)
         if (intersection_procs.empty()) {
             logging::debug() << "independent sync pair: (" << sync_p.first
                 << ", " << sync_p.second << ")";
-            in_s.push_back(sync_p);
+            independent_syncs.insert(sync_p.first);
+            independent_syncs.insert(sync_p.second);
         }
         else {
-            logging::debug() << "overlapping procs from: " << sync_p.first << " and " << sync_p.second;
+            logging::debug() << "overlapping procs from depending sync pair: "
+                << "(" << sync_p.first << ", " << sync_p.second << ")";
+            dependent_syncs.insert(sync_p.first);
+            dependent_syncs.insert(sync_p.second);
             std::copy(intersection_procs.begin(), intersection_procs.end(),
                     std::back_inserter(overlapping_procs));
         }
@@ -969,17 +1005,34 @@ independent_sync_pairs(Graph& graph, std::vector<VertexDescriptor> end_evts)
             std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
     std::cout << "\n";
 
-    return in_s;
+    VertexDescriptor update_evt;
+    // first check dependent events
+    if (!dependent_syncs.empty()) {
+        logging::debug() << "choose from dependent syncs";
+        update_evt = check_update_func(graph, dependent_syncs);
+    }
+    // afterwards check for independent events
+    else if (!independent_syncs.empty()) {
+        logging::debug() << "choose from independent syncs";
+        //update_evt = check_update_func(graph, independent_syncs);
+        std::vector<VertexDescriptor> res;
+        for (const auto& isv : independent_syncs) {
+            if (check_update_func_single(graph, isv)) {
+                res.push_back(isv);
+            }
+        }
+        return res;
+    }
+    else {
+        logging::fatal() << "ERROR NO END EVENT FOUND !";
+        throw -1;
+    }
+
+    return { update_evt };
 }
 
 template<typename Graph, typename VertexDescriptor>
-// inline?
-bool can_update_end_event(const Graph& graph,
-        const std::vector<VertexDescriptor>& end_evts,
-        const VertexDescriptor& pivot)
 {
-    const auto pgroup = pg_group(graph, pivot);
-    return can_update_end_event(pgroup, end_evts, pivot);
 }
 
 template<typename VertexDescriptor>
@@ -994,6 +1047,17 @@ bool can_update_end_event(const process_group_t& pgroup,
             });
 }
 
+template<typename Graph, typename VertexDescriptor>
+// inline?
+bool can_update_end_event(Graph& graph,
+        const std::vector<VertexDescriptor>& end_evts,
+        const VertexDescriptor& pivot)
+{
+    const auto pgroup = pg_group(graph, pivot);
+    return can_update_end_event(pgroup, end_evts, pivot);
+}
+
+
 /**
  * TODO: Implement some kind of `find_end_event` function
  * to find the end_event we can eliminate from our view.
@@ -1003,8 +1067,7 @@ template<typename Graph, typename VertexDescriptor>
 void
 process_sets(Graph& graph,
         map_view_t<VertexDescriptor> map_view,
-        std::vector<set_t<VertexDescriptor>>& merged_sets,
-        const std::vector<VertexDescriptor>& sorted_syncs)
+        std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
     using vertex_descriptor = VertexDescriptor;
 
@@ -1017,83 +1080,19 @@ process_sets(Graph& graph,
         return;
     }
 
-    const auto end_evts = do_merge(map_view, sorted_syncs, merged_sets);
-    assert(map_view.size() == end_evts.size());
+    const auto end_events = do_merge(graph, map_view, merged_sets);
 
-    std::cout << "End-events:\n";
-    std::copy(end_evts.begin(), end_evts.end(),
-            std::ostream_iterator<vertex_descriptor>(std::cout, ", "));
-    std::cout << "\n";
-
-    //classify end_evts
-    logging::debug() << "Global-Sync-Event in end evts vector: "
-        << std::boolalpha << std::any_of(end_evts.begin(), end_evts.end(),
-            [&graph](const auto& evt) {
-                const auto scope = classify_sync(graph, evt);
-                if (sync_scope::Global == scope) {
-                    return true;
-                }
-                return false;
-            });
-
-
-    const auto independent_syncs = independent_sync_pairs(graph, end_evts);
-    if (independent_syncs.empty()) {
-        logging::debug() << "independent syncs empty!";
-        // search end event to kick!
-        // here, take the chronologically first.
-        // TODO this is false!
-        auto first = std::find_first_of(sorted_syncs.begin(), sorted_syncs.end(),
-                end_evts.begin(), end_evts.end());
-        // get process group of end event
-        const auto lpg = pg_group(graph, *first);
-        // satisfy that for each process `p` in `lpg` has `end_evts[p] == *first`
-        bool can_update = can_update_end_event(lpg, end_evts, *first);
-        logging::debug() << "Can update " << *first << "? " << std::boolalpha << can_update;
-        //FIXME we update in everyway indifferent if we can!
-        // update map_view and call recursively
-        logging::debug() << "update for : " << *first << " -> recursive call";
+    for (const auto& end_evt : end_events)
+    {
+        logging::debug() << "Choose end-event: " << end_evt << " -> recursive update!";
+        const auto lpg = pg_group(graph, end_evt);
         process_sets(graph,
                 update_view<vertex_descriptor>(lpg, map_view),
-                merged_sets, sorted_syncs);
+                merged_sets);
     }
-    else {
-        logging::debug() << "independent syncs not empty!";
-        //TODO
-        for (const auto& isp : independent_syncs)
-        {
-            std::cout << "first: " << isp.first << " second: " << isp.second << "\n";
-            // recursive call for first
-            const auto lpg1 = pg_group(graph, isp.first);
-            bool can_update = can_update_end_event(lpg1, end_evts, isp.first);
-            logging::debug() << "Can update " << isp.first <<  "? " << std::boolalpha << can_update;
-            if (!can_update)
-            {
-                logging::debug() << "CONTINUE ... ";
-                continue;
-            }
-            logging::debug() << "update for first: " << isp.first << " -> recursive call";
-            process_sets(graph,
-                    update_view<vertex_descriptor>(lpg1, map_view),
-                    merged_sets, sorted_syncs);
+}
 
-            // recursive call for second
-            const auto lpg2 = pg_group(graph, isp.second);
-            can_update = can_update_end_event(lpg2, end_evts, isp.second);
-            logging::debug() << "Can update " << isp.second <<  "? " << std::boolalpha << can_update;
-            if (!can_update)
-            {
-                logging::debug() << "CONTINUE ... ";
-                continue;
-            }
-            logging::debug() << "update for second: " << isp.second << " -> recursive call";
-            process_sets(graph,
-                    update_view<vertex_descriptor>(lpg2, map_view),
-                    merged_sets, sorted_syncs);
-        }
     }
-    logging::debug() << "return";
-    return;
 }
 
 namespace detail {
@@ -1102,15 +1101,14 @@ template<typename Graph, typename VertexDescriptor>
 inline
 set_container_t<VertexDescriptor>
 merge_sets_impl(Graph& graph,
-        set_map_t<VertexDescriptor>& set_map,
-        const std::vector<VertexDescriptor>& sorted_sync_evts)
+        set_map_t<VertexDescriptor>& set_map)
 {
     set_container_t<VertexDescriptor> merged_sets;
     auto map_view = make_mapview(set_map);
 
     assert(map_view.size() == set_map.size());
 
-    process_sets(graph, map_view, merged_sets, sorted_sync_evts);
+    process_sets(graph, map_view, merged_sets);
 
     logging::debug() << "Resulting Sets:\n"
         << "raw size: " << merged_sets.size();
@@ -1196,11 +1194,10 @@ template<typename Graph, typename VertexDescriptor>
 //as general type-alias
 set_container_t<VertexDescriptor>
 merge_sets(Graph& graph,
-        set_map_t<VertexDescriptor>& set_map,
-        const std::vector<VertexDescriptor>& sorted_sync_evts)
+        set_map_t<VertexDescriptor>& set_map)
 {
     using vertex_descriptor = VertexDescriptor;
-    return detail::merge_sets_impl(graph, set_map, sorted_sync_evts);
+    return detail::merge_sets_impl(graph, set_map);
 }
 
 /**
@@ -1218,7 +1215,8 @@ auto collect_concurrent_io_sets(Graph& graph)
     std::vector<boost::default_color_type> color_map(graph.num_vertices());
     boost::depth_first_visit(*graph.get(), root, vis,
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
-    sort_sets_by_descriptor(*shared_set_container.get());
+    //sort_sets_by_descriptor(*shared_set_container.get());
+    sort_set_map_chrono(graph, *shared_set_container.get());
 
     return shared_set_container;
 }
@@ -1236,10 +1234,16 @@ auto gather_concurrent_io_sets(Graph& graph)
     std::vector<boost::default_color_type> color_map(graph.num_vertices());
     boost::depth_first_visit(*graph.get(), root, vis,
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
-    sort_sets_by_descriptor(*shared_set_container.get());
-    auto sync_evts_v = collect_root_sync_events(graph);
-    sort_events_chrono(graph, sync_evts_v);
-    auto merged_sets = merge_sets(graph, *shared_set_container.get(), sync_evts_v);
+    logging::debug() << "map before sort";
+    dump_set_map(*shared_set_container.get());
+    //sort_sets_by_descriptor(*shared_set_container.get());
+    sort_set_map_chrono(graph, *shared_set_container.get());
+    logging::debug() << "map after sort";
+    dump_set_map(*shared_set_container.get());
+    //sorted sync events are no longer needed!
+    //auto sync_evts_v = collect_root_sync_events(graph);
+    //sort_events_chrono(graph, sync_evts_v);
+    auto merged_sets = merge_sets(graph, *shared_set_container.get());
     remove_empty_sets(merged_sets);
 
     return merged_sets;
