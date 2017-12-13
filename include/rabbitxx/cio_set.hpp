@@ -50,7 +50,7 @@ class CIO_Set
 
     CIO_Set() = default;
 
-    CIO_Set(const value_type& start_event) 
+    CIO_Set(const value_type& start_event)
         : start_evt_(start_event), state_(Set_State::Open)
     {
     }
@@ -195,7 +195,7 @@ inline std::ostream& operator<<(std::ostream& os, const CIO_Set<DescriptorType>&
         os << "\t[End Evt] " << "NONE\n";
     }
     os << "\t[Events] [ ";
-    std::copy(set.begin(), set.end(), 
+    std::copy(set.begin(), set.end(),
             std::ostream_iterator<DescriptorType>(os, ", "));
     os << " ]\n};\n";
     return os;
@@ -260,7 +260,7 @@ get_in_going_syncs(Vertex v, Graph& g)
 
 /**
  * @brief Find the root-Event of a given Synchronization Event.
- * 
+ *
  * @param v the vertex descriptor of a synchronization-event.
  * @param g a reference to the graph.
  *
@@ -333,7 +333,7 @@ find_root(Graph& graph)
 
 /**
  * @brief Get the number of processes involved, in a given I/O Graph.
- * 
+ *
  * Therefore we take the synthetic root vertex and count the out-going edges.
  *
  * @param graph: A reference to the graph.
@@ -612,18 +612,12 @@ get_events_by_kind(Graph& graph, const std::vector<vertex_kind>& kinds)
 }
 
 /**
- * @breif sort sets per process with ascending start events of the CIO_Set.
+ * @brief sort sets per process with ascending end events of the CIO_Set.
  *
  * @param cio_sets: Reference to the SetMap container.
- *
- * When it comes that sets are not sorted, this can happen during backtracking
- * e.g.. 
- * We can sort them using `sort` or try just to `reverse` the vector.
- * Reversing the vector maybe enough if the only reason for sorting
- * is the reverse order of sets through the backtracking during the DFS.
  */
 template<typename VertexDescriptor>
-void sort_sets_by_descriptor(set_map_t<VertexDescriptor>& cio_sets)
+void sort_sets_by_end_event(set_map_t<VertexDescriptor>& cio_sets)
 {
     std::for_each(cio_sets.begin(), cio_sets.end(),
             [](auto& kvp_ps)
@@ -632,22 +626,20 @@ void sort_sets_by_descriptor(set_map_t<VertexDescriptor>& cio_sets)
                         std::begin(kvp_ps.second),
                         std::end(kvp_ps.second),
                         [](const auto& set_a, const auto& set_b) {
-                            return set_a.start_event() < set_b.start_event();
+                            return set_a.end_event() < set_b.end_event();
                         });
                 if (!sorted) {
-                    //try to reverse
-                    //std::reverse(kvp_ps.second.begin(), kvp_ps.second.end());
-                    //... or sort conventionally
                     std::sort(std::begin(kvp_ps.second),
                             std::end(kvp_ps.second),
                             [](const auto& set_a, const auto& set_b) {
-                                return set_a.start_event() < set_b.start_event();
+                                return set_a.end_event() < set_b.end_event();
                             });
                 }
             });
 }
 
 /**
+ * XXX: The assert will fail if used on final sets! Since there is no origin.
  * This is not a final solution, it should work since events of the same rank
  * can not overhaul themselve.
  * TODO: Nevertheless, sorting the sets using a adjacency relation might be better.
@@ -953,6 +945,7 @@ find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
     if (end_evts.size() == 1) {
         assert(sync_scope::Global == classify_sync(graph, end_evts.back()));
         //return end_evts.back();
+        //TODO: check if can update
         return end_evts;
     }
 
@@ -968,6 +961,7 @@ find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
         assert(sync_scope::Local == classify_sync(graph, end_evts.back()));
         logging::debug() << "JUST ONE LOCAL EVENT SO JUST RETURN!";
         //return end_evts.back();
+        //TODO: check if can update
         return end_evts;
     }
 
@@ -1215,7 +1209,6 @@ auto collect_concurrent_io_sets(Graph& graph)
     std::vector<boost::default_color_type> color_map(graph.num_vertices());
     boost::depth_first_visit(*graph.get(), root, vis,
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
-    //sort_sets_by_descriptor(*shared_set_container.get());
     sort_set_map_chrono(graph, *shared_set_container.get());
 
     return shared_set_container;
@@ -1234,15 +1227,7 @@ auto gather_concurrent_io_sets(Graph& graph)
     std::vector<boost::default_color_type> color_map(graph.num_vertices());
     boost::depth_first_visit(*graph.get(), root, vis,
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
-    logging::debug() << "map before sort";
-    dump_set_map(*shared_set_container.get());
-    //sort_sets_by_descriptor(*shared_set_container.get());
     sort_set_map_chrono(graph, *shared_set_container.get());
-    logging::debug() << "map after sort";
-    dump_set_map(*shared_set_container.get());
-    //sorted sync events are no longer needed!
-    //auto sync_evts_v = collect_root_sync_events(graph);
-    //sort_events_chrono(graph, sync_evts_v);
     auto merged_sets = merge_sets(graph, *shared_set_container.get());
     remove_empty_sets(merged_sets);
 
