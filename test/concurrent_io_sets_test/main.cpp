@@ -157,9 +157,9 @@ TEST_CASE("[trace-own-advanced6]", "Find concurrent I/O sets")
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto cio_sets = rabbitxx::gather_concurrent_io_sets(*graph.get());
-
+    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
     const std::vector<
-        std::set<typename decltype(graph)::element_type::vertex_descriptor>>
+        std::set<vertex_descriptor>>
         exp_sets {
             { 7, 8, 9, 10, 11, 12 },
             { 7, 8, 9, 10, 22, 23, 33, 34 },
@@ -189,17 +189,28 @@ TEST_CASE("[trace-own-advanced6]", "Find concurrent I/O sets")
 
     REQUIRE(cio_sets.size() == exp_sets.size());
 
-    for (std::size_t i = 0; i < cio_sets.size(); ++i)
-    {
-        REQUIRE(std::all_of(cio_sets[i].begin(),
-                cio_sets[i].end(),
-                [&exp_sets, &i](const auto& evt) {
-                    return std::any_of(exp_sets[i].begin(),
-                            exp_sets[i].end(),
-                            [&evt](const auto& e_evt) {
-                                return evt == e_evt;
-                            });
-                }));
-    }
-}
+    // LOL, all things must satisfy anything! Too lazy for sorting.
+    bool res = std::all_of(cio_sets.begin(), cio_sets.end(),
+            // all cio-sets must statisfy ...
+            [&exp_sets](const rabbitxx::set_t<vertex_descriptor>& set)
+            {
+                // that in any expected-set ...
+                return std::any_of(exp_sets.begin(), exp_sets.end(),
+                        [&set](const std::set<vertex_descriptor>& eset)
+                        {
+                            // all events in the cio-set satisfy ...
+                            return std::all_of(set.begin(), set.end(),
+                                    [&eset](const vertex_descriptor& v)
+                                    {
+                                        // that they are equal to some element in the expected-set.
+                                        return std::any_of(eset.begin(), eset.end(),
+                                            [&v](const vertex_descriptor& d) {
+                                                return v == d;
+                                            });
+                                    });
+                        });
+            });
 
+    REQUIRE(res);
+
+}
