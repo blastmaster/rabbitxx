@@ -26,7 +26,7 @@ int main(int argc, char** argv)
     auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
 
     logging::debug() << "Write graph to: " << filename;
-    auto cio_sets = gather_concurrent_io_sets(*g.get());
+    auto cio_sets = find_cio_sets(*g.get());
     rabbitxx::write_graph_to_dot(*(g->get()), filename, cio_sets);
 
     return 0;
