@@ -1197,8 +1197,9 @@ merge_sets(Graph& graph,
 /**
  * Here we get the Sets per process - nothing is merged together!
  */
-template<typename Graph> //XXX: returns a shared_ptr to a map-style type
-auto collect_concurrent_io_sets(Graph& graph)
+template<typename Graph>
+set_map_t<typename Graph::vertex_descriptor>
+cio_sets_per_process(Graph& graph)
 {
     using map_t = set_map_t<typename Graph::vertex_descriptor>;
 
@@ -1211,24 +1212,18 @@ auto collect_concurrent_io_sets(Graph& graph)
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
     sort_set_map_chrono(graph, *shared_set_container.get());
 
-    return shared_set_container;
+    return *shared_set_container.get();
 }
 
-// all-in-one version of the alorithm above! needs refactoring
-template<typename Graph> //XXX: returns a vector of sets
-auto gather_concurrent_io_sets(Graph& graph)
+// all-in-one version - do merging
+template<typename Graph>
+set_container_t<typename Graph::vertex_descriptor>
+find_cio_sets(Graph& graph)
 {
     using map_t = set_map_t<typename Graph::vertex_descriptor>;
 
-    auto root = find_root(graph);
-    assert(graph[root].type == vertex_kind::synthetic);
-    auto shared_set_container(std::make_shared<map_t>());
-    CIO_Visitor<map_t> vis(shared_set_container);
-    std::vector<boost::default_color_type> color_map(graph.num_vertices());
-    boost::depth_first_visit(*graph.get(), root, vis,
-            make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
-    sort_set_map_chrono(graph, *shared_set_container.get());
-    auto merged_sets = merge_sets(graph, *shared_set_container.get());
+    map_t sets_per_process = cio_sets_per_process(graph);
+    auto merged_sets = merge_sets(graph, sets_per_process);
     remove_empty_sets(merged_sets);
 
     return merged_sets;
