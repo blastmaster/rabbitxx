@@ -9,3 +9,4 @@ target_link_libraries(root_synchronization_test
     ${MPI_CXX_LIBRARIES}
     otf2xx
 )
+add_test(NAME root_synchronization_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/root_synchronization_test)

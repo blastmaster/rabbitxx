@@ -9,3 +9,4 @@ target_link_libraries(concurrent_io_sets_test
     ${MPI_CXX_LIBRARIES}
     otf2xx
 )
+add_test(NAME concurrent_io_sets_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/concurrent_io_sets_test)

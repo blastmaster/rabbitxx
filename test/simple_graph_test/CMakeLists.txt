@@ -9,3 +9,4 @@ target_link_libraries(simple_graph_test
     ${MPI_CXX_LIBRARIES}
     otf2xx
 )
+add_test(NAME simple_graph_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/simple_graph_test)

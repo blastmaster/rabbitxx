@@ -5,6 +5,8 @@ set(PROJECT_VERSION "0.0.1")
 
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
+include(CTest)
+
 option(BUILD_TESTS "build tests" ON)
 option(BUILD_MODULES "build modules" ON)
 
@@ -44,6 +46,7 @@ if (BUILD_MODULES)
 endif()
 
 if (BUILD_TESTS)
+    enable_testing()
     include_directories("${CMAKE_SOURCE_DIR}/external/catch/include")
     add_subdirectory(test)
 endif()
