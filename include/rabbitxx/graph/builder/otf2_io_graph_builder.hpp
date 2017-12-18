@@ -699,11 +699,6 @@ namespace rabbitxx { namespace graph {
             logging::trace() << "Found io_paradigm defintion";
         }
 
-        virtual void definition(const otf2::definition::io_file& definition) override
-        {
-            logging::trace() << "Found io_file defintion";
-        }
-
         virtual void definition(const otf2::definition::io_handle& definition) override
         {
             logging::trace() << "Found io_handle defintion";

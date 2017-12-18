@@ -56,7 +56,7 @@ namespace rabbitxx
         } // namespace detail
 
         typedef nitro::log::logger<detail::record, detail::rabbitxx_log_formater,
-                                   nitro::log::sink::stdout, detail::rabbitxx_log_filter> logging;
+                                   nitro::log::sink::StdOut, detail::rabbitxx_log_filter> logging;
 
         inline void set_min_severity_level(nitro::log::severity_level sev)
         {
