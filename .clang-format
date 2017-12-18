@@ -1,0 +1,57 @@
+---
+BasedOnStyle:  LLVM
+AccessModifierOffset: -4
+AlignEscapedNewlinesLeft: false
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: TopLevelDefinitions
+AlwaysBreakTemplateDeclarations: true
+AlwaysBreakBeforeMultilineStrings: false
+BinPackParameters: true
+BreakBeforeBinaryOperators: None
+BreakBeforeBraces: Allman
+BreakBeforeTernaryOperators: false
+BreakConstructorInitializersBeforeComma: false
+ColumnLimit:     100
+ConstructorInitializerIndentWidth: 0
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+Cpp11BracedListStyle: false
+DerivePointerBinding: false
+ExperimentalAutoDetectBinPacking: false
+IndentCaseLabels: true
+IndentWidth:     4
+IndentFunctionDeclarationAfterType: false
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: None
+
+PointerBindsToType: true
+
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 60
+PenaltyBreakString: 1000
+PenaltyBreakFirstLessLess: 120
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 60
+
+Language: Cpp
+Standard:        Cpp11
+TabWidth:        4
+UseTab:          Never
+
+SpacesBeforeTrailingComments: 1
+SpacesInParentheses: false
+SpacesInAngles:  false
+SpacesInSquareBrackets: false
+SpaceInEmptyParentheses: false
+SpacesInCStyleCastParentheses: false
+SpaceAfterControlStatementKeyword: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeAssignmentOperators: true
+ContinuationIndentWidth: 4
+...
+
