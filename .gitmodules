@@ -3,7 +3,7 @@
 	url = https://github.com/tud-zih-energy/nitro.git
 [submodule "external/catch"]
 	path = external/catch
-	url = https://github.com/philsquared/Catch.git
+	url = https://github.com/catchorg/Catch2.git
 [submodule "external/otf2xx"]
 	path = external/otf2xx
 	url = git@github.com:tud-zih-energy/otf2xx.git
