@@ -589,7 +589,6 @@ private:
         set_cnt_ptr_->operator[](pid).emplace_back(v);
     }
 
-    // template<typename Set>
     // TODO: use optional instead of trailing return type syntax
     auto find_open_set_for(const std::uint64_t proc_id) -> typename Cont::mapped_type::value_type* // should be set_t<VD>*
     {
@@ -797,22 +796,6 @@ classify_sync(Graph& g, const Vertex& v)
     return classify_sync(g, sync_evt_p);
 }
 
-// TODO will not be found! :(
-template <typename VertexDescriptor>
-inline std::ostream&
-operator<<(std::ostream& os, const pg_map_t<VertexDescriptor>& pmap)
-{
-    for (const auto& pg : pmap)
-    {
-        os << "[" << pg.first << "] ";
-        std::copy(pg.second.begin(), pg.second.end(),
-                  std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
-        os << "\n";
-    }
-
-    return os;
-}
-
 template <typename VertexDescriptor>
 map_view_t<VertexDescriptor>
 make_mapview(set_map_t<VertexDescriptor>& smap)
@@ -948,10 +931,18 @@ do_merge(Graph& graph, const map_view_t<VertexDescriptor>& map_view,
     std::cout << "\n";
 
     const auto e_evts = find_end_events_to_update(graph, end_evts);
-    cur_s.close();
-    cur_s.set_end_event(e_evts.back()); // FIXME referenceing back without check is UB!
-    logging::debug() << "create new set:\n" << cur_s;
-    merged_sets.push_back(cur_s);
+    if (!e_evts.empty())
+    {
+        cur_s.close();
+        cur_s.set_end_event(e_evts.back());
+        logging::debug() << "create new set:\n" << cur_s;
+        merged_sets.push_back(cur_s);
+    }
+    else
+    {
+        logging::fatal() << "ERROR NO END EVENT FOUND TO UPDATE! THIS SHOULD NOT HAPPEN!";
+        throw -1; //TODO
+    }
 
     return e_evts;
 }
@@ -984,9 +975,8 @@ generate_unique_pairs(const std::vector<VertexDescriptor>& v)
 }
 
 template <typename Graph, typename VertexDescriptor>
-std::vector<VertexDescriptor> // maybe set or vector? there could be more than
-                              // one
-    find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
+std::vector<VertexDescriptor>
+find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
 {
     auto check_update_func = [end_evts](Graph& graph, const std::set<VertexDescriptor>& try_s) {
         for (const VertexDescriptor& vd : try_s)
@@ -1094,7 +1084,7 @@ std::vector<VertexDescriptor> // maybe set or vector? there could be more than
     else
     {
         logging::fatal() << "ERROR NO END EVENT FOUND !";
-        throw - 1;
+        throw - 1; //TODO
     }
 
     return { update_evt };
@@ -1124,11 +1114,6 @@ can_update_end_event(Graph& graph, const std::vector<VertexDescriptor>& end_evts
     return can_update_end_event(pgroup, end_evts, pivot);
 }
 
-/**
- * TODO: Implement some kind of `find_end_event` function
- * to find the end_event we can eliminate from our view.
- * This also makes the existence of the `sorted_syncs` vector waste.
- */
 template <typename Graph, typename VertexDescriptor>
 void
 process_sets(Graph& graph, map_view_t<VertexDescriptor> map_view,
@@ -1167,24 +1152,8 @@ merge_sets_impl(Graph& graph, set_map_t<VertexDescriptor>& set_map)
 {
     set_container_t<VertexDescriptor> merged_sets;
     auto map_view = make_mapview(set_map);
-
     assert(map_view.size() == set_map.size());
-
     process_sets(graph, map_view, merged_sets);
-
-    logging::debug() << "Resulting Sets:\n"
-                     << "raw size: " << merged_sets.size();
-
-    // remove empty sets
-    remove_empty_sets(merged_sets);
-
-    logging::debug() << "w/o empty sets: " << merged_sets.size();
-
-    // sort and remove duplicates
-    std::sort(merged_sets.begin(), merged_sets.end());
-    merged_sets.erase(std::unique(merged_sets.begin(), merged_sets.end()), merged_sets.end());
-
-    logging::debug() << "unique sets: " << merged_sets.size();
 
     return merged_sets;
 }
@@ -1247,8 +1216,6 @@ merge_sets_impl_old(Graph& graph, set_map_t<VertexDescriptor>& set_map,
 } // namespace rabbitxx::detail
 
 template <typename Graph, typename VertexDescriptor>
-// TODO: some sort of set_type should be encoded in the SetMap type or provided
-// as general type-alias
 set_container_t<VertexDescriptor>
 merge_sets(Graph& graph, set_map_t<VertexDescriptor>& set_map)
 {
@@ -1287,7 +1254,14 @@ find_cio_sets(Graph& graph)
 
     map_t sets_per_process = cio_sets_per_process(graph);
     auto merged_sets = merge_sets(graph, sets_per_process);
+    logging::debug() << "Resulting Sets:\n" << "raw size: " << merged_sets.size();
+    // remove empty sets
     remove_empty_sets(merged_sets);
+    logging::debug() << "w/o empty sets: " << merged_sets.size();
+    // sort and remove duplicates
+    std::sort(merged_sets.begin(), merged_sets.end());
+    merged_sets.erase(std::unique(merged_sets.begin(), merged_sets.end()), merged_sets.end());
+    logging::debug() << "unique sets: " << merged_sets.size();
 
     return merged_sets;
 }
