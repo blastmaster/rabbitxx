@@ -15,22 +15,21 @@
 namespace rabbitxx
 {
 
-// XXX: Set_State should be a private member of CIO_Set
-enum class Set_State
+enum class State
 {
     Open,
     Closed
 };
 
 std::ostream&
-operator<<(std::ostream& os, const Set_State state)
+operator<<(std::ostream& os, const State& state)
 {
     switch (state)
     {
-        case Set_State::Open:
+        case State::Open:
             os << "Open";
             break;
-        case Set_State::Closed:
+        case State::Closed:
             os << "Closed";
             break;
     }
@@ -53,7 +52,7 @@ public:
 
     CIO_Set() = default;
 
-    CIO_Set(const value_type& start_event) : start_evt_(start_event), state_(Set_State::Open)
+    CIO_Set(const value_type& start_event) : start_evt_(start_event), state_(State::Open)
     {
     }
 
@@ -89,7 +88,7 @@ public:
         std::copy(other_set.begin(), other_set.end(), std::inserter(set_, set_.begin()));
     }
 
-    Set_State state() const noexcept
+    State state() const noexcept
     {
         return state_;
     }
@@ -101,7 +100,7 @@ public:
 
     void close() noexcept
     {
-        state_ = Set_State::Closed;
+        state_ = State::Closed;
     }
 
     value_type start_event() const noexcept
@@ -177,7 +176,7 @@ public:
 
 private:
     value_type start_evt_ = std::numeric_limits<value_type>::max();
-    Set_State state_ = Set_State::Open;
+    State state_ = State::Open;
     boost::optional<value_type> end_evt_ = boost::none;
     value_type origin_end_ = std::numeric_limits<value_type>::max();
     set_t set_{};
@@ -218,8 +217,8 @@ using set_container_t = std::vector<set_t<VD>>;
 template <typename VD>
 using set_iter_t = typename set_container_t<VD>::iterator;
 
-template <typename V>
-using proc_map_t = std::map<std::uint64_t, V>;
+template <typename C>
+using proc_map_t = std::map<std::uint64_t, C>;
 
 // define map type for sets, mapping proc_id -> [ sets ]
 template <typename VD>
@@ -592,7 +591,7 @@ private:
 
     // template<typename Set>
     // TODO: use optional instead of trailing return type syntax
-    auto find_open_set_for(const std::uint64_t proc_id) -> typename Cont::mapped_type::value_type*
+    auto find_open_set_for(const std::uint64_t proc_id) -> typename Cont::mapped_type::value_type* // should be set_t<VD>*
     {
         if (set_cnt_ptr_->empty() || proc_id == std::numeric_limits<std::uint64_t>::max())
         {
@@ -601,7 +600,7 @@ private:
         auto it = std::find_if(set_cnt_ptr_->operator[](proc_id).begin(),
                                set_cnt_ptr_->operator[](proc_id).end(),
                                [](typename Cont::mapped_type::value_type& set) {
-                                   return Set_State::Open == set.state();
+                                    return State::Open == set.state();
                                });
         if (it == set_cnt_ptr_->operator[](proc_id).end())
         {
@@ -639,12 +638,16 @@ get_events_by_kind(Graph& graph, const std::vector<vertex_kind>& kinds)
     using vertex_descriptor = typename Graph::vertex_descriptor;
     const auto vp = graph.vertices();
     std::vector<vertex_descriptor> events;
-    std::copy_if(vp.first, vp.second, std::back_inserter(events), [&kinds, &graph](
-                                                                      const vertex_descriptor& vd) {
-        return std::any_of(kinds.begin(), kinds.end(), [&vd, &graph](const vertex_kind& kind) {
-            return graph[vd].type == kind;
-        });
-    });
+    std::copy_if(vp.first, vp.second, std::back_inserter(events),
+            [&kinds, &graph](const vertex_descriptor& vd)
+            {
+                return std::any_of(kinds.begin(), kinds.end(),
+                        [&vd, &graph](const vertex_kind& kind)
+                        {
+                            return graph[vd].type == kind;
+
+                        });
+            });
     return events;
 }
 
