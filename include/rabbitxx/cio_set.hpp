@@ -265,6 +265,8 @@ get_in_going_syncs(Vertex v, Graph& g)
 /**
  * @brief Find the root-Event of a given Synchronization Event.
  *
+ * @tparam Vertex The vertex-descriptor-type
+ * @tparam Graph The graph-type
  * @param v the vertex descriptor of a synchronization-event.
  * @param g a reference to the graph.
  *
@@ -369,6 +371,8 @@ num_procs(Graph& graph) noexcept
  *
  * @param sevt: Reference to a synchronization event.
  * @return Vector of process ids, which are involved in the synchronization.
+ * If the sync-event is wether a collective nor a peer2peer event the returned
+ * vector is empty.
  */
 std::vector<std::uint64_t>
 procs_in_sync_involved(const sync_event_property& sevt)
@@ -1199,7 +1203,6 @@ template <typename Graph, typename VertexDescriptor>
 set_container_t<VertexDescriptor>
 merge_sets(Graph& graph, set_map_t<VertexDescriptor>& set_map)
 {
-    using vertex_descriptor = VertexDescriptor;
     return detail::merge_sets_impl(graph, set_map);
 }
 

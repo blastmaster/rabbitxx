@@ -81,7 +81,7 @@ namespace rabbitxx { namespace graph {
             const auto& vt = synthetic_event_property("End", otf2::chrono::time_point::max());
             const auto end_descriptor = graph_->add_vertex(otf2_trace_event(vt));
             //get last event from each location
-            for (const auto loc : locations_) {
+            for (const auto& loc : locations_) {
                 const auto last_proc_event = edge_points_.front(loc);
                 graph_->add_edge(last_proc_event, end_descriptor);
             }
@@ -753,7 +753,7 @@ namespace rabbitxx { namespace graph {
     {
         using graph_type = rabbitxx::SimpleIoGraph;
 
-        auto operator()(const std::string trace_file, boost::mpi::communicator& comm) const
+        auto operator()(const std::string& trace_file, boost::mpi::communicator& comm) const
         {
             otf2::reader::reader trc_reader(trace_file);
             auto num_locations = trc_reader.num_locations();
@@ -768,7 +768,7 @@ namespace rabbitxx { namespace graph {
         }
 
         // non-mpi version, overload without communicatior
-        auto operator()(const std::string trace_file) const
+        auto operator()(const std::string& trace_file) const
         {
             otf2::reader::reader trc_reader(trace_file);
             auto num_locations = trc_reader.num_locations();

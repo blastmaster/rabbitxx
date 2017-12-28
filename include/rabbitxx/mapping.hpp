@@ -117,7 +117,7 @@ namespace rabbitxx {
                 return it->second;
             }
 
-            const auto local_locations(int rank) const
+            auto local_locations(int rank) const
             {
                 return rank_to_loc_.equal_range(rank);
             }
