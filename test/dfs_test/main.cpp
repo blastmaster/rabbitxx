@@ -62,7 +62,11 @@ class dfs_test_visitor : public boost::default_dfs_visitor
         template<typename Edge, typename Graph>
         void tree_edge(Edge e, const Graph& g) const
         {
-            logging::debug() << "tree edge: ";
+            const auto src_vd = source(e, g);
+            const auto trg_vd = target(e, g);
+            logging::debug() << "tree edge from vertex #" << src_vd << " @ " << g[src_vd].id()
+                << " [" << g[src_vd].name() << "] -> to vertex #" << trg_vd << " @ " << g[trg_vd].id()
+                << " [" << g[trg_vd].name() << "]";
         }
 
         template<typename Edge, typename Graph>
@@ -74,7 +78,11 @@ class dfs_test_visitor : public boost::default_dfs_visitor
         template<typename Edge, typename Graph>
         void forward_or_cross_edge(Edge e, const Graph& g) const
         {
-            logging::debug() << "forward or cross edge: ";
+            const auto src_vd = source(e, g);
+            const auto trg_vd = target(e, g);
+            logging::debug() << "forward or cross edge from vertex #" << src_vd << " @ " << g[src_vd].id()
+                << " [" << g[src_vd].name() << "] -> to vertex #" << trg_vd << " @ " << g[trg_vd].id()
+                << " [" << g[trg_vd].name() << "]";
         }
 
         template<typename Vertex, typename Graph>
@@ -98,7 +106,10 @@ int main(int argc, char** argv)
     auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
     //dfs_print_visitor vis;
     dfs_test_visitor vis;
-    boost::depth_first_search(*g->get(), boost::visitor(vis));
+    std::vector<boost::default_color_type> color_map(g->num_vertices());
+    //boost::depth_first_search(*g->get(), boost::visitor(vis));
+    boost::depth_first_visit(*g->get(), vertex(0, *g->get()), vis, 
+            make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *g->get())));
 
     return 0;
 }

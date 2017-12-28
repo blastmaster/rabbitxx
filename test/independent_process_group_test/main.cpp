@@ -9,6 +9,21 @@
 
 using rabbitxx::logging;
 
+template <typename VertexDescriptor>
+void
+dump_set_map(const rabbitxx::set_map_t<VertexDescriptor>& set_map)
+{
+    logging::debug() << "DUMP SET MAP end events";
+    for (const auto& proc_set : set_map)
+    {
+        std::cout << "Process [" << proc_set.first << "] ";
+        std::for_each(proc_set.second.begin(), proc_set.second.end(),
+            [](const auto& set) { std::cout << set.end_event() << ", "; });
+        std::cout << "\n";
+    }
+}
+
+
 TEST_CASE("[unqiue pairs]", "Generate all unqiue pairs of a sequence of numbers")
 {
     std::vector<int> numbers {
@@ -30,10 +45,10 @@ TEST_CASE("[ec]", "Find independent process groups")
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph.get());
     logging::debug() << "BEFORE SORTING!";
-    rabbitxx::dump_set_map(cio_sets_pp);
+    dump_set_map(cio_sets_pp);
     sort_set_map_chrono(*graph.get(), cio_sets_pp);
     logging::debug() << "AFTER SORTING!";
-    rabbitxx::dump_set_map(cio_sets_pp);
+    dump_set_map(cio_sets_pp);
 }
 
 TEST_CASE("[trace-own6-advanced]", "Find independent process groups")
@@ -42,10 +57,10 @@ TEST_CASE("[trace-own6-advanced]", "Find independent process groups")
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph.get());
     logging::debug() << "BEFORE SORTING!";
-    rabbitxx::dump_set_map(cio_sets_pp);
+    dump_set_map(cio_sets_pp);
     rabbitxx::sort_set_map_chrono(*graph.get(), cio_sets_pp);
     logging::debug() << "AFTER SORTING!";
-    rabbitxx::dump_set_map(cio_sets_pp);
+    dump_set_map(cio_sets_pp);
 
     // test timestamps for event (42, 31) and (39, 17)
     const auto t42 = graph->operator[](42).timestamp();

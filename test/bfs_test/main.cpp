@@ -14,16 +14,18 @@ public:
     template<typename Vertex, typename Graph>
     void discover_vertex(Vertex v, const Graph& g) const
     {
-        if (g[v].type == rabbitxx::vertex_kind::sync_event)
-        {
-            auto vertex = boost::get<rabbitxx::sync_event_property>(g[v].property);
-            std::cout << "Descriptor: " << v << " process: " << vertex.proc_id << " name: " << vertex.region_name << "\n";
-        }
-        else if (g[v].type == rabbitxx::vertex_kind::io_event)
-        {
-            auto vertex = boost::get<rabbitxx::io_event_property>(g[v].property);
-            std::cout << "Descriptor: " << v << " process: " << vertex.proc_id << " name: " << vertex.region_name << "\n";
-        }
+        logging::debug() << "VERTEX # " << v << " " << g[v].name() << " @ " << g[v].id();
+    }
+
+    template<typename Edge, typename Graph>
+    void examine_edge(Edge e, const Graph& g)
+    {
+        const auto src_v = source(e,g);
+        const auto trg_v = target(e,g);
+
+        logging::debug() << "EDGE from " << g[src_v].name() << " @ " << g[src_v].id()
+            << " -> " << g[trg_v].name() << " @ " << g[trg_v].id();
+
     }
 };
 
