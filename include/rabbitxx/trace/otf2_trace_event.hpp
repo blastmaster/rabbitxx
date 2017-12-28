@@ -300,10 +300,12 @@ namespace rabbitxx {
             if (comm_data.has_root()) {
                 sstr << "[Root rank]: " << comm_data.root() << "\n";
             }
-            sstr << "[Members]: ";
-            std::copy(comm_data.members().begin(),
-                      comm_data.members().end(),
-                      std::ostream_iterator<std::uint64_t>(sstr, ", "));
+            //FIXME
+            //sstr << "[Members]: ";
+            //std::copy(comm_data.members().begin(),
+                      //comm_data.members().end(),
+                      //std::ostream_iterator<std::uint64_t>(sstr, ", "));
+            sstr << "[Member Size]: " << comm_data.members().size();
             return sstr.str();
         }
 
@@ -354,6 +356,12 @@ namespace rabbitxx {
         return os;
     }
 
+    /**
+     * TODO:
+     * Could it be clever to inherit from boost::variant<io_event_property, sync_event_property> ???
+     * This should provide access to the variant api without extra effort and we could extend the class
+     * for the vertex_kind functionality?
+     */
     struct otf2_trace_event
     {
         using vertex_property = boost::variant<io_event_property,

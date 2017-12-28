@@ -434,9 +434,19 @@ namespace rabbitxx { namespace graph {
                 }
 
                 members = evt.comm().self_group().members();
+                logging::debug() << "[" << region_name << "] choose evt.comm().self_group().members(): "
+                    << "size: " << members.size() << " [comm name:] " << evt.comm().name()
+                    << " [group name:] " << evt.comm().self_group().name()
+                    << " [group type:] " << to_string(evt.comm().self_group().type())
+                    << " [group size:] " << evt.comm().self_group().size();
             }
             else {
                 members = evt.comm().group().members();
+                logging::debug() << "[" << region_name <<"] choose evt.comm().group().members(): "
+                    << "size: " << members.size() << " [comm name:] " << evt.comm().name()
+                    << " [group name:] " << evt.comm().group().name()
+                    << " [group type:] " << to_string(evt.comm().group().type())
+                    << " [group size:] " << evt.comm().group().size();
             }
 
             assert(members.size() != 0); // getting sure!
@@ -628,9 +638,11 @@ namespace rabbitxx { namespace graph {
                                                            return sync_kind == sync_event_kind::collective;
                                                        });
                                 if (it == events_[m].end()) {
-                                    logging::fatal() << "cannot find corresponding collective event for member: " << m << vertex;
+                                    logging::fatal() << "cannot find corresponding collective event for member: "
+                                        << m << "\n" << vertex;
                                     return;
                                 }
+                                //TODO: ist gefundene collective auch member der aktuellen
                                 graph_->add_edge(v, *it);
                                 events_[m].erase(it);
                             }
@@ -655,9 +667,13 @@ namespace rabbitxx { namespace graph {
                                             }
                                             const auto p2pevt = boost::get<peer2peer>(sevt.op_data);
                                             if (vertex.proc_id == p2pevt.remote_process()) {
+                                                //logging::debug() << "proc id: " << vertex.proc_id << " remote proc: " << p2pevt.remote_process();
+                                                //logging::debug() << "Selected p2p events: "  << vertex  << " -> "<<  sevt;
                                                 return true;
                                             }
+                                            //logging::debug() << "proc id: " << vertex.proc_id << " remote proc: " << p2pevt.remote_process();
                                             return false;
+                                            //return sevt.comm_kind == sync_event_kind::p2p;
                                          });
                             if (it == events_[remote].end()) {
                                 logging::fatal() << "cannot find corresponding p2p event";

@@ -779,6 +779,10 @@ classify_sync(Graph& g, const sync_event_property& sevt)
     return np == inv ? sync_scope::Global : sync_scope::Local;
 }
 
+// what should be returned in the case that `v` is referencing an I/O-Event?
+// One option might be to throw an exception.
+// Another option might be to introduce a `sync_scope::None` enumeration. On
+// which can be checked outside.
 template <typename Graph, typename Vertex>
 sync_scope
 classify_sync(Graph& g, const Vertex& v)
