@@ -470,21 +470,21 @@ namespace rabbitxx {
                 if (vertex.type == vertex_kind::io_event) {
                     const auto property = boost::get<io_event_property>(vertex.property);
                     const std::string label_str = build_label(property.region_name, property.proc_id);
-                    os << "[label=\"" << "# " << vd << label_str << "\""
+                    os << R"([label=")" << "# " << vd << label_str << R"(")"
                         << ", color=red"
                         << "]";
                 }
                 else if (vertex.type == vertex_kind::sync_event) {
                     const auto property = boost::get<sync_event_property>(vertex.property);
                     const std::string label_str = build_label(property.region_name, property.proc_id);
-                    os << "[label=\"" << "# " << vd << label_str << "\""
+                    os << R"([label=")" << "# " << vd << label_str << R"(")"
                         << ", color=green"
                         << "]";
                 }
                 else if (vertex.type == vertex_kind::synthetic) {
                         logging::debug() << "Draw synthetic node!";
                     const auto property = boost::get<synthetic_event_property>(vertex.property);
-                    os << "[label=\"" << property.name << "\", color=gray]";
+                    os << R"([label=")" << property.name << R"(", color=gray])";
                 }
                 else {
                     logging::fatal() << "Unrecognized vertex property for graphviz output";
@@ -520,7 +520,7 @@ namespace rabbitxx {
                         << "shape=rect;\n"
                         << "style=filled;\n"
                         << "color=" << color << ";\n"
-                        << "label=\"" << "set_" << s_cnt << "\";\n";
+                        << R"(label=")" << "set_" << s_cnt << "\";\n";
 
                     out << set.start_event() << " -> { ";
                     std::copy(set.begin(), set.end(),
