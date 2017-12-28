@@ -340,10 +340,10 @@ typename Graph::vertex_descriptor
 find_root(Graph& graph)
 {
     const auto vertices = graph.vertices();
-    const auto root = std::find_if(vertices.first, vertices.second,
-                                   [&graph](const typename Graph::vertex_descriptor& vd) {
-                                       return graph[vd].type == vertex_kind::synthetic;
-                                   });
+    const auto root = std::find_if(
+        vertices.first, vertices.second, [&graph](const typename Graph::vertex_descriptor& vd) {
+            return graph[vd].type == vertex_kind::synthetic;
+        });
     return *root;
 }
 
@@ -440,8 +440,8 @@ bool
 is_adjacent_event_of(const Vertex of_v, const Vertex cur_v, const Graph& g)
 {
     const auto adjacent_r = boost::adjacent_vertices(cur_v, g);
-    return std::any_of(adjacent_r.first, adjacent_r.second,
-                       [&of_v](const Vertex vd) { return vd == of_v; });
+    return std::any_of(
+        adjacent_r.first, adjacent_r.second, [&of_v](const Vertex vd) { return vd == of_v; });
 }
 
 template <typename Cont>
@@ -466,7 +466,7 @@ public:
                 return;
             }
             else if (vertex_kind::synthetic == g[v].type)
-            {   // synthetic events have
+            { // synthetic events have
                 // no pid so there is
                 // nothing to do here.
                 logging::debug() << "Synthetic Event ... doing nothing....";
@@ -493,7 +493,7 @@ public:
                                  << g[v].name() << " into current set";
             }
             else if (vertex_kind::synthetic == g[v].type)
-            {   // set should be already closed during examination
+            { // set should be already closed during examination
                 // of the edges!
                 logging::fatal() << "Synthetic Event ... THIS SHOULD NEVER HAPPEN";
                 return;
@@ -507,7 +507,7 @@ public:
                 set_ptr->set_end_event(sync_root, v);
                 const auto out_dgr = boost::out_degree(v, g);
                 if (out_dgr > 0)
-                {   // just create a new set if we are not the last
+                { // just create a new set if we are not the last
                     // event, here it could be maybe
                     // better to have a look at our adjacent vertices
                     logging::debug() << "create a new set for pid: " << cur_pid;
@@ -597,10 +597,8 @@ private:
             return nullptr;
         }
         auto it = std::find_if(set_cnt_ptr_->operator[](proc_id).begin(),
-                               set_cnt_ptr_->operator[](proc_id).end(),
-                               [](typename Cont::mapped_type::value_type& set) {
-                                    return State::Open == set.state();
-                               });
+            set_cnt_ptr_->operator[](proc_id).end(),
+            [](typename Cont::mapped_type::value_type& set) { return State::Open == set.state(); });
         if (it == set_cnt_ptr_->operator[](proc_id).end())
         {
             return nullptr;
@@ -616,8 +614,8 @@ template <typename VertexDescriptor>
 void
 remove_empty_sets(set_map_t<VertexDescriptor>& sets)
 {
-    std::for_each(sets.begin(), sets.end(),
-                  [](auto& proc_sets) { remove_empty_sets(proc_sets.second); });
+    std::for_each(
+        sets.begin(), sets.end(), [](auto& proc_sets) { remove_empty_sets(proc_sets.second); });
 }
 
 template <typename VertexDescriptor>
@@ -638,15 +636,12 @@ get_events_by_kind(Graph& graph, const std::vector<vertex_kind>& kinds)
     const auto vp = graph.vertices();
     std::vector<vertex_descriptor> events;
     std::copy_if(vp.first, vp.second, std::back_inserter(events),
-            [&kinds, &graph](const vertex_descriptor& vd)
-            {
-                return std::any_of(kinds.begin(), kinds.end(),
-                        [&vd, &graph](const vertex_kind& kind)
-                        {
-                            return graph[vd].type == kind;
+        [&kinds, &graph](const vertex_descriptor& vd) {
+            return std::any_of(kinds.begin(), kinds.end(), [&vd, &graph](const vertex_kind& kind) {
+                return graph[vd].type == kind;
 
-                        });
             });
+        });
     return events;
 }
 
@@ -661,15 +656,15 @@ sort_sets_by_end_event(set_map_t<VertexDescriptor>& cio_sets)
 {
     std::for_each(cio_sets.begin(), cio_sets.end(), [](auto& kvp_ps) {
         bool sorted = std::is_sorted(std::begin(kvp_ps.second), std::end(kvp_ps.second),
-                                     [](const auto& set_a, const auto& set_b) {
-                                         return set_a.end_event() < set_b.end_event();
-                                     });
+            [](const auto& set_a, const auto& set_b) {
+                return set_a.end_event() < set_b.end_event();
+            });
         if (!sorted)
         {
             std::sort(std::begin(kvp_ps.second), std::end(kvp_ps.second),
-                      [](const auto& set_a, const auto& set_b) {
-                          return set_a.end_event() < set_b.end_event();
-                      });
+                [](const auto& set_a, const auto& set_b) {
+                    return set_a.end_event() < set_b.end_event();
+                });
         }
     });
 }
@@ -686,7 +681,7 @@ void
 sort_set_map_chrono(Graph& graph, rabbitxx::set_map_t<VertexDescriptor>& set_map)
 {
     auto chrono_cmp = [&graph](const rabbitxx::set_t<VertexDescriptor>& set_a,
-                               const rabbitxx::set_t<VertexDescriptor>& set_b) {
+        const rabbitxx::set_t<VertexDescriptor>& set_b) {
         const auto vd_a = set_a.origin();
         const auto vd_b = set_b.origin();
         assert(vd_a != std::numeric_limits<decltype(vd_a)>::max());
@@ -696,7 +691,7 @@ sort_set_map_chrono(Graph& graph, rabbitxx::set_map_t<VertexDescriptor>& set_map
         return t_a < t_b;
     };
 
-    for (auto& proc_sets : set_map) // std::for_each
+    for (auto& proc_sets : set_map)
     {
         std::sort(proc_sets.second.begin(), proc_sets.second.end(), chrono_cmp);
     }
@@ -713,16 +708,16 @@ collect_root_sync_events(Graph& graph)
         get_events_by_kind(graph, { vertex_kind::sync_event, vertex_kind::synthetic });
     // store the root-sync-event in result vector
     std::transform(sync_events.begin(), sync_events.end(), std::back_inserter(result),
-                   [&graph](const vertex_descriptor& vd) {
-                       if (graph[vd].type == vertex_kind::sync_event)
-                       {
-                           return root_of_sync(vd, *graph.get());
-                       }
-                       else
-                       {
-                           return vd;
-                       }
-                   });
+        [&graph](const vertex_descriptor& vd) {
+            if (graph[vd].type == vertex_kind::sync_event)
+            {
+                return root_of_sync(vd, *graph.get());
+            }
+            else
+            {
+                return vd;
+            }
+        });
     // sort the events if necessary
     if (!std::is_sorted(result.begin(), result.end()))
     {
@@ -913,7 +908,7 @@ pg_group(Graph& graph, const Vertex& vd)
 template <typename Graph, typename VertexDescriptor>
 std::vector<VertexDescriptor>
 do_merge(Graph& graph, const map_view_t<VertexDescriptor>& map_view,
-         std::vector<set_t<VertexDescriptor>>& merged_sets)
+    std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
     std::vector<VertexDescriptor> end_evts;
     set_t<VertexDescriptor> cur_s;
@@ -926,8 +921,8 @@ do_merge(Graph& graph, const map_view_t<VertexDescriptor>& map_view,
 
     // JUST FOR DEBUGGING
     std::cout << "END-EVENTS:\n";
-    std::copy(end_evts.begin(), end_evts.end(),
-              std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
+    std::copy(
+        end_evts.begin(), end_evts.end(), std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
     std::cout << "\n";
 
     const auto e_evts = find_end_events_to_update(graph, end_evts);
@@ -1009,11 +1004,11 @@ find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
 
     // not global case! Remove all global syncs;
     end_evts.erase(std::remove_if(end_evts.begin(), end_evts.end(),
-                                  [&graph](const auto& evt) {
-                                      const auto scope = classify_sync(graph, evt);
-                                      return scope == sync_scope::Global;
-                                  }),
-                   end_evts.end());
+                       [&graph](const auto& evt) {
+                           const auto scope = classify_sync(graph, evt);
+                           return scope == sync_scope::Global;
+                       }),
+        end_evts.end());
 
     if (end_evts.size() == 1)
     {
@@ -1034,8 +1029,8 @@ find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
         const auto pg2 = pg_group(graph, sync_p.second);
 
         std::vector<std::uint64_t> intersection_procs;
-        std::set_intersection(pg1.begin(), pg1.end(), pg2.begin(), pg2.end(),
-                              std::back_inserter(intersection_procs));
+        std::set_intersection(
+            pg1.begin(), pg1.end(), pg2.begin(), pg2.end(), std::back_inserter(intersection_procs));
 
         if (intersection_procs.empty())
         {
@@ -1051,12 +1046,12 @@ find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
             dependent_syncs.insert(sync_p.first);
             dependent_syncs.insert(sync_p.second);
             std::copy(intersection_procs.begin(), intersection_procs.end(),
-                      std::back_inserter(overlapping_procs));
+                std::back_inserter(overlapping_procs));
         }
     }
     logging::debug() << "OVERLAPPING PROCS:";
     std::copy(overlapping_procs.begin(), overlapping_procs.end(),
-              std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
+        std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
     std::cout << "\n";
 
     VertexDescriptor update_evt;
@@ -1090,25 +1085,20 @@ find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
     return { update_evt };
 }
 
-{
-}
-
 template <typename VertexDescriptor>
-// inline?
 bool
 can_update_end_event(const process_group_t& pgroup, const std::vector<VertexDescriptor>& end_evts,
-                     const VertexDescriptor& pivot)
+    const VertexDescriptor& pivot)
 {
-    return std::all_of(pgroup.begin(), pgroup.end(), [&end_evts, &pivot](const std::uint64_t pid) {
-        return end_evts[pid] == pivot;
-    });
+    return std::all_of(pgroup.begin(), pgroup.end(),
+        [&end_evts, &pivot](const std::uint64_t pid) { return end_evts[pid] == pivot; });
 }
 
 template <typename Graph, typename VertexDescriptor>
 // inline?
 bool
-can_update_end_event(Graph& graph, const std::vector<VertexDescriptor>& end_evts,
-                     const VertexDescriptor& pivot)
+can_update_end_event(
+    Graph& graph, const std::vector<VertexDescriptor>& end_evts, const VertexDescriptor& pivot)
 {
     const auto pgroup = pg_group(graph, pivot);
     return can_update_end_event(pgroup, end_evts, pivot);
@@ -1117,13 +1107,12 @@ can_update_end_event(Graph& graph, const std::vector<VertexDescriptor>& end_evts
 template <typename Graph, typename VertexDescriptor>
 void
 process_sets(Graph& graph, map_view_t<VertexDescriptor> map_view,
-             std::vector<set_t<VertexDescriptor>>& merged_sets)
+    std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
     using vertex_descriptor = VertexDescriptor;
 
-    bool on_end = std::all_of(map_view.begin(), map_view.end(), [](const auto& p_iters) {
-        return p_iters.second.first == p_iters.second.second;
-    });
+    bool on_end = std::all_of(map_view.begin(), map_view.end(),
+        [](const auto& p_iters) { return p_iters.second.first == p_iters.second.second; });
     if (on_end)
     {
         logging::debug() << "on end return!";
@@ -1137,9 +1126,6 @@ process_sets(Graph& graph, map_view_t<VertexDescriptor> map_view,
         logging::debug() << "Choose end-event: " << end_evt << " -> recursive update!";
         const auto lpg = pg_group(graph, end_evt);
         process_sets(graph, update_view<vertex_descriptor>(lpg, map_view), merged_sets);
-    }
-}
-
     }
 }
 
@@ -1161,37 +1147,37 @@ merge_sets_impl(Graph& graph, set_map_t<VertexDescriptor>& set_map)
 template <typename Graph, typename VertexDescriptor>
 inline set_container_t<VertexDescriptor>
 merge_sets_impl_old(Graph& graph, set_map_t<VertexDescriptor>& set_map,
-                    const std::vector<VertexDescriptor>& sorted_sync_evts)
+    const std::vector<VertexDescriptor>& sorted_sync_evts)
 {
     set_container_t<VertexDescriptor> merged_sets;
     unsigned int count{ 0 };
 
     while (!std::all_of(set_map.begin(), set_map.end(),
-                        [](const auto& proc_sets) { return proc_sets.second.empty(); }))
+        [](const auto& proc_sets) { return proc_sets.second.empty(); }))
     {
         std::vector<VertexDescriptor> end_evts;
         set_t<VertexDescriptor> cur_set;
         // TODO: not sure if this is safe! Because we operating on a sequence but
         // for empty sets ther is no return! Maybe for-loop is better.
         std::transform(set_map.begin(), set_map.end(), std::back_inserter(end_evts),
-                       [&cur_set](const auto& proc_sets) {
-                           if (!proc_sets.second.empty())
-                           {
-                               const auto& first_set = proc_sets.second.front();
-                               cur_set.merge(first_set);
-                               return first_set.end_event().value();
-                           }
-                       });
+            [&cur_set](const auto& proc_sets) {
+                if (!proc_sets.second.empty())
+                {
+                    const auto& first_set = proc_sets.second.front();
+                    cur_set.merge(first_set);
+                    return first_set.end_event().value();
+                }
+            });
 
         std::cout << "End-Events in iteration: " << count << "\n";
         std::copy(end_evts.begin(), end_evts.end(),
-                  std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
+            std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
         std::cout << "\n";
 
         assert(set_map.size() == end_evts.size());
         // it points to first occurence in sorted_sync_evts
-        auto first = std::find_first_of(sorted_sync_evts.begin(), sorted_sync_evts.end(),
-                                        end_evts.begin(), end_evts.end());
+        auto first = std::find_first_of(
+            sorted_sync_evts.begin(), sorted_sync_evts.end(), end_evts.begin(), end_evts.end());
 
         logging::debug() << "iteration: " << count << " first end-event of set: " << *first;
         // the first end event ends the set.
@@ -1237,8 +1223,7 @@ cio_sets_per_process(Graph& graph)
     auto shared_set_container(std::make_shared<map_t>());
     CIO_Visitor<map_t> vis(shared_set_container);
     std::vector<boost::default_color_type> color_map(graph.num_vertices());
-    boost::depth_first_visit(
-        *graph.get(), root, vis,
+    boost::depth_first_visit(*graph.get(), root, vis,
         make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *graph.get())));
     sort_set_map_chrono(graph, *shared_set_container.get());
 
