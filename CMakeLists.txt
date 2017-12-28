@@ -9,9 +9,16 @@ include(CTest)
 
 option(BUILD_TESTS "build tests" ON)
 option(BUILD_MODULES "build modules" ON)
+option(BUILD_DEBUG "enable debug mode" ON)
 
 set(RABBITXX_CXX_FLAGS "-Wall -pedantic -Wextra -std=c++14")
 set(RABBITXX_C_FLAGS "-Wall -pedantic -Wextra")
+
+if(${BUILD_DEBUG})
+    set(RABBITXX_CXX_FLAGS "${RABBITXX_CXX_FLAGS} -ggdb -O0")
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    set(RABBITXX_C_FLAGS "${RABBITXX_C_FLAGS} -ggdb -O0")
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
