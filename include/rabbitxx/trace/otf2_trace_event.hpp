@@ -397,18 +397,17 @@ namespace rabbitxx {
                 const auto& p = boost::get<io_event_property>(property);
                 return p.proc_id;
             }
-            else if (type == vertex_kind::sync_event) {
+            if (type == vertex_kind::sync_event) {
                 const auto& p = boost::get<sync_event_property>(property);
                 return p.proc_id;
             }
-            else if (type == vertex_kind::synthetic) {
+            if (type == vertex_kind::synthetic) {
                 logging::fatal() << "Synthetic Event has no process id return INT MAX.";
                 return std::numeric_limits<std::uint64_t>::max();
             }
-            else {
-                logging::fatal() << "This should not happen! property type seems wether of type io_event_property neither of type sync_event_property.";
-                return std::numeric_limits<std::uint64_t>::max();
-            }
+
+            logging::fatal() << "This should not happen! property type seems wether of type io_event_property neither of type sync_event_property.";
+            return std::numeric_limits<std::uint64_t>::max();
         }
 
         std::string name() const
@@ -417,18 +416,16 @@ namespace rabbitxx {
                 const auto& p = boost::get<io_event_property>(property);
                 return p.region_name;
             }
-            else if (type == vertex_kind::sync_event) {
+            if (type == vertex_kind::sync_event) {
                 const auto& p = boost::get<sync_event_property>(property);
                 return p.region_name;
             }
-            else if (type == vertex_kind::synthetic) {
+            if (type == vertex_kind::synthetic) {
                 const auto& p = boost::get<synthetic_event_property>(property);
                 return p.name;
             }
-            else {
-                logging::fatal() << "This should not happen! property type seems wether of type io_event_property neither of type sync_event_property.";
-                return "";
-            }
+            logging::fatal() << "This should not happen! property type seems wether of type io_event_property neither of type sync_event_property.";
+            return "";
         }
 
         otf2::chrono::time_point timestamp() const
@@ -437,18 +434,16 @@ namespace rabbitxx {
                 const auto& p = boost::get<io_event_property>(property);
                 return p.timestamp;
             }
-            else if (type == vertex_kind::sync_event) {
+            if (type == vertex_kind::sync_event) {
                 const auto& p = boost::get<sync_event_property>(property);
                 return p.timestamp;
             }
-            else if (type == vertex_kind::synthetic) {
+            if (type == vertex_kind::synthetic) {
                 const auto& p = boost::get<synthetic_event_property>(property);
                 return p.timestamp;
             }
-            else {
-                logging::fatal() << "ERROR invalid vertex_kind! Return MAX";
-                return otf2::chrono::time_point::max();
-            }
+            logging::fatal() << "ERROR invalid vertex_kind! Return MAX";
+            return otf2::chrono::time_point::max();
         }
 
     };

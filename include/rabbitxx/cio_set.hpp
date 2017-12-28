@@ -380,11 +380,12 @@ procs_in_sync_involved(const sync_event_property& sevt)
         const auto coll_evt = boost::get<collective>(sevt.op_data);
         return coll_evt.members();
     }
-    else if (sevt.comm_kind == sync_event_kind::p2p)
+    if (sevt.comm_kind == sync_event_kind::p2p)
     {
         const auto p2p_evt = boost::get<peer2peer>(sevt.op_data);
         return { sevt.proc_id, p2p_evt.remote_process() };
     }
+    return {};
 }
 
 // template<typename Graph, typename VertexDescriptor>
@@ -465,14 +466,14 @@ public:
                 logging::fatal() << "I/O Event ... THIS SHOULD NEVER HAPPEN";
                 return;
             }
-            else if (vertex_kind::synthetic == g[v].type)
+            if (vertex_kind::synthetic == g[v].type)
             { // synthetic events have
                 // no pid so there is
                 // nothing to do here.
                 logging::debug() << "Synthetic Event ... doing nothing....";
                 return;
             }
-            else if (vertex_kind::sync_event == g[v].type)
+            if (vertex_kind::sync_event == g[v].type)
             {
                 // we are on a sync event and have no open set
                 logging::debug() << "Sync Event " << v << " ... create a new set";
@@ -536,12 +537,9 @@ public:
                                     "This was not expected.";
                 return;
             }
-            else
-            {
-                logging::debug() << "on end for pid: " << src_pid << " close set";
-                set_ptr->close();
-                set_ptr->set_end_event(trg_vd, trg_vd);
-            }
+            logging::debug() << "on end for pid: " << src_pid << " close set";
+            set_ptr->close();
+            set_ptr->set_end_event(trg_vd, trg_vd);
         }
 
         // close current set if we reach a sync event next.
@@ -713,10 +711,7 @@ collect_root_sync_events(Graph& graph)
             {
                 return root_of_sync(vd, *graph.get());
             }
-            else
-            {
-                return vd;
-            }
+            return vd;
         });
     // sort the events if necessary
     if (!std::is_sorted(result.begin(), result.end()))
@@ -869,18 +864,15 @@ pg_group(Graph& graph, const Vertex& vd)
             logging::debug() << "Retrun process_group_t of LOCAL sync-event: " << vd;
             return process_group_t(inv_proc_v.begin(), inv_proc_v.end());
         }
-        else if (scope == sync_scope::Global)
+        if (scope == sync_scope::Global)
         {
             logging::debug() << "Retrun process_group_t of GLOBAL sync-event: " << vd;
             return process_group_t(inv_proc_v.begin(), inv_proc_v.end());
         }
-        else
-        {
-            logging::fatal() << "undefined sync_scope not handled! Event: " << vd;
-            throw - 1;
-        }
+        logging::fatal() << "undefined sync_scope not handled! Event: " << vd;
+        throw - 1; // TODO: proper error handling!
     }
-    else if (graph[vd].type == vertex_kind::synthetic)
+    if (graph[vd].type == vertex_kind::synthetic)
     {
         logging::debug() << "Retrun process_group_t of GLOBAL synthetic-event: " << vd;
         const auto np = num_procs(graph);
