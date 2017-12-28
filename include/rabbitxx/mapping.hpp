@@ -1,5 +1,5 @@
-#ifndef RABBITXX_MAPPING_HPP_
-#define _RABBITXX_MAPPING_HPP_
+#ifndef RABBITXX_MAPPING_HPP
+#define RABBITXX_MAPPING_HPP
 
 #include <rabbitxx/log.hpp>
 
