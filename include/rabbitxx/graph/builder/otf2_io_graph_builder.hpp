@@ -730,7 +730,7 @@ namespace rabbitxx { namespace graph {
 
         void definitions_done(const otf2::reader::reader& rdr) override
         {
-            for(auto location : rdr.locations()) {
+            for(const auto& location : rdr.locations()) {
                 //do rank mapping!
                 mapping_.register_location(location);
                 rdr.register_location(location);
