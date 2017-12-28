@@ -26,6 +26,7 @@ namespace rabbitxx {
         io_event,
         sync_event,
         synthetic,
+        none,
     };
 
     inline std::ostream& operator<<(std::ostream& os, const vertex_kind& kind)
@@ -38,6 +39,8 @@ namespace rabbitxx {
                 os << "sync event"; break;
             case vertex_kind::synthetic:
                 os << "synthetic"; break;
+            case vertex_kind::none:
+                os << "None"; break;
         }
         return os;
     }
@@ -126,20 +129,16 @@ namespace rabbitxx {
                                            io_creation_option_container,
                                            otf2::common::io_seek_option_type>;
 
-        std::uint64_t proc_id;
+        std::uint64_t proc_id = std::numeric_limits<std::uint64_t>::max();
         std::string filename;
         std::string region_name;
-        std::uint64_t request_size; // bytes requested by an I/O operation
-        std::uint64_t response_size; // bytes actually touched by this I/O operation
-        std::uint64_t offset;
+        std::uint64_t request_size {0}; // bytes requested by an I/O operation
+        std::uint64_t response_size {0}; // bytes actually touched by this I/O operation
+        std::uint64_t offset {0};
         option_type option;
         otf2::chrono::time_point timestamp;
 
-        io_event_property() noexcept
-        :  proc_id(std::numeric_limits<std::uint64_t>::max()), filename(""), region_name(""),
-            request_size(0), response_size(0),  offset(0), option(), timestamp()
-        {
-        }
+        io_event_property() = default;
 
         io_event_property(std::uint64_t process_id, const std::string& fname,
                             const std::string& reg_name, std::uint64_t req_size,
@@ -169,7 +168,7 @@ namespace rabbitxx {
         collective,
         p2p,
         async,
-        undef,
+        none,
     };
 
     class peer2peer
@@ -180,16 +179,12 @@ namespace rabbitxx {
             return sync_event_kind::p2p;
         }
 
-        peer2peer() noexcept
-        {
-        }
-
-        peer2peer(std::uint32_t rproc, std::uint32_t mtag, std::uint64_t mlength) noexcept
+        explicit peer2peer(std::uint32_t rproc, std::uint32_t mtag, std::uint64_t mlength) noexcept
         : remote_process_(rproc), msg_tag_(mtag), msg_length_(mlength)
         {
         }
 
-        peer2peer(std::uint32_t rproc, std::uint32_t mtag, std::uint64_t mlength, std::uint64_t reqid) noexcept
+        explicit peer2peer(std::uint32_t rproc, std::uint32_t mtag, std::uint64_t mlength, std::uint64_t reqid) noexcept
         : remote_process_(rproc), msg_tag_(mtag), msg_length_(mlength), request_id_(reqid)
         {
         }
@@ -216,9 +211,9 @@ namespace rabbitxx {
         }
 
     private:
-        std::uint32_t remote_process_;
-        std::uint32_t msg_tag_;
-        std::uint64_t msg_length_;
+        std::uint32_t remote_process_ = std::numeric_limits<std::uint32_t>::max();
+        std::uint32_t msg_tag_ = std::numeric_limits<std::uint32_t>::max();
+        std::uint64_t msg_length_ = std::numeric_limits<std::uint64_t>::max();
         boost::optional<std::uint64_t> request_id_;
     };
 
@@ -230,18 +225,14 @@ namespace rabbitxx {
             return sync_event_kind::collective;
         }
 
-        collective() noexcept
-        {
-        }
-
-        collective(std::uint32_t root, const std::vector<std::uint64_t>& members) noexcept
-        : root_rank_(root), members_(members)
+        collective(std::uint32_t root, std::vector<std::uint64_t> members) noexcept
+        : root_rank_(root), members_(std::move(members))
         {
         }
 
         //since not every collective operation does have an `root`
-        collective(const std::vector<std::uint64_t>& members) noexcept
-        : root_rank_(), members_(members)
+        collective(std::vector<std::uint64_t> members) noexcept
+        : members_(std::move(members))
         {
         }
 
@@ -261,7 +252,7 @@ namespace rabbitxx {
         }
 
     private:
-        std::uint32_t root_rank_;
+        std::uint32_t root_rank_ = std::numeric_limits<std::uint32_t>::max();
         std::vector<std::uint64_t> members_;
     };
 
@@ -269,22 +260,18 @@ namespace rabbitxx {
     {
         using comm_type = boost::variant<peer2peer, collective>;
 
-        std::uint64_t proc_id;
+        std::uint64_t proc_id = std::numeric_limits<std::uint64_t>::max();
         std::string region_name;
-        sync_event_kind comm_kind;
+        sync_event_kind comm_kind = sync_event_kind::none;
         comm_type op_data;
         otf2::chrono::time_point timestamp;
 
-        sync_event_property() noexcept : proc_id(std::numeric_limits<std::uint64_t>::max()), region_name(""), comm_kind(sync_event_kind::undef), op_data(), timestamp()
-        {
-        }
-
-        sync_event_property(std::uint64_t process_id, const std::string& rname, const peer2peer& op_dat, const otf2::chrono::time_point ts) noexcept
+        explicit sync_event_property(std::uint64_t process_id, const std::string& rname, const peer2peer& op_dat, const otf2::chrono::time_point ts) noexcept
         : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::p2p), op_data(op_dat), timestamp(ts)
         {
         }
 
-        sync_event_property(std::uint64_t process_id, const std::string& rname, const collective& op_dat, const otf2::chrono::time_point ts) noexcept
+        explicit sync_event_property(std::uint64_t process_id, const std::string& rname, const collective& op_dat, const otf2::chrono::time_point ts) noexcept
         : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::collective), op_data(op_dat), timestamp(ts)
         {
         }
@@ -367,26 +354,26 @@ namespace rabbitxx {
         using vertex_property = boost::variant<io_event_property,
                                                sync_event_property,
                                                synthetic_event_property>;
-        vertex_kind type;
+        vertex_kind type = vertex_kind::none;
         vertex_property property;
 
         otf2_trace_event() = default;
 
-        otf2_trace_event(const vertex_kind& t)  noexcept : type(t)
+        explicit otf2_trace_event(const vertex_kind& t)  noexcept : type(t)
         {
         }
 
-        otf2_trace_event(const io_event_property& io_p) noexcept
+        explicit otf2_trace_event(const io_event_property& io_p) noexcept
             : type(vertex_kind::io_event), property(io_p)
         {
         }
 
-        otf2_trace_event(const sync_event_property& sync_p) noexcept
+        explicit otf2_trace_event(const sync_event_property& sync_p) noexcept
             : type(vertex_kind::sync_event), property(sync_p)
         {
         }
 
-        otf2_trace_event(const synthetic_event_property& synthetic_p) noexcept
+        explicit otf2_trace_event(const synthetic_event_property& synthetic_p) noexcept
             : type(vertex_kind::synthetic), property(synthetic_p)
         {
         }
@@ -461,6 +448,9 @@ namespace rabbitxx {
             case vertex_kind::synthetic:
                 os << vertex.property;
                 break;
+            case vertex_kind::none:
+                os << "None";
+                break;
         }
         return os;
     }
@@ -517,7 +507,7 @@ namespace rabbitxx {
     class set_graph_writer
     {
         public:
-            set_graph_writer(const std::vector<Set>& set_v) : sets_(set_v) {}
+            explicit set_graph_writer(const std::vector<Set>& set_v) : sets_(set_v) {}
 
             void operator()(std::ostream& out)
             {

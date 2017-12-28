@@ -52,11 +52,9 @@ public:
 
     CIO_Set() = default;
 
-    CIO_Set(const value_type& start_event) : start_evt_(start_event), state_(State::Open)
+    explicit CIO_Set(const value_type& start_event) : start_evt_(start_event)
     {
     }
-
-    CIO_Set(const CIO_Set<value_type>& other) = default;
 
     // needed for std::unique
     bool operator==(const CIO_Set<value_type>& other)
@@ -449,7 +447,7 @@ template <typename Cont>
 class CIO_Visitor : public boost::default_dfs_visitor
 {
 public:
-    CIO_Visitor(std::shared_ptr<Cont>& sp) : set_cnt_ptr_(sp)
+    explicit CIO_Visitor(std::shared_ptr<Cont>& sp) : set_cnt_ptr_(sp)
     {
     }
 
