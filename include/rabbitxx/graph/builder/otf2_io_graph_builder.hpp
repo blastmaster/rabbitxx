@@ -764,7 +764,7 @@ namespace rabbitxx { namespace graph {
             trc_reader.read_events();
             comm.barrier();
 
-            return std::move(builder.graph());
+            return builder.graph();
         }
 
         // non-mpi version, overload without communicatior
@@ -777,7 +777,7 @@ namespace rabbitxx { namespace graph {
             trc_reader.read_definitions();
             trc_reader.read_events();
 
-            return std::move(builder.graph());
+            return builder.graph();
         }
 
     };
