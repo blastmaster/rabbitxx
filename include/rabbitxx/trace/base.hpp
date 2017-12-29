@@ -17,7 +17,7 @@ namespace rabbitxx { namespace trace {
             using otf2::reader::callback::definition;
 
             base() = default;
-            base(boost::mpi::communicator comm) noexcept
+            explicit base(boost::mpi::communicator comm) noexcept
             : rank_(comm.rank()), comm_(comm)
             {
             }
