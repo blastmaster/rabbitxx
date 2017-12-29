@@ -325,6 +325,9 @@ root_of_sync(Vertex v, Graph& g)
             }
         }
     }
+    // if we reached the end of function without finding a root vertex. THROw
+    logging::fatal() << "Error no root of sync-event could be found. This should never happen!";
+    throw -1; // FIXME: Do useful error-handling.
 }
 
 /**
