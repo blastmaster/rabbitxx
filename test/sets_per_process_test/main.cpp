@@ -10,7 +10,7 @@
 using rabbitxx::logging;
 
 template<typename Set>
-bool has_events(const std::vector<Set>& proc_sets, const std::vector<std::vector<int>>& exp_vals)
+bool has_events(const std::vector<Set>& proc_sets, const std::vector<std::vector<unsigned long>>& exp_vals)
 {
     // the number of sets should be equal
     REQUIRE(proc_sets.size() == exp_vals.size());

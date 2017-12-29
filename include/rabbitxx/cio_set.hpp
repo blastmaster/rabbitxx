@@ -954,10 +954,10 @@ generate_unique_pairs(const std::vector<VertexDescriptor>& v)
 {
     using vd_t = VertexDescriptor;
     std::vector<std::pair<vd_t, vd_t>> res;
-    for (vd_t i = 0; i < v.size(); ++i)
+    for (vd_t i = 0ul; i < v.size(); ++i)
     {
         vd_t t1 = v[i];
-        for (vd_t j = i + 1; j < v.size(); ++j)
+        for (vd_t j = i + 1ul; j < v.size(); ++j)
         {
             vd_t t2 = v[j];
             res.push_back(std::make_pair(t1, t2));
