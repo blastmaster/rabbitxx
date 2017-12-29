@@ -44,7 +44,7 @@ int main(int argc, char** argv)
     logging::debug() << "Try to read first vertex";
     std::cout << graph->operator[](0) << std::endl;
 
-    const auto out_degrees = get_out_degrees(*graph.get());
+    const auto out_degrees = get_out_degrees(*graph);
     for (const auto& out_d : out_degrees)
     {
         std::cout << out_d.second << " " << out_d.first << std::endl;

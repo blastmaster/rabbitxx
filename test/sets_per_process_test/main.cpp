@@ -41,7 +41,7 @@ TEST_CASE("trace-simple", "[create sets per process]")
     static const std::string trc_file {"/home/soeste/traces/dios/24.10/trace-simple/traces.otf2"};
 
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph.get());
+    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 2); // size of map is 2, because we have 2 processes
@@ -65,7 +65,7 @@ TEST_CASE("trace-own", "[create sets per process]")
 {
     static const std::string trc_file {"/home/soeste/traces/trace-own_trace-20171116_1704_50058813361150354/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph.get());
+    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 4); // size of map is 4, because we have 4 processes
@@ -121,7 +121,7 @@ TEST_CASE("[ec]", "[create sets per process]")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-edgecase/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph.get());
+    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 4); // size of map is 4, because we have 4 processes
@@ -182,7 +182,7 @@ TEST_CASE("[ech]", "[create sets per process]")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/edge_case_hard/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph.get());
+    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 4); // size of map is 4, because we have 4 processes
@@ -242,7 +242,7 @@ TEST_CASE("[trace-own-advanced6]", "Sets per Process")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph.get());
+    auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 6); // size of map is 6, because we have 6 processes

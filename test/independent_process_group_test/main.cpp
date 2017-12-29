@@ -43,10 +43,10 @@ TEST_CASE("[ec]", "Find independent process groups")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-edgecase/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph.get());
+    auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph);
     logging::debug() << "BEFORE SORTING!";
     dump_set_map(cio_sets_pp);
-    sort_set_map_chrono(*graph.get(), cio_sets_pp);
+    sort_set_map_chrono(*graph, cio_sets_pp);
     logging::debug() << "AFTER SORTING!";
     dump_set_map(cio_sets_pp);
 }
@@ -55,10 +55,10 @@ TEST_CASE("[trace-own6-advanced]", "Find independent process groups")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph.get());
+    auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph);
     logging::debug() << "BEFORE SORTING!";
     dump_set_map(cio_sets_pp);
-    rabbitxx::sort_set_map_chrono(*graph.get(), cio_sets_pp);
+    rabbitxx::sort_set_map_chrono(*graph, cio_sets_pp);
     logging::debug() << "AFTER SORTING!";
     dump_set_map(cio_sets_pp);
 

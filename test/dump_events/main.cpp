@@ -47,11 +47,11 @@ int main(int argc, char** argv)
     if (argc == 3) {
         std::string filter {argv[2]};
         if (filter == "io") {
-            auto io_evts = get_io_events(*(g.get()));
+            auto io_evts = get_io_events(*g);
             print(io_evts);
         }
         else if (filter == "sync") {
-            auto sync_evts = get_sync_events(*(g.get()));
+            auto sync_evts = get_sync_events(*g);
             print(sync_evts);
         }
     }

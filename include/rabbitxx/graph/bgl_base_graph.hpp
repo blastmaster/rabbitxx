@@ -36,31 +36,31 @@ namespace rabbitxx { namespace graph {
 
             vertex_descriptor add_vertex(const vertex_type& v)
             {
-                const auto vd = boost::add_vertex(v, *graph_.get());
+                const auto vd = boost::add_vertex(v, *graph_);
                 return vd;
             }
 
             edge_add_t add_edge(const vertex_descriptor& vd_from,
                                 const vertex_descriptor& vd_to)
             {
-                return boost::add_edge(vd_from, vd_to, *graph_.get());
+                return boost::add_edge(vd_from, vd_to, *graph_);
             }
 
             //TODO need const version
             vertex_range vertices()
             {
-                return boost::vertices(*graph_.get());
+                return boost::vertices(*graph_);
             }
 
             edge_range edges()
             {
-                return boost::edges(*graph_.get());
+                return boost::edges(*graph_);
             }
 
             std::vector<vertex_descriptor> vertex_descriptors()
             {
                 std::vector<vertex_descriptor> vds(num_vertices());
-                auto v_range = vertices();
+                auto v_range = boost::vertices(*graph_);
                 std::copy(v_range.first, v_range.second, std::begin(vds));
                 return vds;
             }
@@ -75,17 +75,17 @@ namespace rabbitxx { namespace graph {
 
             std::size_t num_vertices() const
             {
-                return boost::num_vertices(*graph_.get());
+                return boost::num_vertices(*graph_);
             }
 
             std::size_t num_edges() const
             {
-                return boost::num_edges(*graph_.get());
+                return boost::num_edges(*graph_);
             }
 
             vertex_type& operator[](const vertex_descriptor& vd) const
             {
-                return graph_.get()->operator[](vd);
+                return graph_->operator[](vd);
             }
 
         private:

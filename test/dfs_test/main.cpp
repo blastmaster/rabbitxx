@@ -107,7 +107,6 @@ int main(int argc, char** argv)
     //dfs_print_visitor vis;
     dfs_test_visitor vis;
     std::vector<boost::default_color_type> color_map(g->num_vertices());
-    //boost::depth_first_search(*g->get(), boost::visitor(vis));
     boost::depth_first_visit(*g->get(), vertex(0, *g->get()), vis, 
             make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *g->get())));
 

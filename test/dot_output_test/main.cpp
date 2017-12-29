@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 
     auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
     const std::string filename {"test.dot"};
-    rabbitxx::write_graph_to_dot(*(g->get()), filename);
+    rabbitxx::write_graph_to_dot(*g->get(), filename);
 
     return 0;
 }
