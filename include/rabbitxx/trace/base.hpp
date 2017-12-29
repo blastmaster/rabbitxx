@@ -16,11 +16,17 @@ namespace rabbitxx { namespace trace {
             using otf2::reader::callback::event;
             using otf2::reader::callback::definition;
 
-            base() noexcept = default;
+            base() = default;
             base(boost::mpi::communicator comm) noexcept
             : rank_(comm.rank()), comm_(comm)
             {
             }
+
+            base(const base& other) = default;
+            base(base&& other) noexcept = default;
+
+            base& operator=(const base& other) = default;
+            base& operator=(base&& other) = default;
 
             virtual ~base();
 
@@ -37,7 +43,7 @@ namespace rabbitxx { namespace trace {
             }
 
         private:
-            int rank_ = 0;
+            std::uint64_t rank_ = std::numeric_limits<std::uint64_t>::lowest();
             boost::optional<boost::mpi::communicator> comm_;
     };
 
