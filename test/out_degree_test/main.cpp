@@ -1,9 +1,8 @@
 #include <rabbitxx/graph.hpp>
 #include <rabbitxx/log.hpp>
-#include <boost/mpi.hpp>
 
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 #include <string>
 
 using rabbitxx::logging;
@@ -29,9 +28,6 @@ get_out_degrees(Graph& graph)
 
 int main(int argc, char** argv)
 {
-    boost::mpi::environment env(argc, argv);
-    boost::mpi::communicator world;
-
     if (argc < 2)
     {
         std::cerr << "Error usage: " << argv[0]
@@ -39,7 +35,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
+    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
 
     logging::debug() << "Try to read first vertex";
     std::cout << graph->operator[](0) << std::endl;

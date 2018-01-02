@@ -1,8 +1,8 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
-#include <rabbitxx/graph.hpp>
 #include <rabbitxx/cio_set.hpp>
+#include <rabbitxx/graph.hpp>
 #include <rabbitxx/log.hpp>
 
 #include <iostream>

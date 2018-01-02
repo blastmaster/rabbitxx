@@ -1,5 +1,5 @@
-#include <rabbitxx/graph.hpp>
 #include <rabbitxx/cio_set.hpp>
+#include <rabbitxx/graph.hpp>
 #include <rabbitxx/log.hpp>
 
 

@@ -2,6 +2,8 @@
 #define RABBITXX_CIO_SET_HPP
 
 #include <rabbitxx/log.hpp>
+#include <rabbitxx/graph.hpp>
+
 
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/optional.hpp>
@@ -9,7 +11,7 @@
 #include <algorithm>
 #include <map>
 #include <numeric>
-#include <unordered_set>
+#include <set>
 #include <vector>
 
 namespace rabbitxx
@@ -681,10 +683,10 @@ sort_sets_by_end_event(set_map_t<VertexDescriptor>& cio_sets)
  */
 template <typename Graph, typename VertexDescriptor>
 void
-sort_set_map_chrono(Graph& graph, rabbitxx::set_map_t<VertexDescriptor>& set_map)
+sort_set_map_chrono(Graph& graph, set_map_t<VertexDescriptor>& set_map)
 {
-    auto chrono_cmp = [&graph](const rabbitxx::set_t<VertexDescriptor>& set_a,
-        const rabbitxx::set_t<VertexDescriptor>& set_b) {
+    auto chrono_cmp = [&graph](const set_t<VertexDescriptor>& set_a,
+        const set_t<VertexDescriptor>& set_b) {
         const auto vd_a = set_a.origin();
         const auto vd_b = set_b.origin();
         assert(vd_a != std::numeric_limits<decltype(vd_a)>::max());
