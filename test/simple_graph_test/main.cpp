@@ -33,7 +33,7 @@ TEST_CASE("empty graph has empty list of vertex descriptors", "[SimpleGraph]")
     using rabbitxx::SimpleIoGraph;
     SimpleIoGraph g;
     auto vec_vd = g.vertex_descriptors();
-    REQUIRE(vec_vd.size() == 0);
+    REQUIRE(vec_vd.empty());
 }
 
 TEST_CASE("empyt graph has empty list of edge descriptors", "[SimpleGraph]")
@@ -41,5 +41,5 @@ TEST_CASE("empyt graph has empty list of edge descriptors", "[SimpleGraph]")
     using rabbitxx::SimpleIoGraph;
     SimpleIoGraph g;
     auto vec_ed = g.edge_descriptors();
-    REQUIRE(vec_ed.size() == 0);
+    REQUIRE(vec_ed.empty());
 }
