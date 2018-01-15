@@ -651,30 +651,6 @@ get_events_by_kind(Graph& graph, const std::vector<vertex_kind>& kinds)
 }
 
 /**
- * @brief sort sets per process with ascending end events of the CIO_Set.
- *
- * @param cio_sets: Reference to the SetMap container.
- */
-template <typename VertexDescriptor>
-void
-sort_sets_by_end_event(set_map_t<VertexDescriptor>& cio_sets)
-{
-    std::for_each(cio_sets.begin(), cio_sets.end(), [](auto& kvp_ps) {
-        bool sorted = std::is_sorted(std::begin(kvp_ps.second), std::end(kvp_ps.second),
-            [](const auto& set_a, const auto& set_b) {
-                return set_a.end_event() < set_b.end_event();
-            });
-        if (!sorted)
-        {
-            std::sort(std::begin(kvp_ps.second), std::end(kvp_ps.second),
-                [](const auto& set_a, const auto& set_b) {
-                    return set_a.end_event() < set_b.end_event();
-                });
-        }
-    });
-}
-
-/**
  * XXX: The assert will fail if used on final sets! Since there is no origin.
  * This is not a final solution, it should work since events of the same rank
  * can not overhaul themselve.
@@ -729,23 +705,6 @@ collect_root_sync_events(Graph& graph)
     result.erase(std::unique(result.begin(), result.end()), result.end());
 
     return result;
-}
-
-template <typename Graph, typename Vertex>
-void
-sort_events_chrono(Graph& graph, std::vector<Vertex>& events)
-{
-    auto chrono_cmp = [&graph](const Vertex& vd_a, const Vertex& vd_b) {
-        const auto t_a = graph[vd_a].timestamp();
-        const auto t_b = graph[vd_b].timestamp();
-        return t_a < t_b;
-    };
-
-    if (!std::is_sorted(events.begin(), events.end(), chrono_cmp))
-    {
-        logging::debug() << "not chronologically sorted, ... sorting";
-        std::sort(events.begin(), events.end(), chrono_cmp);
-    }
 }
 
 enum class sync_scope
@@ -887,8 +846,6 @@ pg_group(Graph& graph, const Vertex& vd)
         std::iota(all_procs.begin(), all_procs.end(), 0);
         return process_group_t(all_procs.begin(), all_procs.end());
     }
-    // TODO FIXME XXX synthetic event should return all processes to update map
-    // properly otherwise we never found an end!
 
     return {};
 }
@@ -1143,61 +1100,6 @@ merge_sets_impl(Graph& graph, set_map_t<VertexDescriptor>& set_map)
     auto map_view = make_mapview(set_map);
     assert(map_view.size() == set_map.size());
     process_sets(graph, map_view, merged_sets);
-
-    return merged_sets;
-}
-
-template <typename Graph, typename VertexDescriptor>
-inline set_container_t<VertexDescriptor>
-merge_sets_impl_old(Graph& graph, set_map_t<VertexDescriptor>& set_map,
-    const std::vector<VertexDescriptor>& sorted_sync_evts)
-{
-    set_container_t<VertexDescriptor> merged_sets;
-    unsigned int count{ 0 };
-
-    while (!std::all_of(set_map.begin(), set_map.end(),
-        [](const auto& proc_sets) { return proc_sets.second.empty(); }))
-    {
-        std::vector<VertexDescriptor> end_evts;
-        set_t<VertexDescriptor> cur_set;
-        // TODO: not sure if this is safe! Because we operating on a sequence but
-        // for empty sets ther is no return! Maybe for-loop is better.
-        std::transform(set_map.begin(), set_map.end(), std::back_inserter(end_evts),
-            [&cur_set](const auto& proc_sets) {
-                if (!proc_sets.second.empty())
-                {
-                    const auto& first_set = proc_sets.second.front();
-                    cur_set.merge(first_set);
-                    return first_set.end_event().value();
-                }
-            });
-
-        std::cout << "End-Events in iteration: " << count << "\n";
-        std::copy(end_evts.begin(), end_evts.end(),
-            std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
-        std::cout << "\n";
-
-        assert(set_map.size() == end_evts.size());
-        // it points to first occurence in sorted_sync_evts
-        auto first = std::find_first_of(
-            sorted_sync_evts.begin(), sorted_sync_evts.end(), end_evts.begin(), end_evts.end());
-
-        logging::debug() << "iteration: " << count << " first end-event of set: " << *first;
-        // the first end event ends the set.
-        cur_set.close();
-        cur_set.set_end_event(*first);
-        merged_sets.push_back(cur_set);
-
-        for (std::size_t i = 0; i < end_evts.size(); ++i)
-        {
-            if (*first == end_evts[i])
-            {
-                logging::debug() << "delete first set of proc: " << i;
-                set_map[i].erase(set_map[i].begin());
-            }
-        }
-        count++;
-    }
 
     return merged_sets;
 }
