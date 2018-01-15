@@ -333,7 +333,7 @@ root_of_sync(Vertex v, Graph& g)
 }
 
 /**
- * @brief Finds the synthetic root node of a given graph.
+ * @brief Find the synthetic root node of a given graph.
  *
  * Root node is the only vertex with a `vertex_kind::synthetic`.
  *
@@ -678,6 +678,10 @@ sort_set_map_chrono(Graph& graph, set_map_t<VertexDescriptor>& set_map)
     }
 }
 
+/**
+ * TODO: eventually we could use a set as container and get rid of the sort and
+ * the erase + unique too.
+ */
 template <typename Graph>
 std::vector<typename Graph::vertex_descriptor>
 collect_root_sync_events(Graph& graph)
@@ -786,6 +790,7 @@ update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view)
     return map_view;
 }
 
+//TODO: needed?!?
 template <typename Graph>
 pg_map_t<typename Graph::vertex_descriptor>
 make_local_pgmap(Graph& graph)

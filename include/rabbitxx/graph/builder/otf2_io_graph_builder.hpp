@@ -92,8 +92,8 @@ namespace rabbitxx { namespace graph {
                    const otf2::definition::location& location)
         {
             if (edge_points_.count(location) == 0) {
-                logging::debug() << "edge_points_ has no entry location #" << location.ref()
-                    << "try access...";
+                logging::debug() << "First `edge_points_` location #" << location.ref()
+                    << " entry! try access...";
             }
 
             if (edge_points_.empty(location)) {
@@ -109,6 +109,7 @@ namespace rabbitxx { namespace graph {
 
             if (edge_points_.size(location) > 1) {
                 logging::warn() << "More than one vertex in the edge_points_ queue.";
+                //XXX: does this case matter, can this ever happen?
             }
 
             const auto& from_vertex = edge_points_.front(location);
@@ -117,12 +118,13 @@ namespace rabbitxx { namespace graph {
                 logging::fatal() << "Error could not add edge .. this should not happen.";
             }
             edge_points_.dequeue(location); // remove old vertex after adding the edge.
-            // store descriptor in queue, for adding edges later
+            // Store descriptor in queue, for adding edges later.
             edge_points_.enqueue(location, descriptor);
 
             return edge_desc;
         }
 
+        //FIXME: get_io_handle_name would be a better name since we actually work on a `io_handle`.
         std::string get_handle_name(const otf2::definition::io_handle& handle) const
         {
             // check if we have a file name or a "non-file" handle
@@ -133,7 +135,8 @@ namespace rabbitxx { namespace graph {
         }
 
     public:
-        // Events
+        // Event callbacks
+
         void event(const otf2::definition::location& location,
                            const otf2::event::enter& evt) override
         {
@@ -751,8 +754,10 @@ namespace rabbitxx { namespace graph {
 
     struct OTF2_Io_Graph_Builder
     {
+        //FIXME: should just name IoGraph
         using graph_type = rabbitxx::SimpleIoGraph;
 
+        //TODO: should be better use decltype(auto) or just return graph_type.
         auto operator()(const std::string& trace_file, boost::mpi::communicator& comm) const
         {
             otf2::reader::reader trc_reader(trace_file);
