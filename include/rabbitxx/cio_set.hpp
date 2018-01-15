@@ -616,7 +616,7 @@ private:
 };
 
 template <typename VertexDescriptor>
-void
+void inline
 remove_empty_sets(set_map_t<VertexDescriptor>& sets)
 {
     std::for_each(
@@ -624,8 +624,8 @@ remove_empty_sets(set_map_t<VertexDescriptor>& sets)
 }
 
 template <typename VertexDescriptor>
-void
-remove_empty_sets(std::vector<set_t<VertexDescriptor>>& sets)
+void inline
+remove_empty_sets(set_container_t<VertexDescriptor>& sets)
 {
     sets.erase(
         std::remove_if(sets.begin(), sets.end(), [](const auto& set) { return set.empty(); }),

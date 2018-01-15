@@ -31,21 +31,21 @@ namespace rabbitxx { namespace graph {
         using otf2::reader::callback::definition;
         using mapping_type = mapping<rabbitxx::detail::round_robin_mapping>;
 
-        simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
+        explicit simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
         : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
           edge_points_(), region_name_queue_(), events_(), graph_(std::make_unique<Graph>()),
           root_(create_synthetic_root())
         {
         }
 
-        simple_graph_builder(int num_locations)
+        explicit simple_graph_builder(int num_locations)
         : base(), io_ops_started_(), mpi_coll_started_(), mapping_(num_locations),
           edge_points_(), region_name_queue_(), events_(), graph_(std::make_unique<Graph>()),
           root_(create_synthetic_root())
         {
         }
 
-        auto graph()
+        decltype(auto) graph()
         {
             return std::move(graph_);
         }
