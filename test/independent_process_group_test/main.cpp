@@ -29,9 +29,9 @@ TEST_CASE("[unqiue pairs]", "Generate all unqiue pairs of a sequence of numbers"
     std::vector<int> numbers {
          19, 22, 26 };
 
-    auto pair_v = rabbitxx::generate_unique_pairs(numbers);
+    auto pair_v = rabbitxx::detail::generate_unique_pairs(numbers);
 
-    REQUIRE(pair_v.size() == rabbitxx::num_unique_pairs(numbers.size()));
+    REQUIRE(pair_v.size() == rabbitxx::detail::num_unique_pairs(numbers.size()));
 
     for (const auto& pair : pair_v)
     {
@@ -46,7 +46,7 @@ TEST_CASE("[ec]", "Find independent process groups")
     auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph);
     logging::debug() << "BEFORE SORTING!";
     dump_set_map(cio_sets_pp);
-    sort_set_map_chrono(*graph, cio_sets_pp);
+    rabbitxx::detail::sort_set_map_chrono(*graph, cio_sets_pp);
     logging::debug() << "AFTER SORTING!";
     dump_set_map(cio_sets_pp);
 }
@@ -58,7 +58,7 @@ TEST_CASE("[trace-own6-advanced]", "Find independent process groups")
     auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph);
     logging::debug() << "BEFORE SORTING!";
     dump_set_map(cio_sets_pp);
-    rabbitxx::sort_set_map_chrono(*graph, cio_sets_pp);
+    rabbitxx::detail::sort_set_map_chrono(*graph, cio_sets_pp);
     logging::debug() << "AFTER SORTING!";
     dump_set_map(cio_sets_pp);
 
