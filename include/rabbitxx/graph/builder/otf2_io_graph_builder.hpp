@@ -2,7 +2,7 @@
 #define RABBITXX_OTF2_IO_GRAPH_BUILDER_HPP
 
 #include <rabbitxx/trace/base.hpp>
-#include <rabbitxx/graph/io_graph_simple.hpp>
+#include <rabbitxx/graph/io_graph.hpp>
 #include <rabbitxx/mapping.hpp>
 #include <rabbitxx/log.hpp>
 #include <rabbitxx/location_queue.hpp>
@@ -754,8 +754,7 @@ namespace rabbitxx { namespace graph {
 
     struct OTF2_Io_Graph_Builder
     {
-        //FIXME: should just name IoGraph
-        using graph_type = rabbitxx::SimpleIoGraph;
+        using graph_type = rabbitxx::IoGraph;
 
         //TODO: should be better use decltype(auto) or just return graph_type.
         auto operator()(const std::string& trace_file, boost::mpi::communicator& comm) const
