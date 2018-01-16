@@ -10,7 +10,6 @@ namespace rabbitxx {
     template<typename Builder, typename... Args>
     auto make_graph(Args&&... args)
     {
-//         using Graph = typename Builder::graph_type;
         Builder builder;
         return std::move(builder(std::forward<Args>(args)...));
     }
