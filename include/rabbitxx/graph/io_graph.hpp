@@ -19,10 +19,14 @@ namespace graph { namespace detail {
 }} // namespace graph::detail
 
 using IoGraph = graph::graph<graph::detail::io_graph_impl>;
+// try to define the vertex_descriptor type to avoid templates!
+// since we dependet on an integral vertex descriptor type.
+using VertexDescriptor = typename IoGraph::vertex_descriptor;
 
-// API
 /**
  * @brief Get all in-going synchronization-events of a given vertex.
+ *
+ * @tparam Graph: The graph type, here we pass a BGL graph not an IoGraph.
  *
  * @param v: The vertex descriptor of the synchronization-event.
  * @param g: A Reference to the Graph.
@@ -30,12 +34,12 @@ using IoGraph = graph::graph<graph::detail::io_graph_impl>;
  * @return Retruns a vector containing the vertex descriptors of all in-going
  * synchronization events from a given vertex v.
  */
-template <typename Vertex, typename Graph>
-std::vector<Vertex>
-get_in_going_syncs(Vertex v, Graph& g)
+template <typename Graph>
+std::vector<VertexDescriptor>
+get_in_going_syncs(const VertexDescriptor v, Graph& g)
 {
     const auto in_edge_r = boost::in_edges(v, g);
-    std::vector<Vertex> results;
+    std::vector<VertexDescriptor> results;
     for (auto edge_it = in_edge_r.first; edge_it != in_edge_r.second; ++edge_it)
     {
         const auto src_v = source(*edge_it, g);
@@ -47,20 +51,20 @@ get_in_going_syncs(Vertex v, Graph& g)
     return results;
 }
 
-// API
 /**
  * @brief Find the root-Event of a given Synchronization Event.
  *
- * @tparam Vertex The vertex-descriptor-type
- * @tparam Graph The graph-type
+ * XXX @tparam Vertex: The vertex-descriptor-type
+ * @tparam Graph: The graph-type, here we pass a BGL graph not an IoGraph.
+ *
  * @param v the vertex descriptor of a synchronization-event.
  * @param g a reference to the graph.
  *
  * @return The vertex descriptor of the root-event of the synchronization.
  */
-template <typename Vertex, typename Graph>
-Vertex
-root_of_sync(Vertex v, Graph& g)
+template <typename Graph>
+VertexDescriptor
+root_of_sync(const VertexDescriptor v, Graph& g)
 {
     assert(vertex_kind::sync_event == g[v].type);
     const auto in_dgr = boost::in_degree(v, g);
@@ -116,7 +120,6 @@ root_of_sync(Vertex v, Graph& g)
     throw -1; // FIXME: Do useful error-handling.
 }
 
-// API
 /**
  * @brief Find the synthetic root node of a given graph.
  *
@@ -125,19 +128,17 @@ root_of_sync(Vertex v, Graph& g)
  * @param graph: A reference to the Graph.
  * @return The vertex descriptor of the root node.
  */
-template <typename Graph>
-typename Graph::vertex_descriptor
-find_root(Graph& graph)
+VertexDescriptor
+find_root(const IoGraph& graph)
 {
     const auto vertices = graph.vertices();
     const auto root = std::find_if(
-        vertices.first, vertices.second, [&graph](const typename Graph::vertex_descriptor& vd) {
+        vertices.first, vertices.second, [&graph](const VertexDescriptor& vd) {
             return graph[vd].type == vertex_kind::synthetic;
         });
     return *root;
 }
 
-// API
 /**
  * @brief Get the number of processes involved, in a given I/O Graph.
  *
@@ -146,15 +147,13 @@ find_root(Graph& graph)
  * @param graph: A reference to the graph.
  * @return The number of processes that have events in the graph.
  */
-template <typename Graph>
 std::uint64_t
-num_procs(Graph& graph) noexcept
+num_procs(IoGraph& graph) noexcept
 {
     const auto root = find_root(graph);
     return static_cast<std::uint64_t>(boost::out_degree(root, *graph.get()));
 }
 
-// API
 /**
  * @brief Get all processes which are involved in a given synchronization event.
  *
@@ -203,9 +202,8 @@ procs_in_sync_involved(const sync_event_property& sevt)
 //}
 //}
 
-// API
 /**
- * Return the number of processes involved in a given synchronization routine.
+ * @return The number of processes involved in a given synchronization routine.
  */
 std::uint64_t
 num_procs_in_sync_involved(const sync_event_property& sevt)
@@ -213,7 +211,6 @@ num_procs_in_sync_involved(const sync_event_property& sevt)
     return procs_in_sync_involved(sevt).size();
 }
 
-// API
 // TODO: unused!
 template <typename Graph, typename Vertex, typename Visitor>
 void
@@ -228,7 +225,6 @@ traverse_adjacent_vertices(Graph& graph, Vertex v, Visitor& vis)
     }
 }
 
-// API
 /**
 * Checks if the start event of a set `of_v` is an adjacent vertex of the current
 * event `cur_v`.
@@ -242,13 +238,19 @@ is_adjacent_event_of(const Vertex of_v, const Vertex cur_v, const Graph& g)
         adjacent_r.first, adjacent_r.second, [&of_v](const Vertex vd) { return vd == of_v; });
 }
 
-// Graph-API
-// should maybe a variadic template
-template <typename Graph>
-std::vector<typename Graph::vertex_descriptor>
-get_events_by_kind(Graph& graph, const std::vector<vertex_kind>& kinds)
+/**
+ * @brief Get vertice descriptors by kind.
+ *
+ * @param graph: An `IoGraph` object.
+ * @param kinds: A `std::vector` of `vertex_kind` objects.
+ *
+ * @return A vector containing all vertices of the `vertex_kind` in the `kinds` vector.
+ */
+// XXX: should maybe a variadic template
+std::vector<VertexDescriptor>
+get_events_by_kind(const IoGraph& graph, const std::vector<vertex_kind>& kinds)
 {
-    using vertex_descriptor = typename Graph::vertex_descriptor;
+    using vertex_descriptor = VertexDescriptor;
     const auto vp = graph.vertices();
     std::vector<vertex_descriptor> events;
     std::copy_if(vp.first, vp.second, std::back_inserter(events),
@@ -259,6 +261,38 @@ get_events_by_kind(Graph& graph, const std::vector<vertex_kind>& kinds)
             });
         });
     return events;
+}
+
+/**
+ * @brief Get the `sync_scope` of a synchronization event.
+ *
+ * @param g: An `IoGraph` object.
+ * @param sevt: A `sync_event_property` object.
+ *
+ * @return The corresponding `sync_scope` of the synchronization event.
+ * Either `sync_scope::local` or `sync_scope::global`.
+ */
+sync_scope
+classify_sync(IoGraph& g, const sync_event_property& sevt)
+{
+    const auto np = num_procs(g);
+    const auto inv = num_procs_in_sync_involved(sevt);
+    return np == inv ? sync_scope::Global : sync_scope::Local;
+}
+
+// What should be returned in the case that `v` is referencing an I/O-Event?
+// One option might be to throw an exception.
+// Another option might be to introduce a `sync_scope::None` enumeration. On
+// which can be checked outside.
+sync_scope
+classify_sync(IoGraph& g, const VertexDescriptor& v)
+{
+    if (g[v].type == vertex_kind::synthetic)
+    {
+        return sync_scope::Global;
+    }
+    const auto& sync_evt_p = boost::get<sync_event_property>(g[v].property);
+    return classify_sync(g, sync_evt_p);
 }
 
 } // namespace rabbitxx

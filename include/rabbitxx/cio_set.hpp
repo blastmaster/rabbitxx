@@ -12,7 +12,6 @@ namespace rabbitxx
 {
 
 // set-api
-template <typename VertexDescriptor>
 void inline
 remove_empty_sets(set_map_t<VertexDescriptor>& sets)
 {
@@ -20,7 +19,6 @@ remove_empty_sets(set_map_t<VertexDescriptor>& sets)
         sets.begin(), sets.end(), [](auto& proc_sets) { remove_empty_sets(proc_sets.second); });
 }
 
-template <typename VertexDescriptor>
 void inline
 remove_empty_sets(set_container_t<VertexDescriptor>& sets)
 {
@@ -33,11 +31,10 @@ remove_empty_sets(set_container_t<VertexDescriptor>& sets)
  * TODO: eventually we could use a set as container and get rid of the sort and
  * the erase + unique too.
  */
-template <typename Graph>
-std::vector<typename Graph::vertex_descriptor>
-collect_root_sync_events(Graph& graph)
+std::vector<VertexDescriptor>
+collect_root_sync_events(IoGraph& graph)
 {
-    using vertex_descriptor = typename Graph::vertex_descriptor;
+    using vertex_descriptor = VertexDescriptor;
     std::vector<vertex_descriptor> result;
     // get all sync and synthetic events in the graph
     const auto sync_events =
@@ -117,7 +114,6 @@ classify_sync(Graph& g, const Vertex& v)
 }
 
 // set-api
-template <typename VertexDescriptor>
 map_view_t<VertexDescriptor>
 make_mapview(set_map_t<VertexDescriptor>& smap)
 {
@@ -133,7 +129,6 @@ make_mapview(set_map_t<VertexDescriptor>& smap)
 }
 
 // set-api
-template <typename VertexDescriptor>
 map_view_t<VertexDescriptor>
 update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view)
 {
@@ -149,11 +144,10 @@ update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view)
 }
 
 //TODO: needed?!?
-template <typename Graph>
-pg_map_t<typename Graph::vertex_descriptor>
-make_local_pgmap(Graph& graph)
+pg_map_t<VertexDescriptor>
+make_local_pgmap(IoGraph& graph)
 {
-    using vertex_descriptor = typename Graph::vertex_descriptor;
+    using vertex_descriptor = VertexDescriptor;
     pg_map_t<vertex_descriptor> pg_map;
     const auto sync_evt_roots_v = collect_root_sync_events(graph);
     // needs to be sorted?!?
@@ -180,9 +174,8 @@ make_local_pgmap(Graph& graph)
 }
 
 // set-api
-template <typename Graph, typename Vertex>
 process_group_t
-pg_group(Graph& graph, const Vertex& vd)
+pg_group(IoGraph& graph, const VertexDescriptor& vd)
 {
     if (graph[vd].type == vertex_kind::sync_event)
     {
@@ -225,9 +218,8 @@ namespace detail
  * TODO: Nevertheless, sorting the sets using a adjacency relation might be
  * better.
  */
-template <typename Graph, typename VertexDescriptor>
 void
-sort_set_map_chrono(Graph& graph, set_map_t<VertexDescriptor>& set_map)
+sort_set_map_chrono(const IoGraph& graph, set_map_t<VertexDescriptor>& set_map)
 {
     auto chrono_cmp = [&graph](const set_t<VertexDescriptor>& set_a,
         const set_t<VertexDescriptor>& set_b) {
@@ -254,7 +246,6 @@ num_unique_pairs(const std::size_t n)
 }
 
 // O(n^2)
-template <typename VertexDescriptor>
 std::vector<std::pair<VertexDescriptor, VertexDescriptor>>
 generate_unique_pairs(const std::vector<VertexDescriptor>& v)
 {
@@ -273,7 +264,6 @@ generate_unique_pairs(const std::vector<VertexDescriptor>& v)
     return res;
 }
 
-template <typename VertexDescriptor>
 bool
 can_update_end_event(const process_group_t& pgroup, const std::vector<VertexDescriptor>& end_evts,
     const VertexDescriptor& pivot)
@@ -282,20 +272,18 @@ can_update_end_event(const process_group_t& pgroup, const std::vector<VertexDesc
         [&end_evts, &pivot](const std::uint64_t pid) { return end_evts[pid] == pivot; });
 }
 
-template <typename Graph, typename VertexDescriptor>
 bool
 can_update_end_event(
-    Graph& graph, const std::vector<VertexDescriptor>& end_evts, const VertexDescriptor& pivot)
+    IoGraph& graph, const std::vector<VertexDescriptor>& end_evts, const VertexDescriptor& pivot)
 {
     const auto pgroup = pg_group(graph, pivot);
     return can_update_end_event(pgroup, end_evts, pivot);
 }
 
-template <typename Graph, typename VertexDescriptor>
 std::vector<VertexDescriptor>
-find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
+find_end_events_to_update(IoGraph& graph, std::vector<VertexDescriptor> end_evts)
 {
-    auto check_update_func = [end_evts](Graph& graph, const std::set<VertexDescriptor>& try_s) {
+    auto check_update_func = [end_evts](IoGraph& graph, const std::set<VertexDescriptor>& try_s) {
         for (const VertexDescriptor& vd : try_s)
         {
             bool update = can_update_end_event(graph, end_evts, vd);
@@ -306,7 +294,7 @@ find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
         }
     };
 
-    auto check_update_func_single = [end_evts](Graph& graph, const VertexDescriptor& vd) {
+    auto check_update_func_single = [end_evts](IoGraph& graph, const VertexDescriptor& vd) {
         return can_update_end_event(graph, end_evts, vd);
     };
 
@@ -423,9 +411,8 @@ find_end_events_to_update(Graph& graph, std::vector<VertexDescriptor> end_evts)
  * pairs anyway so it could be possible that the end_event later is no longer
  * needed.
  */
-template <typename Graph, typename VertexDescriptor>
 std::vector<VertexDescriptor>
-do_merge(Graph& graph, const map_view_t<VertexDescriptor>& map_view,
+do_merge(IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
     std::vector<VertexDescriptor> end_evts;
@@ -460,9 +447,8 @@ do_merge(Graph& graph, const map_view_t<VertexDescriptor>& map_view,
     return e_evts;
 }
 
-template <typename Graph, typename VertexDescriptor>
 void
-process_sets(Graph& graph, map_view_t<VertexDescriptor> map_view,
+process_sets(IoGraph& graph, map_view_t<VertexDescriptor> map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
     using vertex_descriptor = VertexDescriptor;
@@ -481,13 +467,12 @@ process_sets(Graph& graph, map_view_t<VertexDescriptor> map_view,
     {
         logging::debug() << "Choose end-event: " << end_evt << " -> recursive update!";
         const auto lpg = pg_group(graph, end_evt);
-        process_sets(graph, update_view<vertex_descriptor>(lpg, map_view), merged_sets);
+        process_sets(graph, update_view(lpg, map_view), merged_sets);
     }
 }
 
-template <typename Graph, typename VertexDescriptor>
 inline set_container_t<VertexDescriptor>
-merge_sets_impl(Graph& graph, set_map_t<VertexDescriptor>& set_map)
+merge_sets_impl(IoGraph& graph, set_map_t<VertexDescriptor>& set_map)
 {
     set_container_t<VertexDescriptor> merged_sets;
     auto map_view = make_mapview(set_map);
@@ -497,9 +482,8 @@ merge_sets_impl(Graph& graph, set_map_t<VertexDescriptor>& set_map)
     return merged_sets;
 }
 
-template <typename Graph, typename VertexDescriptor>
 set_container_t<VertexDescriptor>
-merge_sets(Graph& graph, set_map_t<VertexDescriptor>& set_map)
+merge_sets(IoGraph& graph, set_map_t<VertexDescriptor>& set_map)
 {
     return merge_sets_impl(graph, set_map);
 }
@@ -510,11 +494,10 @@ merge_sets(Graph& graph, set_map_t<VertexDescriptor>& set_map)
 /**
  * Here we get the Sets per process - nothing is merged together!
  */
-template <typename Graph>
-set_map_t<typename Graph::vertex_descriptor>
-cio_sets_per_process(Graph& graph)
+set_map_t<VertexDescriptor>
+cio_sets_per_process(IoGraph& graph)
 {
-    using map_t = set_map_t<typename Graph::vertex_descriptor>;
+    using map_t = set_map_t<VertexDescriptor>;
 
     auto root = find_root(graph);
     assert(graph[root].type == vertex_kind::synthetic);
@@ -529,11 +512,10 @@ cio_sets_per_process(Graph& graph)
 }
 
 // all-in-one version - do merging
-template <typename Graph>
-set_container_t<typename Graph::vertex_descriptor>
-find_cio_sets(Graph& graph)
+set_container_t<VertexDescriptor>
+find_cio_sets(IoGraph& graph)
 {
-    using map_t = set_map_t<typename Graph::vertex_descriptor>;
+    using map_t = set_map_t<VertexDescriptor>;
 
     map_t sets_per_process = cio_sets_per_process(graph);
     auto merged_sets = detail::merge_sets(graph, sets_per_process);

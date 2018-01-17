@@ -52,6 +52,11 @@ namespace rabbitxx { namespace graph {
                 return boost::vertices(*graph_);
             }
 
+            const vertex_range vertices() const
+            {
+                return boost::vertices(*graph_);
+            }
+
             edge_range edges()
             {
                 return boost::edges(*graph_);

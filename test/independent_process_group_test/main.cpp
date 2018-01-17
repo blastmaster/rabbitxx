@@ -24,9 +24,12 @@ dump_set_map(const rabbitxx::set_map_t<VertexDescriptor>& set_map)
 }
 
 
+//TODO: test case to check if the order of events is correct for the sets per
+//process. if Tn > Tn-1.
+
 TEST_CASE("[unqiue pairs]", "Generate all unqiue pairs of a sequence of numbers")
 {
-    std::vector<int> numbers {
+    std::vector<rabbitxx::VertexDescriptor> numbers {
          19, 22, 26 };
 
     auto pair_v = rabbitxx::detail::generate_unique_pairs(numbers);
