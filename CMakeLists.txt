@@ -48,6 +48,11 @@ set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI suppo
 include_directories("${CMAKE_SOURCE_DIR}/include")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RABBITXX_CXX_FLAGS}")
 
+set(RABBITXX_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/cio_set.cpp
+    ${CMAKE_SOURCE_DIR}/src/io_graph.cpp
+)
+
 if (BUILD_MODULES)
     add_subdirectory(modules)
 endif()

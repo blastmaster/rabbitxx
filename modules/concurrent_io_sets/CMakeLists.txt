@@ -1,4 +1,5 @@
 set(SOURCES 
+    ${RABBITXX_SOURCES}
     main.cpp
 )
 

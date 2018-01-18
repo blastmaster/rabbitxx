@@ -19,6 +19,7 @@ enum class State
     Closed
 };
 
+inline
 std::ostream&
 operator<<(std::ostream& os, const State& state)
 {

@@ -4,7 +4,7 @@
 #include <boost/graph/adjacency_list.hpp>
 
 #include <rabbitxx/graph/bgl_base_graph.hpp>
-#include <rabbitxx/trace/otf2_trace_event.hpp>
+#include <rabbitxx/graph/otf2_io_graph_properties.hpp>
 
 namespace rabbitxx {
 
@@ -128,16 +128,7 @@ root_of_sync(const VertexDescriptor v, Graph& g)
  * @param graph: A reference to the Graph.
  * @return The vertex descriptor of the root node.
  */
-VertexDescriptor
-find_root(const IoGraph& graph)
-{
-    const auto vertices = graph.vertices();
-    const auto root = std::find_if(
-        vertices.first, vertices.second, [&graph](const VertexDescriptor& vd) {
-            return graph[vd].type == vertex_kind::synthetic;
-        });
-    return *root;
-}
+VertexDescriptor find_root(const IoGraph& graph);
 
 /**
  * @brief Get the number of processes involved, in a given I/O Graph.
@@ -147,12 +138,7 @@ find_root(const IoGraph& graph)
  * @param graph: A reference to the graph.
  * @return The number of processes that have events in the graph.
  */
-std::uint64_t
-num_procs(IoGraph& graph) noexcept
-{
-    const auto root = find_root(graph);
-    return static_cast<std::uint64_t>(boost::out_degree(root, *graph.get()));
-}
+std::uint64_t num_procs(IoGraph& graph) noexcept;
 
 /**
  * @brief Get all processes which are involved in a given synchronization event.
@@ -165,21 +151,7 @@ num_procs(IoGraph& graph) noexcept
  * If the sync-event is wether a collective nor a peer2peer event the returned
  * vector is empty.
  */
-std::vector<std::uint64_t>
-procs_in_sync_involved(const sync_event_property& sevt)
-{
-    if (sevt.comm_kind == sync_event_kind::collective)
-    {
-        const auto coll_evt = boost::get<collective>(sevt.op_data);
-        return coll_evt.members();
-    }
-    if (sevt.comm_kind == sync_event_kind::p2p)
-    {
-        const auto p2p_evt = boost::get<peer2peer>(sevt.op_data);
-        return { sevt.proc_id, p2p_evt.remote_process() };
-    }
-    return {};
-}
+std::vector<std::uint64_t> procs_in_sync_involved(const sync_event_property& sevt);
 
 // template<typename Graph, typename VertexDescriptor>
 // std::vector<std::uint64_t>
@@ -205,11 +177,7 @@ procs_in_sync_involved(const sync_event_property& sevt)
 /**
  * @return The number of processes involved in a given synchronization routine.
  */
-std::uint64_t
-num_procs_in_sync_involved(const sync_event_property& sevt)
-{
-    return procs_in_sync_involved(sevt).size();
-}
+std::uint64_t num_procs_in_sync_involved(const sync_event_property& sevt);
 
 // TODO: unused!
 template <typename Graph, typename Vertex, typename Visitor>
@@ -248,20 +216,7 @@ is_adjacent_event_of(const Vertex of_v, const Vertex cur_v, const Graph& g)
  */
 // XXX: should maybe a variadic template
 std::vector<VertexDescriptor>
-get_events_by_kind(const IoGraph& graph, const std::vector<vertex_kind>& kinds)
-{
-    using vertex_descriptor = VertexDescriptor;
-    const auto vp = graph.vertices();
-    std::vector<vertex_descriptor> events;
-    std::copy_if(vp.first, vp.second, std::back_inserter(events),
-        [&kinds, &graph](const vertex_descriptor& vd) {
-            return std::any_of(kinds.begin(), kinds.end(), [&vd, &graph](const vertex_kind& kind) {
-                return graph[vd].type == kind;
-
-            });
-        });
-    return events;
-}
+get_events_by_kind(const IoGraph& graph, const std::vector<vertex_kind>& kinds);
 
 /**
  * @brief Get the `sync_scope` of a synchronization event.
@@ -273,27 +228,13 @@ get_events_by_kind(const IoGraph& graph, const std::vector<vertex_kind>& kinds)
  * Either `sync_scope::local` or `sync_scope::global`.
  */
 sync_scope
-classify_sync(IoGraph& g, const sync_event_property& sevt)
-{
-    const auto np = num_procs(g);
-    const auto inv = num_procs_in_sync_involved(sevt);
-    return np == inv ? sync_scope::Global : sync_scope::Local;
-}
+classify_sync(IoGraph& g, const sync_event_property& sevt);
 
 // What should be returned in the case that `v` is referencing an I/O-Event?
 // One option might be to throw an exception.
 // Another option might be to introduce a `sync_scope::None` enumeration. On
 // which can be checked outside.
-sync_scope
-classify_sync(IoGraph& g, const VertexDescriptor& v)
-{
-    if (g[v].type == vertex_kind::synthetic)
-    {
-        return sync_scope::Global;
-    }
-    const auto& sync_evt_p = boost::get<sync_event_property>(g[v].property);
-    return classify_sync(g, sync_evt_p);
-}
+sync_scope classify_sync(IoGraph& g, const VertexDescriptor& v);
 
 } // namespace rabbitxx
 

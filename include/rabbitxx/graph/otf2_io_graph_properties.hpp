@@ -1,5 +1,5 @@
-#ifndef RABBITXX_GRAPH_OTF2_TRACE_EVENT_HPP
-#define RABBITXX_GRAPH_OTF2_TRACE_EVENT_HPP
+#ifndef RABBITXX_OTF2_IO_GRAPH_PROPERTIES_HPP
+#define RABBITXX_OTF2_IO_GRAPH_PROPERTIES_HPP
 
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
@@ -9,7 +9,7 @@
 #include <otf2xx/otf2.hpp>
 
 #include <rabbitxx/log.hpp>
-#include <utils/enum_to_string.hpp>
+#include <rabbitxx/utils/enum_to_string.hpp>
 
 #include <limits>
 
@@ -572,4 +572,4 @@ make_otf2_trace_event_writer(G& graph)
 
 } // namespace rabbtixx
 
-#endif /* RABBITXX_GRAPH_OTF2_TRACE_EVENT_HPP */
+#endif /* RABBITXX_OTF2_IO_GRAPH_PROPERTIES_HPP */

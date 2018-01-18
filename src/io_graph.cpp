@@ -1,0 +1,83 @@
+#include <rabbitxx/graph/io_graph.hpp>
+
+
+namespace rabbitxx {
+
+
+VertexDescriptor
+find_root(const IoGraph& graph)
+{
+    const auto vertices = graph.vertices();
+    const auto root = std::find_if(
+        vertices.first, vertices.second, [&graph](const VertexDescriptor& vd) {
+            return graph[vd].type == vertex_kind::synthetic;
+        });
+    return *root;
+}
+
+
+std::uint64_t
+num_procs(IoGraph& graph) noexcept
+{
+    const auto root = find_root(graph);
+    return static_cast<std::uint64_t>(boost::out_degree(root, *graph.get()));
+}
+
+std::vector<std::uint64_t>
+procs_in_sync_involved(const sync_event_property& sevt)
+{
+    if (sevt.comm_kind == sync_event_kind::collective)
+    {
+        const auto coll_evt = boost::get<collective>(sevt.op_data);
+        return coll_evt.members();
+    }
+    if (sevt.comm_kind == sync_event_kind::p2p)
+    {
+        const auto p2p_evt = boost::get<peer2peer>(sevt.op_data);
+        return { sevt.proc_id, p2p_evt.remote_process() };
+    }
+    return {};
+}
+
+std::uint64_t
+num_procs_in_sync_involved(const sync_event_property& sevt)
+{
+    return procs_in_sync_involved(sevt).size();
+}
+
+std::vector<VertexDescriptor>
+get_events_by_kind(const IoGraph& graph, const std::vector<vertex_kind>& kinds)
+{
+    using vertex_descriptor = VertexDescriptor;
+    const auto vp = graph.vertices();
+    std::vector<vertex_descriptor> events;
+    std::copy_if(vp.first, vp.second, std::back_inserter(events),
+        [&kinds, &graph](const vertex_descriptor& vd) {
+            return std::any_of(kinds.begin(), kinds.end(), [&vd, &graph](const vertex_kind& kind) {
+                return graph[vd].type == kind;
+
+            });
+        });
+    return events;
+}
+
+sync_scope
+classify_sync(IoGraph& g, const sync_event_property& sevt)
+{
+    const auto np = num_procs(g);
+    const auto inv = num_procs_in_sync_involved(sevt);
+    return np == inv ? sync_scope::Global : sync_scope::Local;
+}
+
+sync_scope
+classify_sync(IoGraph& g, const VertexDescriptor& v)
+{
+    if (g[v].type == vertex_kind::synthetic)
+    {
+        return sync_scope::Global;
+    }
+    const auto& sync_evt_p = boost::get<sync_event_property>(g[v].property);
+    return classify_sync(g, sync_evt_p);
+}
+
+} // namespace rabbitxx

@@ -7,6 +7,7 @@
 
 
 // helper function, return string representation for io_operation_mode
+inline
 std::string to_string(const otf2::common::io_operation_mode_type& mode) noexcept
 {
     switch (mode)
@@ -22,6 +23,7 @@ std::string to_string(const otf2::common::io_operation_mode_type& mode) noexcept
     }
 }
 
+inline
 std::string to_string(const otf2::common::io_operation_flag_type& flag) noexcept
 {
     switch (flag)
@@ -37,7 +39,9 @@ std::string to_string(const otf2::common::io_operation_flag_type& flag) noexcept
     }
 }
 
+
 // helper function, return string representation for io_seek_option_type
+inline
 std::string to_string(const otf2::common::io_seek_option_type& op_type) noexcept
 {
     switch (op_type)
@@ -57,6 +61,7 @@ std::string to_string(const otf2::common::io_seek_option_type& op_type) noexcept
     }
 }
 
+inline
 std::string to_string(const otf2::common::io_access_mode_type& acc_mode) noexcept
 {
     switch (acc_mode)
@@ -76,6 +81,7 @@ std::string to_string(const otf2::common::io_access_mode_type& acc_mode) noexcep
     }
 }
 
+inline
 std::string to_string(const otf2::common::io_creation_flag_type& creation_flag) noexcept
 {
     switch (creation_flag)
@@ -109,6 +115,7 @@ std::string to_string(const otf2::common::io_creation_flag_type& creation_flag) 
     }
 }
 
+inline
 std::string to_string(const otf2::common::io_status_flag_type& status_flag) noexcept
 {
     switch (status_flag)
@@ -138,6 +145,7 @@ std::string to_string(const otf2::common::io_status_flag_type& status_flag) noex
     }
 }
 
+inline
 std::string to_string(const otf2::common::collective_type& coll_type) noexcept
 {
     switch (coll_type)
@@ -191,6 +199,7 @@ std::string to_string(const otf2::common::collective_type& coll_type) noexcept
     }
 }
 
+inline
 std::string to_string(const otf2::common::group_type& grp_type) noexcept
 {
     switch (grp_type)
@@ -214,6 +223,7 @@ std::string to_string(const otf2::common::group_type& grp_type) noexcept
     }
 }
 
+inline
 std::string to_string(const otf2::common::group_flag_type& grp_flag_type) noexcept
 {
     switch (grp_flag_type)
@@ -227,6 +237,7 @@ std::string to_string(const otf2::common::group_flag_type& grp_flag_type) noexce
     }
 }
 
+inline
 std::string to_string(const otf2::common::paradigm_type& para_type) noexcept
 {
     switch (para_type)

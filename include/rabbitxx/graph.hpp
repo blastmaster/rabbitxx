@@ -1,7 +1,7 @@
 #ifndef RABBITXX_GRAPH_HPP
 #define RABBITXX_GRAPH_HPP
 
-#include <rabbitxx/graph/builder/builder.hpp>
+#include <rabbitxx/graph/builder.hpp>
 
 #include <utility>
 
