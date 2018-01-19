@@ -45,6 +45,34 @@ inline std::ostream& operator<<(std::ostream& os, const vertex_kind& kind)
     return os;
 }
 
+// scope of a synchronization operation
+// can be global which means that the operation covers all processes
+// or local which mean that the operation does not cover all processes
+enum class sync_scope
+{
+    Local,
+    Global
+};
+
+inline std::ostream&
+operator<<(std::ostream& os, const sync_scope& scope)
+{
+    switch (scope)
+    {
+        case sync_scope::Local:
+            os << "Local";
+            break;
+        case sync_scope::Global:
+            os << "Global";
+            break;
+        default:
+            os << "NONE";
+            break;
+    }
+    return os;
+}
+
+
 struct io_creation_option_container
 {
     otf2::common::io_status_flag_type status_flag;

@@ -22,60 +22,6 @@ void remove_empty_sets(set_container_t<VertexDescriptor>& sets);
  */
 std::vector<VertexDescriptor> collect_root_sync_events(IoGraph& graph);
 
-// scope of a synchronization operation
-// can be global which means that the operation covers all processes
-// or local which mean that the operation does not cover all processes
-enum class sync_scope
-{
-    Local,
-    Global
-};
-
-inline std::ostream&
-operator<<(std::ostream& os, const sync_scope& scope)
-{
-    switch (scope)
-    {
-        case sync_scope::Local:
-            os << "Local";
-            break;
-        case sync_scope::Global:
-            os << "Global";
-            break;
-        default:
-            os << "NONE";
-            break;
-    }
-    return os;
-}
-
-// API
-template <typename Graph>
-sync_scope
-classify_sync(Graph& g, const sync_event_property& sevt)
-{
-    const auto np = num_procs(g);
-    const auto inv = num_procs_in_sync_involved(sevt);
-    return np == inv ? sync_scope::Global : sync_scope::Local;
-}
-
-// API
-// what should be returned in the case that `v` is referencing an I/O-Event?
-// One option might be to throw an exception.
-// Another option might be to introduce a `sync_scope::None` enumeration. On
-// which can be checked outside.
-template <typename Graph, typename Vertex>
-sync_scope
-classify_sync(Graph& g, const Vertex& v)
-{
-    if (g[v].type == vertex_kind::synthetic)
-    {
-        return sync_scope::Global;
-    }
-    const auto& sync_evt_p = boost::get<sync_event_property>(g[v].property);
-    return classify_sync(g, sync_evt_p);
-}
-
 // set-api
 map_view_t<VertexDescriptor> make_mapview(set_map_t<VertexDescriptor>& smap);
 
