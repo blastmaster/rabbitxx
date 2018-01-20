@@ -1,6 +1,7 @@
 
-add_executable(rabbitxx ${RABBITXX_SOURCES} main.cpp)
+add_executable(rabbitxx main.cpp)
 
+target_link_libraries(rabbitxx ${RABBITXX_LIBRARIES})
 # link against otf2xx
 target_link_libraries(rabbitxx otf2xx)
 # link against boost stuff

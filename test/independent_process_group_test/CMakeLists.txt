@@ -1,10 +1,10 @@
 set(SOURCE
-    ${RABBITXX_SOURCES}
     main.cpp
 )
 
 add_executable(independent_process_group_test ${SOURCE})
 target_link_libraries(independent_process_group_test
+    ${RABBITXX_LIBRARIES}
     ${OTF2_LIBRARIES}
     ${Boost_LIBRARIES}
     ${MPI_CXX_LIBRARIES}

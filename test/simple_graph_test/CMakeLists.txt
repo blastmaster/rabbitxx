@@ -1,10 +1,10 @@
 set(SOURCE
-    ${RABBITXX_SOURCES}
     main.cpp
 )
 
 add_executable(simple_graph_test ${SOURCE})
 target_link_libraries(simple_graph_test
+    ${RABBITXX_LIBRARIES}
     ${OTF2_LIBRARIES}
     ${Boost_LIBRARIES}
     ${MPI_CXX_LIBRARIES}

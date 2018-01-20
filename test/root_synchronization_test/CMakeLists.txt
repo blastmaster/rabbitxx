@@ -1,10 +1,10 @@
 set(SOURCE
-    ${RABBITXX_SOURCES}
     main.cpp
 )
 
 add_executable(root_synchronization_test ${SOURCE})
 target_link_libraries(root_synchronization_test
+    ${RABBITXX_LIBRARIES}
     ${OTF2_LIBRARIES}
     ${Boost_LIBRARIES}
     ${MPI_CXX_LIBRARIES}

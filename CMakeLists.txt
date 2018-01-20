@@ -53,6 +53,10 @@ set(RABBITXX_SOURCES
     ${CMAKE_SOURCE_DIR}/src/io_graph.cpp
 )
 
+#TODO: build individual static libraries
+add_library(rabbitxx_core ${RABBITXX_SOURCES})
+set(RABBITXX_LIBRARIES rabbitxx_core)
+
 if (BUILD_MODULES)
     add_subdirectory(modules)
 endif()
