@@ -181,14 +181,14 @@ struct io_event_property
 
 inline std::ostream& operator<<(std::ostream& os, const io_event_property& vertex)
 {
-    return os << "process id: " << vertex.proc_id
-                << " filename: " << vertex.filename
-                << " region: " << vertex.region_name
-                << " request_size:  " << vertex.request_size
-                << " response size: " << vertex.response_size
-                << " offset: " << vertex.offset
-                << " mode: " << boost::apply_visitor(option_type_printer(), vertex.option)
-                << " timestamp: " << vertex.timestamp;
+    return os << "process id: " << vertex.proc_id << "\n"
+                << "filename: " << vertex.filename << "\n"
+                << "region: " << vertex.region_name << "\n"
+                << "request_size:  " << vertex.request_size << "\n"
+                << "response size: " << vertex.response_size << "\n"
+                << "offset: " << vertex.offset << "\n"
+                << "mode: " << boost::apply_visitor(option_type_printer(), vertex.option) << "\n"
+                << "timestamp: " << vertex.timestamp << "\n";
 }
 
 enum class sync_event_kind
