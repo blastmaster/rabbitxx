@@ -41,10 +41,6 @@ int main(int argc, char** argv)
         }
 
         const auto input_trace = vm["input-trace"].as<std::string>();
-        otf2::reader::reader reader(input_trace);
-
-        std::size_t num_locations = reader.num_locations();
-        logging::debug() << "OTF2 trace reader created... " << num_locations << " locations.";
 
         //rabbitxx::log::set_min_severity_level("trace");
 

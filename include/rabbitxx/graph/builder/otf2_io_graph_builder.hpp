@@ -87,6 +87,12 @@ namespace rabbitxx { namespace graph {
             }
         }
 
+        //TODO: Do not return an optional type. Since there are no path where
+        //we does not have an edge_descriptor to return. This function should
+        //return just an edge_descriptor. This is even more reasonable, when
+        //mentioning that the edge_add_t type consists of an
+        //pair<edge_descriptor, bool> where the bool indicates whether edge
+        //adding was successful or not.
         boost::optional<typename Graph::edge_add_t>
         build_edge(const typename Graph::vertex_descriptor& descriptor,
                    const otf2::definition::location& location)

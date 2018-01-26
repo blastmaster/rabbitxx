@@ -7,12 +7,12 @@
 
 namespace rabbitxx {
 
-    template<typename Builder, typename... Args>
-    auto make_graph(Args&&... args)
-    {
-        Builder builder;
-        return std::move(builder(std::forward<Args>(args)...));
-    }
+template<typename Builder, typename... Args>
+auto make_graph(Args&&... args)
+{
+    Builder builder;
+    return builder(std::forward<Args>(args)...);
+}
 
 } // namespace rabbitxx
 
