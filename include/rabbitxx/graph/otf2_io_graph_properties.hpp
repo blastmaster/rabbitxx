@@ -77,7 +77,7 @@ struct io_creation_option_container
 {
     otf2::common::io_status_flag_type status_flag;
     otf2::common::io_creation_flag_type creation_flag;
-    boost::optional<otf2::common::io_access_mode_type> access_mode;
+    boost::optional<otf2::common::io_access_mode_type> access_mode = boost::none;
 
     io_creation_option_container(const otf2::common::io_status_flag_type& status,
                                     const otf2::common::io_creation_flag_type& flag,
@@ -151,11 +151,63 @@ struct option_type_printer : boost::static_visitor<std::string>
 
 };
 
+enum class io_event_kind
+{
+    create,  // create or open a new handle
+    dup,     // duplicate a handle
+    seek,   // seek
+    read,   // read operation
+    write,  // write operation
+    flush,  // flush
+    delete_or_close, // delete or close handle
+    none        // none
+};
+
+inline std::ostream& operator<<(std::ostream& os, const io_event_kind& io_kind)
+{
+    switch (io_kind)
+    {
+        case io_event_kind::create:
+            os << "create";
+            break;
+        case io_event_kind::dup:
+            os << "dup";
+            break;
+        case io_event_kind::seek:
+            os << "seek";
+            break;
+        case io_event_kind::read:
+            os << "read";
+            break;
+        case io_event_kind::write:
+            os << "write";
+            break;
+        case io_event_kind::flush:
+            os << "flush";
+            break;
+        case io_event_kind::delete_or_close:
+            os << "close_or_delete";
+            break;
+        case io_event_kind::none:
+            os << "None";
+            break;
+        default:
+            logging::fatal() << "This should never happen! Wrong `io_event_kind`!";
+            os << "UNDEFINED";
+            break;
+    }
+    return os;
+}
+
 struct io_event_property
 {
     using option_type = boost::variant<io_operation_option_container,
                                         io_creation_option_container,
                                         otf2::common::io_seek_option_type>;
+
+    //TODO enum class to distinguish the different operation types
+    //or a proper static visitor to check for which type we have
+    // maybe {create_op, seek_op, read_op, write_op}
 
     std::uint64_t proc_id = std::numeric_limits<std::uint64_t>::max();
     std::string filename;
@@ -164,6 +216,7 @@ struct io_event_property
     std::uint64_t response_size {0}; // bytes actually touched by this I/O operation
     std::uint64_t offset {0};
     option_type option;
+    io_event_kind kind;
     otf2::chrono::time_point timestamp;
 
     io_event_property() = default;
@@ -172,9 +225,10 @@ struct io_event_property
                         const std::string& reg_name, std::uint64_t req_size,
                         std::uint64_t resp_size,
                         std::uint64_t off, option_type mode,
+                        io_event_kind event_kind,
                         const otf2::chrono::time_point ts) noexcept
     : proc_id(process_id), filename(fname), region_name(reg_name), request_size(req_size),
-        response_size(resp_size), offset(off), option(mode), timestamp(ts)
+        response_size(resp_size), offset(off), option(mode), kind(event_kind), timestamp(ts)
     {
     }
 };
@@ -188,6 +242,7 @@ inline std::ostream& operator<<(std::ostream& os, const io_event_property& verte
                 << "response size: " << vertex.response_size << "\n"
                 << "offset: " << vertex.offset << "\n"
                 << "mode: " << boost::apply_visitor(option_type_printer(), vertex.option) << "\n"
+                << "kind: " << vertex.kind << "\n"
                 << "timestamp: " << vertex.timestamp << "\n";
 }
 
