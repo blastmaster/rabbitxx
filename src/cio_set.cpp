@@ -265,6 +265,17 @@ find_cio_sets(IoGraph& graph)
     return merged_sets;
 }
 
+std::vector<VertexDescriptor>
+get_io_events_by_kind(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set, io_event_kind kind)
+{
+    std::vector<VertexDescriptor> result;
+    std::copy_if(cio_set.begin() , cio_set.end(), std::back_inserter(result),
+            [&graph, &kind](const VertexDescriptor& vd) {
+                return boost::get<io_event_property>(graph[vd].property).kind == kind;
+            });
+    return result;
+}
+
 namespace detail
 {
 

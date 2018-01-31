@@ -61,6 +61,21 @@ get_events_by_kind(const IoGraph& graph, const std::vector<vertex_kind>& kinds)
     return events;
 }
 
+std::vector<VertexDescriptor>
+get_io_events_by_kind(const IoGraph& graph, const std::vector<io_event_kind>& kinds)
+{
+    const auto io_events = get_events_by_kind(graph, { vertex_kind::io_event });
+    std::vector<VertexDescriptor> io_evts_by_kind;
+    std::copy_if(io_events.begin(), io_events.end(), std::back_inserter(io_evts_by_kind),
+            [&kinds, &graph](const VertexDescriptor& vd) {
+                return std::any_of(kinds.begin(), kinds.end(),
+                        [&vd, &graph](const io_event_kind& kind) {
+                            return boost::get<io_event_property>(graph[vd].property).kind = kind;
+                        });
+                });
+    return io_evts_by_kind;
+}
+
 sync_scope
 classify_sync(IoGraph& g, const sync_event_property& sevt)
 {

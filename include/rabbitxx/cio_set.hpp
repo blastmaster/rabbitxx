@@ -73,6 +73,12 @@ set_map_t<VertexDescriptor> cio_sets_per_process(IoGraph& graph);
 // all-in-one version - do merging
 set_container_t<VertexDescriptor> find_cio_sets(IoGraph& graph);
 
+//FIXME ambigious overload, same function is already defined in `io_graph` 
+//but just works on graph instead of cio_sets.
+std::vector<VertexDescriptor> get_io_events_by_kind(const IoGraph& graph,
+        const set_t<VertexDescriptor>& cio_set,
+        io_event_kind kind);
+
 namespace detail
 {
 
