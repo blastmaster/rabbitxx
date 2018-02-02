@@ -58,8 +58,7 @@ collect_root_sync_events(IoGraph& graph)
 map_view_t<VertexDescriptor>
 make_mapview(set_map_t<VertexDescriptor>& smap)
 {
-    using vertex_descriptor = VertexDescriptor;
-    map_view_t<vertex_descriptor> m_v;
+    map_view_t<VertexDescriptor> m_v;
     for (auto& setmap_kvp : smap)
     {
         auto iter_p = std::make_pair(setmap_kvp.second.begin(), setmap_kvp.second.end());
@@ -188,13 +187,10 @@ void
 process_sets(IoGraph& graph, map_view_t<VertexDescriptor> map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
-    using vertex_descriptor = VertexDescriptor;
-
     bool on_end = std::all_of(map_view.begin(), map_view.end(),
         [](const auto& p_iters) { return p_iters.second.first == p_iters.second.second; });
     if (on_end)
     {
-        logging::debug() << "on end return!";
         return;
     }
 
@@ -279,7 +275,6 @@ get_io_events_by_kind(const IoGraph& graph, const set_t<VertexDescriptor>& cio_s
 namespace detail
 {
 
-// TODO: should at least be hidden from accedential use
 /**
  * XXX: The assert will fail if used on final sets! Since there is no origin.
  * This is not a final solution, it should work since events of the same rank
