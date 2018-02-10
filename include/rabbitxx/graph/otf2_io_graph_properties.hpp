@@ -79,14 +79,14 @@ struct io_creation_option_container
     otf2::common::io_creation_flag_type creation_flag;
     boost::optional<otf2::common::io_access_mode_type> access_mode = boost::none;
 
-    io_creation_option_container(const otf2::common::io_status_flag_type& status,
+    explicit io_creation_option_container(const otf2::common::io_status_flag_type& status,
                                     const otf2::common::io_creation_flag_type& flag,
                                     const otf2::common::io_access_mode_type& mode) noexcept
         : status_flag(status), creation_flag(flag), access_mode(mode)
     {
     }
 
-    io_creation_option_container(const otf2::common::io_status_flag_type& status) noexcept
+    explicit io_creation_option_container(const otf2::common::io_status_flag_type& status) noexcept
         : status_flag(status), creation_flag(otf2::common::io_creation_flag_type::none)
     {
     }
