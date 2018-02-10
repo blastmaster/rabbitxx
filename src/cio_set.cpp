@@ -76,8 +76,8 @@ update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view)
     {
         const auto& dbg_cached_value = map_view[proc].first->end_event();
         map_view[proc].first = std::next(map_view[proc].first);
-        logging::debug() << "process: " << proc << " increment iterator from " << dbg_cached_value
-                         << " to " << map_view[proc].first->end_event();
+        //logging::debug() << "process: " << proc << " increment iterator from " << dbg_cached_value
+                         //<< " to " << map_view[proc].first->end_event();
     }
 
     return map_view;
@@ -124,12 +124,12 @@ pg_group(IoGraph& graph, const VertexDescriptor& vd)
         const auto& scope = classify_sync(graph, evt_property);
         if (scope == sync_scope::Local)
         {
-            logging::debug() << "Retrun process_group_t of LOCAL sync-event: " << vd;
+            //logging::debug() << "Retrun process_group_t of LOCAL sync-event: " << vd;
             return process_group_t(inv_proc_v.begin(), inv_proc_v.end());
         }
         if (scope == sync_scope::Global)
         {
-            logging::debug() << "Retrun process_group_t of GLOBAL sync-event: " << vd;
+            //logging::debug() << "Retrun process_group_t of GLOBAL sync-event: " << vd;
             return process_group_t(inv_proc_v.begin(), inv_proc_v.end());
         }
         logging::fatal() << "undefined sync_scope not handled! Event: " << vd;
@@ -137,7 +137,7 @@ pg_group(IoGraph& graph, const VertexDescriptor& vd)
     }
     if (graph[vd].type == vertex_kind::synthetic)
     {
-        logging::debug() << "Retrun process_group_t of GLOBAL synthetic-event: " << vd;
+        //logging::debug() << "Retrun process_group_t of GLOBAL synthetic-event: " << vd;
         const auto np = num_procs(graph);
         std::vector<std::uint64_t> all_procs(np);
         std::iota(all_procs.begin(), all_procs.end(), 0);
@@ -161,17 +161,17 @@ do_merge(IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
     }
 
     // JUST FOR DEBUGGING
-    std::cout << "END-EVENTS:\n";
-    std::copy(
-        end_evts.begin(), end_evts.end(), std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
-    std::cout << "\n";
+    //std::cout << "END-EVENTS:\n";
+    //std::copy(
+        //end_evts.begin(), end_evts.end(), std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
+    //std::cout << "\n";
 
     const auto e_evts = detail::find_end_events_to_update(graph, end_evts);
     if (!e_evts.empty())
     {
         cur_s.close();
         cur_s.set_end_event(e_evts.back());
-        logging::debug() << "create new set:\n" << cur_s;
+        //logging::debug() << "create new set:\n" << cur_s;
         merged_sets.push_back(cur_s);
     }
     else
@@ -198,7 +198,7 @@ process_sets(IoGraph& graph, map_view_t<VertexDescriptor> map_view,
 
     for (const auto& end_evt : end_events)
     {
-        logging::debug() << "Choose end-event: " << end_evt << " -> recursive update!";
+        //logging::debug() << "Choose end-event: " << end_evt << " -> recursive update!";
         const auto lpg = pg_group(graph, end_evt);
         process_sets(graph, update_view(lpg, map_view), merged_sets);
     }
@@ -249,14 +249,14 @@ find_cio_sets(IoGraph& graph)
 
     map_t sets_per_process = cio_sets_per_process(graph);
     auto merged_sets = merge_sets(graph, sets_per_process);
-    logging::debug() << "Resulting Sets:\n" << "raw size: " << merged_sets.size();
+    //logging::debug() << "Resulting Sets:\n" << "raw size: " << merged_sets.size();
     // remove empty sets
     remove_empty_sets(merged_sets);
-    logging::debug() << "w/o empty sets: " << merged_sets.size();
+    //logging::debug() << "w/o empty sets: " << merged_sets.size();
     // sort and remove duplicates
     std::sort(merged_sets.begin(), merged_sets.end());
     merged_sets.erase(std::unique(merged_sets.begin(), merged_sets.end()), merged_sets.end());
-    logging::debug() << "unique sets: " << merged_sets.size();
+    //logging::debug() << "unique sets: " << merged_sets.size();
 
     return merged_sets;
 }
@@ -372,7 +372,6 @@ find_end_events_to_update(IoGraph& graph, std::vector<VertexDescriptor> end_evts
     if (end_evts.size() == 1)
     {
         assert(sync_scope::Global == classify_sync(graph, end_evts.back()));
-        // return end_evts.back();
         // TODO: check if can update
         return end_evts;
     }
@@ -388,12 +387,12 @@ find_end_events_to_update(IoGraph& graph, std::vector<VertexDescriptor> end_evts
     if (end_evts.size() == 1)
     {
         assert(sync_scope::Local == classify_sync(graph, end_evts.back()));
-        logging::debug() << "JUST ONE LOCAL EVENT SO JUST RETURN!";
-        // return end_evts.back();
+        //logging::debug() << "JUST ONE LOCAL EVENT SO JUST RETURN!";
         // TODO: check if can update
         return end_evts;
     }
 
+    // we have more than one end-event with sync_scope::Local
     const auto upairs_v = generate_unique_pairs(end_evts);
     assert(upairs_v.size() == num_unique_pairs(end_evts.size()));
     std::set<VertexDescriptor> independent_syncs, dependent_syncs;
@@ -409,37 +408,39 @@ find_end_events_to_update(IoGraph& graph, std::vector<VertexDescriptor> end_evts
 
         if (intersection_procs.empty())
         {
-            logging::debug() << "independent sync pair: (" << sync_p.first << ", " << sync_p.second
-                             << ")";
+            //logging::debug() << "independent sync pair: (" << sync_p.first << ", " << sync_p.second
+                             //<< ")";
             independent_syncs.insert(sync_p.first);
             independent_syncs.insert(sync_p.second);
         }
         else
         {
-            logging::debug() << "overlapping procs from depending sync pair: "
-                             << "(" << sync_p.first << ", " << sync_p.second << ")";
+            //logging::debug() << "overlapping procs from depending sync pair: "
+                             //<< "(" << sync_p.first << ", " << sync_p.second << ")";
             dependent_syncs.insert(sync_p.first);
             dependent_syncs.insert(sync_p.second);
             std::copy(intersection_procs.begin(), intersection_procs.end(),
                 std::back_inserter(overlapping_procs));
         }
     }
-    logging::debug() << "OVERLAPPING PROCS:";
-    std::copy(overlapping_procs.begin(), overlapping_procs.end(),
-        std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
-    std::cout << "\n";
+
+    // JUST FOR DEBUGGING
+    //logging::debug() << "OVERLAPPING PROCS:";
+    //std::copy(overlapping_procs.begin(), overlapping_procs.end(),
+        //std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
+    //std::cout << "\n";
 
     VertexDescriptor update_evt;
     // first check dependent events
     if (!dependent_syncs.empty())
     {
-        logging::debug() << "choose from dependent syncs";
+        //logging::debug() << "choose from dependent syncs";
         update_evt = check_update_func(graph, dependent_syncs);
     }
     // afterwards check for independent events
     else if (!independent_syncs.empty())
     {
-        logging::debug() << "choose from independent syncs";
+        //logging::debug() << "choose from independent syncs";
         // update_evt = check_update_func(graph, independent_syncs);
         std::vector<VertexDescriptor> res;
         for (const auto& isv : independent_syncs)

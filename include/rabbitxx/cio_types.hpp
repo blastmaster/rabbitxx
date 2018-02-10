@@ -78,7 +78,7 @@ public:
         start_evt_ = other_set.start_event() < start_evt_ ? other_set.start_event() : start_evt_;
         if (other_set.empty())
         {
-            logging::debug() << "in merge, other set is empty... skip!";
+            //logging::debug() << "in merge, other set is empty... skip!";
             return;
         }
 
@@ -215,60 +215,62 @@ public:
     {
         const auto cur_pid = g[v].id();
         auto* set_ptr = find_open_set_for(cur_pid);
-        if (set_ptr == nullptr)
-        { // no open set was found for this process
-            logging::debug() << "No open set was found!";
+        if (set_ptr == nullptr) // no open set was found for this process
+        {
+            //logging::debug() << "No open set was found!";
             if (vertex_kind::io_event == g[v].type)
             {
-                logging::fatal() << "I/O Event ... THIS SHOULD NEVER HAPPEN";
+                //logging::fatal() << "I/O Event ... THIS SHOULD NEVER HAPPEN";
                 return;
             }
             if (vertex_kind::synthetic == g[v].type)
             { // synthetic events have
                 // no pid so there is
                 // nothing to do here.
-                logging::debug() << "Synthetic Event ... doing nothing....";
+                //logging::debug() << "Synthetic Event ... doing nothing....";
                 return;
             }
             if (vertex_kind::sync_event == g[v].type)
             {
                 // we are on a sync event and have no open set
-                logging::debug() << "Sync Event " << v << " ... create a new set";
+                //logging::debug() << "Sync Event " << v << " ... create a new set";
                 const auto sync_root = root_of_sync(v, g);
                 // create a new set
                 create_new_set(cur_pid, sync_root);
             }
         }
-        else
-        { // an open set for this process was found
-            logging::debug() << "Open set found!";
+        else // an open set for this process was found
+        {
+            //logging::debug() << "Open set found!";
             if (vertex_kind::io_event == g[v].type)
             {
-                logging::debug() << "I/O Event ... ";
+                //logging::debug() << "I/O Event ... ";
                 // open set and on I/O event -> insert I/O event into set
                 set_ptr->insert(v);
-                logging::debug() << "insert vertex #" << v << " @ rank " << g[v].id() << " "
-                                 << g[v].name() << " into current set";
+                //logging::debug() << "insert vertex #" << v << " @ rank " << g[v].id() << " "
+                                 //<< g[v].name() << " into current set";
             }
             else if (vertex_kind::synthetic == g[v].type)
             { // set should be already closed during examination
                 // of the edges!
-                logging::fatal() << "Synthetic Event ... THIS SHOULD NEVER HAPPEN";
+                //logging::fatal() << "Synthetic Event ... THIS SHOULD NEVER HAPPEN";
                 return;
             }
             else if (vertex_kind::sync_event == g[v].type)
             {
-                logging::debug() << "Sync Event " << g[v].name() << " ... close current set @"
-                                 << g[v].id();
+                //logging::debug() << "Sync Event " << g[v].name() << " ... close current set @"
+                                 //<< g[v].id();
                 set_ptr->close();
                 const auto sync_root = root_of_sync(v, g);
                 set_ptr->set_end_event(sync_root, v);
                 const auto out_dgr = boost::out_degree(v, g);
+                // FIXME: this should be the case every time, since we have an
+                // synthetic end-event.
                 if (out_dgr > 0)
                 { // just create a new set if we are not the last
                     // event, here it could be maybe
                     // better to have a look at our adjacent vertices
-                    logging::debug() << "create a new set for pid: " << cur_pid;
+                    //logging::debug() << "create a new set for pid: " << cur_pid;
                     create_new_set(cur_pid, sync_root);
                 }
             }
@@ -280,7 +282,7 @@ public:
     {
         const auto src_vd = source(e, g);
         const auto trg_vd = target(e, g);
-        logging::debug() << "on examine edge from " << src_vd << " to " << trg_vd;
+        //logging::debug() << "on examine edge from " << src_vd << " to " << trg_vd;
         const auto src_pid = g[src_vd].id();
         const auto trg_pid = g[trg_vd].id();
 
@@ -290,11 +292,11 @@ public:
             auto* set_ptr = find_open_set_for(src_pid);
             if (set_ptr == nullptr)
             {
-                logging::fatal() << "No set was found on the way to synthetic event! "
-                                    "This was not expected.";
+                //logging::fatal() << "No set was found on the way to synthetic event! "
+                                    //"This was not expected.";
                 return;
             }
-            logging::debug() << "on end for pid: " << src_pid << " close set";
+            //logging::debug() << "on end for pid: " << src_pid << " close set";
             set_ptr->close();
             set_ptr->set_end_event(trg_vd, trg_vd);
         }
@@ -319,15 +321,21 @@ public:
         // create new set if we come from synthetic root event.
         if (g[src_vd].type == vertex_kind::synthetic)
         {
-            logging::debug() << "source is synthetic ...";
+            //logging::debug() << "source is synthetic ...";
             create_new_set(trg_pid, src_vd);
+            //FIXME is this necessary?
+            //here the newly created set is closed if the target is a
+            //sync event, Since next to this we call `discover vertex`
+            //where an sync event will causing the set to be closed.
+            //We should only create a cio_set if the target isn't a sync event.
+            //This saves us to produce empty sets.
             if (g[trg_vd].type == vertex_kind::sync_event)
             {
-                logging::debug() << "target is sync event ... close!";
+                //logging::debug() << "target is sync event ... close!";
                 auto* set_ptr = find_open_set_for(trg_pid);
                 if (set_ptr == nullptr)
                 {
-                    logging::fatal() << "Error no set found!";
+                    //logging::fatal() << "Error no set found!";
                     return;
                 }
                 set_ptr->close();

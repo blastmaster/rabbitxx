@@ -98,12 +98,12 @@ namespace rabbitxx { namespace graph {
                    const otf2::definition::location& location)
         {
             if (edge_points_.count(location) == 0) {
-                logging::debug() << "First `edge_points_` location #" << location.ref()
-                    << " entry! try access...";
+                //logging::debug() << "First `edge_points_` location #" << location.ref()
+                    //<< " entry! try access...";
             }
 
             if (edge_points_.empty(location)) {
-                logging::debug() << "No vertex in edge_points_ queue.";
+                //logging::debug() << "No vertex in edge_points_ queue.";
                 // We cannot add an edge if only one vertex are given.
                 // So push vertex into queue and return.
                 edge_points_.enqueue(location, descriptor);
@@ -251,7 +251,7 @@ namespace rabbitxx { namespace graph {
 
             // check for parent! to avoid duplication
             if (evt.handle().has_parent()) {
-                logging::debug() << "handle has a parent! ... discard";
+                //logging::debug() << "handle has a parent! ... discard";
                 return;
                 // Since we already have the parent handle recorded... discard!
                 // FIXME: This is not quiet correct! How handle more
@@ -311,7 +311,7 @@ namespace rabbitxx { namespace graph {
 
             //check for parent! avoid duplication
             if (evt.handle().has_parent()) {
-                logging::debug() << "handle has a parent! ... discard!";
+                //logging::debug() << "handle has a parent! ... discard!";
                 return;
                 // Since we already have the parent handle recorded... discard!
                 // FIXME: This is not quiet correct! How handle more
@@ -446,24 +446,24 @@ namespace rabbitxx { namespace graph {
                 // TODO: skip sync event if no members are involved!
                 // A single process sync with itself is no synchronization.
                 if (evt.comm().self_group().size() <= 0) {
-                    logging::debug() << "[" << region_name << "] has no members, therefore no synchronizations happens... skip!";
+                    //logging::debug() << "[" << region_name << "] has no members, therefore no synchronizations happens... skip!";
                     return;
                 }
 
                 members = evt.comm().self_group().members();
-                logging::debug() << "[" << region_name << "] choose evt.comm().self_group().members(): "
-                    << "size: " << members.size() << " [comm name:] " << evt.comm().name()
-                    << " [group name:] " << evt.comm().self_group().name()
-                    << " [group type:] " << to_string(evt.comm().self_group().type())
-                    << " [group size:] " << evt.comm().self_group().size();
+                //logging::debug() << "[" << region_name << "] choose evt.comm().self_group().members(): "
+                    //<< "size: " << members.size() << " [comm name:] " << evt.comm().name()
+                    //<< " [group name:] " << evt.comm().self_group().name()
+                    //<< " [group type:] " << to_string(evt.comm().self_group().type())
+                    //<< " [group size:] " << evt.comm().self_group().size();
             }
             else {
                 members = evt.comm().group().members();
-                logging::debug() << "[" << region_name <<"] choose evt.comm().group().members(): "
-                    << "size: " << members.size() << " [comm name:] " << evt.comm().name()
-                    << " [group name:] " << evt.comm().group().name()
-                    << " [group type:] " << to_string(evt.comm().group().type())
-                    << " [group size:] " << evt.comm().group().size();
+                //logging::debug() << "[" << region_name <<"] choose evt.comm().group().members(): "
+                    //<< "size: " << members.size() << " [comm name:] " << evt.comm().name()
+                    //<< " [group name:] " << evt.comm().group().name()
+                    //<< " [group type:] " << to_string(evt.comm().group().type())
+                    //<< " [group size:] " << evt.comm().group().size();
             }
 
             assert(members.size() != 0); // getting sure!
@@ -598,6 +598,8 @@ namespace rabbitxx { namespace graph {
             //graph_.add_vertex();
         }
 
+        //TODO: merge sync events together but conserve the data from all
+        //synchronization events.
         void events_done(const otf2::reader::reader& rdr) override
         {
             auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds {SYNC,IO, SYNTHETIC}
@@ -606,7 +608,7 @@ namespace rabbitxx { namespace graph {
                 create_synthetic_end();
                 for (const auto& loc_events : events_)
                 {
-                    logging::debug() << "processing location: " << loc_events.first;
+                    //logging::debug() << "processing location: " << loc_events.first;
                     std::deque<typename Graph::vertex_descriptor> sync_events;
                     //Copy all synchronization events in separate vector.
                     std::copy_if(loc_events.second.begin(), loc_events.second.end(),
@@ -625,7 +627,7 @@ namespace rabbitxx { namespace graph {
                         // Distinguish between sync_event_kind's atm. just collective and p2p.
                         if (vertex.comm_kind == sync_event_kind::collective)
                         {
-                            logging::debug() << "vertex sync_event_kind is collective";
+                            //logging::debug() << "vertex sync_event_kind is collective";
                             auto coll_op = boost::get<collective>(vertex.op_data);
                             ///XXX if vertex.root_rank == OTF2XXX::irgendwas::undefined
                             //          hole alle events aus allen locations und
@@ -664,7 +666,7 @@ namespace rabbitxx { namespace graph {
                         }
                         else
                         {
-                            logging::debug() << "vertex sync_event_kind is p2p";
+                            //logging::debug() << "vertex sync_event_kind is p2p";
                             assert(vertex.comm_kind == sync_event_kind::p2p);
                             auto p2p_op = boost::get<peer2peer>(vertex.op_data);
                             const auto remote = p2p_op.remote_process();
@@ -686,9 +688,7 @@ namespace rabbitxx { namespace graph {
                                                 //logging::debug() << "Selected p2p events: "  << vertex  << " -> "<<  sevt;
                                                 return true;
                                             }
-                                            //logging::debug() << "proc id: " << vertex.proc_id << " remote proc: " << p2pevt.remote_process();
                                             return false;
-                                            //return sevt.comm_kind == sync_event_kind::p2p;
                                          });
                             if (it == events_[remote].end()) {
                                 logging::fatal() << "cannot find corresponding p2p event";
