@@ -107,6 +107,27 @@ TEST_CASE("[ech]", "Find correct root of synchronization events")
                         }));
 }
 
+TEST_CASE("[echp2p]", "check-p2p-root")
+{
+    static const std::string trc_file {"/home/soeste/traces/dios/edge_case_hard/traces.otf2"};
+    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
+    auto root_sync_evts = rabbitxx::collect_root_sync_events(*graph);
+
+    const std::vector<typename decltype(graph)::element_type::vertex_descriptor> exp_evts {
+        0, 1, 21, 22, 26, 29, 30, 34, 38 };
+
+    const std::vector<std::pair<rabbitxx::VertexDescriptor,rabbitxx::VertexDescriptor>> p2p_roots {
+        {21, 9}, {22, 10}, {26, 25}, {29, 13}, {30, 18} };
+
+    // assert root of these root are the other
+    for (const auto kvp : p2p_roots)
+    {
+        REQUIRE(kvp.first == rabbitxx::root_of_sync(kvp.first, *graph->get()));
+        REQUIRE(kvp.first == rabbitxx::root_of_sync(kvp.second, *graph->get()));
+    }
+
+}
+
 TEST_CASE("[trace-own-advanced6]", "Find correct root of synchronization events")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
