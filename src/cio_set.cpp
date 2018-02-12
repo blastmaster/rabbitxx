@@ -248,6 +248,12 @@ find_cio_sets(IoGraph& graph)
     using map_t = set_map_t<VertexDescriptor>;
 
     map_t sets_per_process = cio_sets_per_process(graph);
+    return find_cio_sets(graph, sets_per_process);
+}
+
+set_container_t<VertexDescriptor>
+find_cio_sets(IoGraph& graph, set_map_t<VertexDescriptor>& sets_per_process)
+{
     auto merged_sets = merge_sets(graph, sets_per_process);
     //logging::debug() << "Resulting Sets:\n" << "raw size: " << merged_sets.size();
     // remove empty sets
