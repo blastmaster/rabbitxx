@@ -1,5 +1,6 @@
 #include <rabbitxx/cio_set.hpp>
 #include <rabbitxx/graph.hpp>
+#include <rabbitxx/utils.hpp>
 #include <rabbitxx/log.hpp>
 
 #include <string>
@@ -18,6 +19,34 @@ using rabbitxx::logging;
  *
  */
 
+void
+creates_per_dir(rabbitxx::IoGraph& graph, const std::vector<rabbitxx::VertexDescriptor>& create_evts)
+//creates_per_dir(rabbitxx::IoGraph& graph, rabbitxx::set_t<rabbitxx::VertexDescriptor>& cio_set, const std::vector<rabbitxx::VertexDescriptor>& create_evts)
+{
+    std::map<rabbitxx::fs::path, int> dir_cnt_map;
+    for (const auto create_evt : create_evts)
+    {
+        auto io_evt = boost::get<rabbitxx::io_event_property>(graph[create_evt].property);
+
+        rabbitxx::fs::path p(io_evt.filename);
+        p.remove_filename();
+        auto it = dir_cnt_map.find(p);
+        if (it == dir_cnt_map.end()) {
+            dir_cnt_map[p] = 1;
+        }
+        else {
+            dir_cnt_map[p]++;
+            std::cout << "in proc " << io_evt.proc_id;
+        }
+    }
+
+    std::cout << std::endl;
+    for (const auto kvp : dir_cnt_map)
+    {
+        std::cout << kvp.first.c_str() << " " << kvp.second << std::endl;
+    }
+}
+
 int main(int argc, char** argv)
 {
 
@@ -31,26 +60,11 @@ int main(int argc, char** argv)
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     // get cio-sets
     auto cio_sets = rabbitxx::find_cio_sets(*graph);
-    static unsigned long count = 0;
-
-    for (auto& cs : cio_sets)
+    for (auto& cio_set : cio_sets)
     {
-        for (rabbitxx::VertexDescriptor vd : cs)
-        {
-            try
-            {
-                auto property = boost::get<rabbitxx::io_event_property>((*graph)[vd].property);
-                auto op = boost::get<rabbitxx::io_creation_option_container>(property.option);
-                //here we have a create
-                //logging::debug() << property;
-                count++;
-            } catch (...) {
-            }
-        }
+        const auto create_evts = rabbitxx::get_io_events_by_kind(*graph, cio_set, rabbitxx::io_event_kind::create);
+        creates_per_dir(*graph, create_evts);
     }
-
-    std::cout << "\n\n";
-    logging::debug() << "create events: " << count << "\n";
 
     return EXIT_SUCCESS;
 }
