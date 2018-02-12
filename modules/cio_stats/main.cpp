@@ -127,6 +127,21 @@ void print_cio_set_stats(const rabbitxx::IoGraph& graph,
     }
 }
 
+void print_cio_set_per_process_stats(rabbitxx::IoGraph& graph,
+        rabbitxx::set_map_t<rabbitxx::VertexDescriptor> sets_per_proc)
+{
+    int cnt {0};
+    rabbitxx::remove_empty_sets(sets_per_proc); //Thats the reason for taking the parameter by value!
+    std::cout << "==================== Cio-Set per process stats ====================" << std::endl;
+    for (const auto& set_pp_kvp : sets_per_proc)
+    {
+        int cnt_pp = set_pp_kvp.second.size();
+        std::cout << "Number of CIO-Sets per process [" << set_pp_kvp.first << "] " << cnt_pp << std::endl;
+        cnt += cnt_pp;
+    }
+    std::cout << "Sum CIO-Sets per process: " << cnt << std::endl;
+}
+
 int main(int argc, char** argv)
 {
     if (argc < 2)
@@ -137,8 +152,11 @@ int main(int argc, char** argv)
 
     std::string trc_file(argv[1]);
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
+    // get cio-sets per process
+    auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph);
+    print_cio_set_per_process_stats(*graph, cio_sets_pp);
     // get cio-sets
-    auto cio_sets = rabbitxx::find_cio_sets(*graph);
+    auto cio_sets = rabbitxx::find_cio_sets(*graph, cio_sets_pp);
     print_cio_set_stats(*graph, cio_sets);
 
     return EXIT_SUCCESS;
