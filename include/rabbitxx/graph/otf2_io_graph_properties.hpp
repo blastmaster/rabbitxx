@@ -313,7 +313,6 @@ public:
     {
     }
 
-    //since not every collective operation does have an `root`
     explicit collective(std::vector<std::uint64_t> members) noexcept
     : members_(std::move(members))
     {
@@ -348,6 +347,7 @@ struct sync_event_property
     sync_event_kind comm_kind = sync_event_kind::none;
     comm_type op_data;
     otf2::chrono::time_point timestamp;
+    size_t root_event = std::numeric_limits<size_t>::max();
 
     explicit sync_event_property(std::uint64_t process_id, const std::string& rname, const peer2peer& op_dat, const otf2::chrono::time_point ts) noexcept
     : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::p2p), op_data(op_dat), timestamp(ts)
@@ -358,7 +358,6 @@ struct sync_event_property
     : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::collective), op_data(op_dat), timestamp(ts)
     {
     }
-
 };
 
 struct comm_type_printer : boost::static_visitor<std::string>

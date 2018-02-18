@@ -687,7 +687,7 @@ struct stack_frame
                     // iterate through all vertex desciptors of sync_events occuring on this location
                     for (const auto& v : loc_events.second)
                     {
-                        auto vertex = boost::get<sync_event_property>(get(p_map, v)); // get the corresponding sync event property
+                        auto& vertex = boost::get<sync_event_property>(get(p_map, v)); // get the corresponding sync event property
                         // Distinguish between sync_event_kind's atm. just collective and p2p.
                         if (vertex.comm_kind == sync_event_kind::collective)
                         {
@@ -717,6 +717,9 @@ struct stack_frame
                                     return;
                                 }
                                 //TODO: ist gefundene collective auch member der aktuellen
+                                //TODO: set_root_events
+                                auto& trg_vertex = boost::get<sync_event_property>(get(p_map, *it));
+                                trg_vertex.root_event = v;
                                 graph_->add_edge(v, *it);
                                 synchronizations_[m].erase(it);
                             }
@@ -746,9 +749,14 @@ struct stack_frame
                                 logging::fatal() << "cannot find corresponding p2p event";
                                 return;
                             }
+                            // TODO: set root event
+                            auto& trg_vertex = boost::get<sync_event_property>(get(p_map, *it));
+                            trg_vertex.root_event = v;
                             graph_->add_edge(v, *it);
                             synchronizations_[remote].erase(it);
                         }
+                        // set sync event as root
+                        vertex.root_event = v;
                     }
                 }
                 // setting graph properties
