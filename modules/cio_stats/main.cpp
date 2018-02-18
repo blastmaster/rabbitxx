@@ -1,6 +1,7 @@
 #include <rabbitxx/log.hpp>
 #include <rabbitxx/graph.hpp>
 #include <rabbitxx/cio_set.hpp>
+#include <rabbitxx/cio_stats.hpp>
 
 #include <iostream>
 
@@ -159,5 +160,13 @@ int main(int argc, char** argv)
     auto cio_sets = rabbitxx::find_cio_sets(*graph, cio_sets_pp);
     print_cio_set_stats(*graph, cio_sets);
 
+    int set_cnt {0};
+    for (auto& cio_set : cio_sets)
+    {
+        std::cout << "==================== Set " << set_cnt << " ====================" << std::endl;
+        rabbitxx::CIO_Stats rw_statistic(*graph, cio_set);
+        rabbitxx::dump_stats(rw_statistic);
+        ++set_cnt;
+    }
     return EXIT_SUCCESS;
 }
