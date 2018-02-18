@@ -95,7 +95,7 @@ TEST_CASE("[ech]", "Find correct root of synchronization events")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/edge_case_hard/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto root_sync_evts = rabbitxx::collect_root_sync_events(*graph);
+    const auto root_sync_evts = rabbitxx::collect_root_sync_events(*graph);
 
     const std::vector<typename decltype(graph)::element_type::vertex_descriptor> exp_evts {
         0, 1, 21, 22, 26, 29, 30, 34, 38 };
@@ -113,6 +113,28 @@ TEST_CASE("[ech]", "Find correct root of synchronization events")
                                                 return e_evt == evt;
                                             });
                         }));
+}
+
+TEST_CASE("root events in property", "[ech]")
+{
+    static const std::string trc_file {"/home/soeste/traces/dios/edge_case_hard/traces.otf2"};
+    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
+    const auto syncs = rabbitxx::get_events_by_kind(*graph, {rabbitxx::vertex_kind::sync_event});
+    std::set<rabbitxx::VertexDescriptor> rt_syncs;
+
+    std::transform(syncs.begin(), syncs.end(), std::inserter(rt_syncs, rt_syncs.begin()),
+            [&graph](const rabbitxx::VertexDescriptor vd)
+            {
+                auto s = boost::get<rabbitxx::sync_event_property>(graph->operator[](vd).property);
+                return s.root_event;
+            });
+
+    std::cout << std::endl;
+    std::cout << "root events" << std::endl;
+    for (auto s : rt_syncs)
+    {
+        std::cout << "root: " << s << std::endl;
+    }
 }
 
 TEST_CASE("[echp2p]", "check-p2p-root")
