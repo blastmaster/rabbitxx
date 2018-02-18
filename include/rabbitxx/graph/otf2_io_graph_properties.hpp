@@ -472,7 +472,7 @@ struct otf2_trace_event
             return p.proc_id;
         }
         if (type == vertex_kind::synthetic) {
-            logging::fatal() << "Synthetic Event has no process id return INT MAX.";
+            logging::debug() << "Synthetic Event has no process id return INT MAX.";
             return std::numeric_limits<std::uint64_t>::max();
         }
 

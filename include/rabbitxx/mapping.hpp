@@ -95,7 +95,7 @@ namespace rabbitxx {
             int to_rank(const otf2::reference<otf2::definition::location>::ref_type ref) const
             {
                 if (loc_to_rank_.count(ref) <= 0) {
-                    logging::fatal() << "There is no rank registered to location #" << ref;
+                    logging::debug() << "There is no rank registered to location #" << ref;
                     return -1;
                 }
 
