@@ -278,6 +278,21 @@ get_io_events_by_kind(const IoGraph& graph, const set_t<VertexDescriptor>& cio_s
     return result;
 }
 
+std::vector<VertexDescriptor>
+get_io_events_by_kind(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set, const std::vector<io_event_kind>& kinds)
+{
+    std::vector<VertexDescriptor> results;
+    std::copy_if(cio_set.begin(), cio_set.end(), std::back_inserter(results),
+            [&graph, &kinds](const VertexDescriptor& vd) {
+                const auto io_evt_kind = boost::get<io_event_property>(graph[vd].property).kind;
+                return std::any_of(kinds.begin(), kinds.end(),
+                        [&io_evt_kind](const io_event_kind kind) {
+                            return io_evt_kind == kind;
+                        });
+            });
+    return results;
+}
+
 namespace detail
 {
 

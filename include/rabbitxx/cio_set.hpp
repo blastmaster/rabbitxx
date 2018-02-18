@@ -83,6 +83,9 @@ std::vector<VertexDescriptor> get_io_events_by_kind(const IoGraph& graph,
         const set_t<VertexDescriptor>& cio_set,
         io_event_kind kind);
 
+std::vector<VertexDescriptor>
+get_io_events_by_kind(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set, const std::vector<io_event_kind>& kinds);
+
 namespace detail
 {
 
