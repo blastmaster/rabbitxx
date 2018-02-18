@@ -8,18 +8,6 @@
 
 using rabbitxx::logging;
 
-rabbitxx::io_event_property 
-get_io_property(const rabbitxx::IoGraph& graph, const rabbitxx::VertexDescriptor vd)
-{
-    return boost::get<rabbitxx::io_event_property>(graph[vd].property);
-}
-
-rabbitxx::sync_event_property
-get_sync_property(const rabbitxx::IoGraph& graph, const rabbitxx::VertexDescriptor vd)
-{
-    return boost::get<rabbitxx::sync_event_property>(graph[vd].property);
-}
-
 double avg_request_size(const rabbitxx::IoGraph& graph, const std::vector<rabbitxx::VertexDescriptor>& events)
 {
     if (events.empty())

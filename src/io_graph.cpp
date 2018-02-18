@@ -4,6 +4,18 @@
 namespace rabbitxx {
 
 
+io_event_property 
+get_io_property(const IoGraph& graph, const VertexDescriptor vd)
+{
+    return boost::get<io_event_property>(graph[vd].property);
+}
+
+sync_event_property
+get_sync_property(const IoGraph& graph, const VertexDescriptor vd)
+{
+    return boost::get<sync_event_property>(graph[vd].property);
+}
+
 VertexDescriptor
 find_root(const IoGraph& graph)
 {
