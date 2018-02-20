@@ -7,4 +7,3 @@
 [submodule "external/otf2xx"]
 	path = external/otf2xx
 	url = git@github.com:tud-zih-energy/otf2xx.git
-	branch = io

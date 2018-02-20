@@ -40,16 +40,6 @@ double avg_response_size(const IoGraph& graph, const std::vector<VertexDescripto
                 return init + io_evt.response_size;
             });
 
-    std::cout << "EVENTS\n[ ";
-    std::vector<std::uint64_t> event_sizes(events.size());
-    std::transform(events.begin(), events.end(), event_sizes.begin(),
-            [&graph](const VertexDescriptor vd)
-            {
-                return get_io_property(graph, vd).response_size;
-            });
-    std::copy(event_sizes.begin(), event_sizes.end(), std::ostream_iterator<std::uint64_t>(
-                std::cout, ", "));
-    std::cout << " ]\n";
 
     std::cout << "sum responses: " << res << " num events: " << events.size() << "\n";
     return static_cast<double>(res / events.size());
@@ -88,35 +78,85 @@ read_functions(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
 }
 
 std::map<std::string, std::vector<VertexDescriptor>>
-rw_region_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
+region_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
 {
     std::map<std::string, std::vector<VertexDescriptor>> rm;
     for (auto vd : cio_set)
     {
         const auto io_evt = get_io_property(graph, vd);
-        if (io_evt.kind == io_event_kind::write ||
-                io_evt.kind == io_event_kind::read)
-        {
-            rm[io_evt.region_name].push_back(vd);
-        }
+        rm[io_evt.region_name].push_back(vd);
     }
 
     return rm;
+}
+
+std::map<io_event_kind, std::vector<VertexDescriptor>>
+kind_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
+{
+    std::map<io_event_kind, std::vector<VertexDescriptor>> io_evt_kind_map;
+    for (const auto& evt_vd : cio_set)
+    {
+        auto io_evt = boost::get<io_event_property>(graph[evt_vd].property);
+        switch(io_evt.kind)
+        {
+            case io_event_kind::create:
+                io_evt_kind_map[io_event_kind::create].push_back(evt_vd);
+                break;
+            case io_event_kind::dup:
+                io_evt_kind_map[io_event_kind::dup].push_back(evt_vd);
+                break;
+            case io_event_kind::read:
+                io_evt_kind_map[io_event_kind::read].push_back(evt_vd);
+                break;
+            case io_event_kind::write:
+                io_evt_kind_map[io_event_kind::write].push_back(evt_vd);
+                break;
+            case io_event_kind::seek:
+                io_evt_kind_map[io_event_kind::seek].push_back(evt_vd);
+                break;
+            case io_event_kind::flush:
+                io_evt_kind_map[io_event_kind::flush].push_back(evt_vd);
+                break;
+            case io_event_kind::delete_or_close:
+                io_evt_kind_map[io_event_kind::delete_or_close].push_back(evt_vd);
+                break;
+            default:
+                logging::debug() << "Ambigious I/O-Event in CIO_Set\n" << io_evt;
+        }
+    }
+
+    return io_evt_kind_map;
+}
+
+std::map<std::string, std::vector<VertexDescriptor>>
+file_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
+{
+    std::map<std::string, std::vector<VertexDescriptor>> f_map;
+    for (VertexDescriptor vd : cio_set)
+    {
+        auto io_evt = get_io_property(graph, vd);
+        f_map[io_evt.filename].push_back(vd);
+    }
+    return f_map;
 }
 
 class CIO_Stats
 {
     struct rw_stats
     {
-        std::uint64_t total;
-        std::uint64_t max_size;
-        std::uint64_t min_size;
-        double avg_size;
+        std::uint64_t total {0};
+        std::uint64_t max_size {0};
+        std::uint64_t min_size {0};
+        std::uint64_t sum_size {0};
+        double avg_size {0.0};
+        std::vector<std::uint64_t> response_sizes;
 
         rw_stats() = default;
 
-        explicit rw_stats(std::uint64_t num_evts, std::uint64_t max_sz, std::uint64_t min_sz, double avg) noexcept
-            : total(num_evts), max_size(max_sz), min_size(min_sz), avg_size(avg)
+        explicit rw_stats(std::uint64_t num_evts, std::uint64_t max_sz, std::uint64_t min_sz,
+                std::uint64_t sum, double avg, std::vector<std::uint64_t> resp_sizes) noexcept
+            : total(num_evts), max_size(max_sz), min_size(min_sz), sum_size(sum),
+            avg_size(avg), response_sizes(std::move(resp_sizes))
         {
         }
     };
@@ -133,69 +173,55 @@ class CIO_Stats
         std::uint64_t max_sz {0};
         std::uint64_t min_sz {0};
         double avg_sz {0.0};
-        auto min_sz_it = std::min_element(events.begin(), events.end(),
-                [&graph](const VertexDescriptor vd_a, const VertexDescriptor vd_b)
+        std::vector<std::uint64_t> response_sizes;
+        std::transform(events.begin(), events.end(), std::back_inserter(response_sizes),
+                [&graph](const VertexDescriptor vd)
                 {
-                    const auto io_evt_a = get_io_property(graph, vd_a);
-                    const auto io_evt_b = get_io_property(graph, vd_b);
-                    return io_evt_a.response_size < io_evt_b.response_size;
+                    auto io_evt = get_io_property(graph, vd);
+                    return io_evt.response_size;
                 });
+        auto min_sz_it = std::min_element(response_sizes.begin(), response_sizes.end());
         if (min_sz_it != events.end())
         {
-            min_sz = get_io_property(graph, *min_sz_it).response_size;
+            min_sz = *min_sz_it;
         }
 
-        auto max_sz_it = std::max_element(events.begin(), events.end(),
-                [&graph](const VertexDescriptor vd_a, const VertexDescriptor vd_b)
-                {
-                    const auto io_evt_a = get_io_property(graph, vd_a);
-                    const auto io_evt_b = get_io_property(graph, vd_b);
-                    return io_evt_a.response_size > io_evt_b.response_size;
-                });
+        auto max_sz_it = std::max_element(response_sizes.begin(), response_sizes.end());
         if (max_sz_it != events.end())
         {
-            max_sz = get_io_property(graph, *max_sz_it).response_size;
+            max_sz = *max_sz_it;
         }
-        avg_sz = avg_response_size(graph, events);
+        std::uint64_t sum_sz = std::accumulate(response_sizes.begin(), response_sizes.end(), 0);
         std::uint64_t size = static_cast<std::uint64_t>(events.size());
-        return rw_stats(size, max_sz, min_sz, avg_sz);
+        if (size > 0) {
+            avg_sz = static_cast<double>(sum_sz / size);
+        }
+        return rw_stats(size, max_sz, min_sz, sum_sz, avg_sz, response_sizes);
     }
+
 
 public:
 
     explicit CIO_Stats(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
     {
-        std::map<io_event_kind, std::vector<VertexDescriptor>> kind_map;
-        for (auto vd : cio_set)
-        {
-                          //TODO
-            auto io_evt = get_io_property(graph, vd);
-            switch (io_evt.kind)
-            {
-                case io_event_kind::write:
-                    kind_map[io_evt.kind].push_back(vd);
-                    break;
-                case io_event_kind::read:
-                    kind_map[io_evt.kind].push_back(vd);
-                    break;
-            }
-        }
+        auto k_map = kind_map(graph, cio_set);
 
-        write_stats = make_rw_stats(graph, kind_map[io_event_kind::write]);
-        read_stats = make_rw_stats(graph, kind_map[io_event_kind::read]);
-        auto rw_map = rw_region_map(graph, cio_set);
+        write_stats = make_rw_stats(graph, k_map[io_event_kind::write]);
+        read_stats = make_rw_stats(graph, k_map[io_event_kind::read]);
+        auto rw_map = region_map(graph, cio_set);
         for (const auto& kvp : rw_map)
         {
             region_stats[kvp.first] = make_rw_stats(graph, kvp.second);
         }
     }
 
-    const rw_stats& get_read_stats() const noexcept
+
+    const rw_stats& get_total_read_stats() const noexcept
     {
         return read_stats;
     }
 
-    const rw_stats& get_write_stats() const noexcept
+    const rw_stats& get_total_write_stats() const noexcept
     {
         return write_stats;
     }
@@ -210,18 +236,20 @@ public:
 
 void dump_stats(const CIO_Stats& stats)
 {
-    const auto& read_stats = stats.get_read_stats();
-    const auto& write_stats = stats.get_write_stats();
+    const auto& read_stats = stats.get_total_read_stats();
+    const auto& write_stats = stats.get_total_write_stats();
     std::cout << "Read-Stats: " << "\n" <<
-        " read total: " << read_stats.total << 
+        " Number of read events: " << read_stats.total << 
         " min: " << read_stats.min_size <<
         " max: " << read_stats.max_size <<
+        " sum: " << read_stats.sum_size <<
         " avg: " << read_stats.avg_size << "\n";
 
     std::cout << "Write-Stats: " << "\n" <<
-        " write total: " << write_stats.total << 
+        " Number of write events: " << write_stats.total << 
         " min: " << write_stats.min_size <<
         " max: " << write_stats.max_size <<
+        " sum: " << write_stats.sum_size <<
         " avg: " << write_stats.avg_size << "\n";
 
     std::cout << "====================" << " Read / Write - Stats per region " << "====================" << "\n";
@@ -231,6 +259,7 @@ void dump_stats(const CIO_Stats& stats)
         std::cout << region_st.first << " " <<
             " min: " << region_st.second.min_size <<
             " max: " << region_st.second.max_size <<
+            " sum: " << region_st.second.sum_size <<
             " avg: " << region_st.second.avg_size << "\n";
     }
 }
