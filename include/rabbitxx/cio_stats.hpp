@@ -140,6 +140,17 @@ file_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
     return f_map;
 }
 
+otf2::chrono::microseconds
+get_set_duration(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
+{
+    auto ts_start = graph[cio_set.start_event()].timestamp();
+    auto ts_end = graph[cio_set.end_event().value()].timestamp();
+    assert(ts_end > ts_start);
+    auto dur_diff = ts_end - ts_start;
+    auto res = otf2::chrono::duration_cast<otf2::chrono::microseconds>(dur_diff);
+    return res;
+}
+
 class CIO_Stats
 {
     struct rw_stats
@@ -161,6 +172,7 @@ class CIO_Stats
         }
     };
 
+    otf2::chrono::microseconds duration;
     rw_stats write_stats;
     rw_stats read_stats;
     // read / write stats per read / write region
@@ -206,6 +218,7 @@ public:
     {
         auto k_map = kind_map(graph, cio_set);
 
+        duration = get_set_duration(graph, cio_set);
         write_stats = make_rw_stats(graph, k_map[io_event_kind::write]);
         read_stats = make_rw_stats(graph, k_map[io_event_kind::read]);
         auto rw_map = region_map(graph, cio_set);
@@ -231,6 +244,12 @@ public:
     {
         return region_stats;
     }
+
+    otf2::chrono::microseconds
+    set_duration() const noexcept
+    {
+        return duration;
+    }
 };
 
 
@@ -238,6 +257,7 @@ void dump_stats(const CIO_Stats& stats)
 {
     const auto& read_stats = stats.get_total_read_stats();
     const auto& write_stats = stats.get_total_write_stats();
+    std::cout << "Set Duration: " << stats.set_duration() << "\n";
     std::cout << "Read-Stats: " << "\n" <<
         " Number of read events: " << read_stats.total << 
         " min: " << read_stats.min_size <<

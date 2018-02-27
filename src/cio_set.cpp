@@ -342,7 +342,6 @@ generate_unique_pairs(const std::vector<VertexDescriptor>& v)
         for (vd_t j = i + 1ul; j < v.size(); ++j)
         {
             vd_t t2 = v[j];
-            //TODO: use `emplace_back`
             res.push_back(std::make_pair(t1, t2));
         }
     }
