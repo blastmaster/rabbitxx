@@ -16,7 +16,7 @@ namespace rabbitxx {
 enum class State
 {
     Open,
-    Closed
+    Close
 };
 
 inline
@@ -28,8 +28,8 @@ operator<<(std::ostream& os, const State& state)
         case State::Open:
             os << "Open";
             break;
-        case State::Closed:
-            os << "Closed";
+        case State::Close:
+            os << "Close";
             break;
     }
     return os;
@@ -74,14 +74,12 @@ public:
 
     void merge(const CIO_Set<value_type>& other_set)
     {
-        // choose earliest start_evt_ of all sets merged into the current.
-        start_evt_ = other_set.start_event() < start_evt_ ? other_set.start_event() : start_evt_;
         if (other_set.empty())
         {
-            //logging::debug() << "in merge, other set is empty... skip!";
             return;
         }
-
+        //TODO: choose smallest start_evt_, this might not be the earliest.
+        start_evt_ = other_set.start_event() < start_evt_ ? other_set.start_event() : start_evt_;
         std::copy(other_set.begin(), other_set.end(), std::inserter(set_, set_.begin()));
     }
 
@@ -97,7 +95,7 @@ public:
 
     void close() noexcept
     {
-        state_ = State::Closed;
+        state_ = State::Close;
     }
 
     value_type start_event() const noexcept
@@ -115,14 +113,14 @@ public:
         return origin_end_;
     }
 
-    void set_end_event(const value_type& root_end_event)
+    void set_end_event(const value_type& event)
     {
-        end_evt_ = root_end_event;
+        end_evt_ = event;
     }
 
-    void set_end_event(const value_type& root_end_event, const value_type& origin)
+    void set_end_event(const value_type& event, const value_type& origin)
     {
-        end_evt_ = root_end_event;
+        end_evt_ = event;
         origin_end_ = origin;
     }
 
@@ -217,34 +215,25 @@ public:
         auto* set_ptr = find_open_set_for(cur_pid);
         if (set_ptr == nullptr) // no open set was found for this process
         {
-            //logging::debug() << "No open set was found!";
-            if (vertex_kind::io_event == g[v].type)
-            {
-                //logging::fatal() << "I/O Event ... THIS SHOULD NEVER HAPPEN";
-                return;
-            }
-            if (vertex_kind::synthetic == g[v].type)
-            { // synthetic events have
-                // no pid so there is
-                // nothing to do here.
-                //logging::debug() << "Synthetic Event ... doing nothing....";
-                return;
-            }
             if (vertex_kind::sync_event == g[v].type)
             {
                 // we are on a sync event and have no open set
                 //logging::debug() << "Sync Event " << v << " ... create a new set";
                 const auto sync_root = root_of_sync(v, g);
-                // create a new set
                 create_new_set(cur_pid, sync_root);
             }
+            if (vertex_kind::io_event == g[v].type) // just to check my assumptions
+            {
+                logging::fatal() << "I/O Event ... THIS SHOULD NEVER HAPPEN";
+                return;
+            }
+            // synthetic events have no pid so there is nothing to do here.
         }
         else // an open set for this process was found
         {
             //logging::debug() << "Open set found!";
             if (vertex_kind::io_event == g[v].type)
             {
-                //logging::debug() << "I/O Event ... ";
                 // open set and on I/O event -> insert I/O event into set
                 set_ptr->insert(v);
                 //logging::debug() << "insert vertex #" << v << " @ rank " << g[v].id() << " "
@@ -264,14 +253,21 @@ public:
                 const auto sync_root = root_of_sync(v, g);
                 set_ptr->set_end_event(sync_root, v);
                 const auto out_dgr = boost::out_degree(v, g);
-                // FIXME: this should be the case every time, since we have an
-                // synthetic end-event.
+                // FIXME: this should be the case every time, since we have an synthetic end-event.
+                // It was introduced in commit: 06c381d2f8c0e887d279f9e86ea04174d90581fe
+                // one commit before the synthetic end event was introduced.
+                // Since the synthetic end-event exists this should be always
+                // true.
                 if (out_dgr > 0)
                 { // just create a new set if we are not the last
                     // event, here it could be maybe
                     // better to have a look at our adjacent vertices
                     //logging::debug() << "create a new set for pid: " << cur_pid;
                     create_new_set(cur_pid, sync_root);
+                }
+                else
+                {
+                    logging::fatal() << "sync event with out_dgr: " << out_dgr << " THIS SHOULD NEVER HAPPEN!";
                 }
             }
         }
@@ -282,9 +278,10 @@ public:
     {
         const auto src_vd = source(e, g);
         const auto trg_vd = target(e, g);
-        //logging::debug() << "on examine edge from " << src_vd << " to " << trg_vd;
         const auto src_pid = g[src_vd].id();
         const auto trg_pid = g[trg_vd].id();
+
+        //logging::debug() << "on examine edge from " << src_vd << " to " << trg_vd;
 
         // close current set if synthetic end event is found!
         if (g[trg_vd].type == vertex_kind::synthetic)
@@ -292,8 +289,7 @@ public:
             auto* set_ptr = find_open_set_for(src_pid);
             if (set_ptr == nullptr)
             {
-                //logging::fatal() << "No set was found on the way to synthetic event! "
-                                    //"This was not expected.";
+                logging::fatal() << "no set was found on the way to synthetic event! THIS SHOULD NEVER HAPPEN!";
                 return;
             }
             //logging::debug() << "on end for pid: " << src_pid << " close set";

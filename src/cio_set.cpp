@@ -148,6 +148,7 @@ pg_group(IoGraph& graph, const VertexDescriptor& vd)
 }
 
 std::vector<VertexDescriptor>
+// IoGraph const?!?
 do_merge(IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
@@ -170,8 +171,8 @@ do_merge(IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
     if (!e_evts.empty())
     {
         cur_s.close();
+        //TODO: This is a Hack, why use the back?
         cur_s.set_end_event(e_evts.back());
-        //logging::debug() << "create new set:\n" << cur_s;
         merged_sets.push_back(cur_s);
     }
     else
@@ -262,7 +263,6 @@ find_cio_sets(IoGraph& graph, set_map_t<VertexDescriptor>& sets_per_process)
     // sort and remove duplicates
     std::sort(merged_sets.begin(), merged_sets.end());
     merged_sets.erase(std::unique(merged_sets.begin(), merged_sets.end()), merged_sets.end());
-    //logging::debug() << "unique sets: " << merged_sets.size();
 
     return merged_sets;
 }
