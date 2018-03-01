@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2.2)
+cmake_minimum_required(VERSION 3.5)
 
 set(PROJECT_NAME "rabbitxx")
 set(PROJECT_VERSION "0.0.1")
@@ -6,6 +6,8 @@ set(PROJECT_VERSION "0.0.1")
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
 include(CTest)
+
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
 option(BUILD_TESTS "build tests" ON)
 option(BUILD_MODULES "build modules" ON)
@@ -43,6 +45,8 @@ include(external/nitro/Nitro.cmake)
 
 set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI support or not (Requires Boost.MPI)" FORCE)
 include(external/otf2xx/OTF2XX.cmake)
+set(OTF2XX_CHRONO_DURATION_TYPE nanoseconds)
+#add_subdirectory(external/otf2xx)
 set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI support or not (Requires Boost.MPI)" FORCE)
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
@@ -56,6 +60,8 @@ set(RABBITXX_SOURCES
 #TODO: build individual static libraries
 add_library(rabbitxx_core ${RABBITXX_SOURCES})
 set(RABBITXX_LIBRARIES rabbitxx_core)
+#set(RABBITXX_LIBRARIES rabbitxx_core otf2xx::Reader)
+#set(RABBITXX_LIBRARIES rabbitxx_core otf2xx-core otf2xx-reader)
 
 if (BUILD_MODULES)
     add_subdirectory(modules)
