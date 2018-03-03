@@ -221,7 +221,7 @@ struct io_event_property
 
     io_event_property() = default;
 
-    io_event_property(std::uint64_t process_id, const std::string& fname,
+    explicit io_event_property(std::uint64_t process_id, const std::string& fname,
                         const std::string& reg_name, std::uint64_t req_size,
                         std::uint64_t resp_size,
                         std::uint64_t off, option_type mode,

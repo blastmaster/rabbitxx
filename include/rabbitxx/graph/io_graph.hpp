@@ -120,10 +120,8 @@ root_of_sync(const VertexDescriptor v, Graph& g)
     throw -1; // FIXME: Do useful error-handling.
 }
 
-//TODO
 io_event_property get_io_property(const IoGraph& graph, const VertexDescriptor vd);
 
-//TODO
 sync_event_property get_sync_property(const IoGraph& graph, const VertexDescriptor vd);
 
 /**

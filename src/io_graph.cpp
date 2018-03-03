@@ -13,9 +13,11 @@ get_io_property(const IoGraph& graph, const VertexDescriptor vd)
 sync_event_property
 get_sync_property(const IoGraph& graph, const VertexDescriptor vd)
 {
+    //TODO throws if event is a synthetic event
     return boost::get<sync_event_property>(graph[vd].property);
 }
 
+// member function? of graph
 VertexDescriptor
 find_root(const IoGraph& graph)
 {

@@ -77,7 +77,6 @@ get_io_events_by_kind(const IoGraph& graph, const set_t<VertexDescriptor>& cio_s
 namespace detail
 {
 
-// TODO: should at least be hidden from accedential use
 /**
  * XXX: The assert will fail if used on final sets! Since there is no origin.
  * This is not a final solution, it should work since events of the same rank

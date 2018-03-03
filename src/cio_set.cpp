@@ -106,18 +106,16 @@ do_merge(const IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
     //std::cout << "\n";
 
     const auto e_evts = detail::find_end_events_to_update(graph, end_evts);
-    if (!e_evts.empty())
-    {
-        cur_s.close();
-        //TODO: This is a Hack, why use the back?
-        cur_s.set_end_event(e_evts.back());
-        merged_sets.push_back(cur_s);
-    }
-    else
+    if (e_evts.empty())
     {
         logging::fatal() << "ERROR NO END EVENT FOUND TO UPDATE! THIS SHOULD NOT HAPPEN!";
         throw -1; //TODO
     }
+
+    cur_s.close();
+    //TODO: This is a Hack, why use the back?
+    cur_s.set_end_event(e_evts.back());
+    merged_sets.push_back(cur_s);
 
     return e_evts;
 }
@@ -395,7 +393,7 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
         //logging::debug() << "choose from dependent syncs";
         update_evt = check_update_func(graph, dependent_syncs);
     }
-    // afterwards check for independent events
+    // otherwise check for independent events
     else if (!independent_syncs.empty())
     {
         //logging::debug() << "choose from independent syncs";
