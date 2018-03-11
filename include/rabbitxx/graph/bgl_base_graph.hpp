@@ -24,6 +24,7 @@ namespace rabbitxx { namespace graph {
             using vertex_range = std::pair<vertex_iterator, vertex_iterator>;
             using edge_range = std::pair<edge_iterator, edge_iterator>;
             using edge_add_t = std::pair<edge_descriptor, bool>;
+            using degree_size_t = typename boost::graph_traits<GraphImpl>::degree_size_type;
 
             graph() noexcept : graph_(std::make_unique<GraphImpl>())
             {
@@ -86,6 +87,11 @@ namespace rabbitxx { namespace graph {
             std::size_t num_edges() const
             {
                 return boost::num_edges(*graph_);
+            }
+
+            degree_size_t out_degree(vertex_descriptor v) const
+            {
+                return boost::out_degree(v, *graph_);
             }
 
             vertex_type& operator[](const vertex_descriptor& vd) const
