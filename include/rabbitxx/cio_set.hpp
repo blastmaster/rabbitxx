@@ -33,7 +33,7 @@ map_view_t<VertexDescriptor> update_view(const process_group_t& pg, map_view_t<V
 pg_map_t<VertexDescriptor> make_local_pgmap(IoGraph& graph);
 
 // set-api
-process_group_t pg_group(IoGraph& graph, const VertexDescriptor& vd);
+process_group_t pg_group(const IoGraph& graph, const VertexDescriptor& vd);
 
 
 /**
@@ -52,18 +52,18 @@ process_group_t pg_group(IoGraph& graph, const VertexDescriptor& vd);
  * needed.
  */
 std::vector<VertexDescriptor>
-do_merge(IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
+do_merge(const IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets);
 
 void
-process_sets(IoGraph& graph, map_view_t<VertexDescriptor> map_view,
+process_sets(const IoGraph& graph, map_view_t<VertexDescriptor> map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets);
 
 inline set_container_t<VertexDescriptor>
-merge_sets_impl(IoGraph& graph, set_map_t<VertexDescriptor>& set_map);
+merge_sets_impl(const IoGraph& graph, set_map_t<VertexDescriptor>& set_map);
 
 set_container_t<VertexDescriptor>
-merge_sets(IoGraph& graph, set_map_t<VertexDescriptor>& set_map);
+merge_sets(const IoGraph& graph, set_map_t<VertexDescriptor>& set_map);
 
 /**
  * Here we get the Sets per process - nothing is merged together!
@@ -74,7 +74,7 @@ set_map_t<VertexDescriptor> cio_sets_per_process(IoGraph& graph);
 set_container_t<VertexDescriptor> find_cio_sets(IoGraph& graph);
 
 // find final cio sets with cio_sets per process given
-set_container_t<VertexDescriptor> find_cio_sets(IoGraph& graph,
+set_container_t<VertexDescriptor> find_cio_sets(const IoGraph& graph,
         set_map_t<VertexDescriptor>& cio_set_pp);
 
 //FIXME ambigious overload, same function is already defined in `io_graph` 
@@ -114,10 +114,10 @@ can_update_end_event(const process_group_t& pgroup, const std::vector<VertexDesc
 
 bool
 can_update_end_event(
-    IoGraph& graph, const std::vector<VertexDescriptor>& end_evts, const VertexDescriptor& pivot);
+    const IoGraph& graph, const std::vector<VertexDescriptor>& end_evts, const VertexDescriptor& pivot);
 
 std::vector<VertexDescriptor>
-find_end_events_to_update(IoGraph& graph, std::vector<VertexDescriptor> end_evts);
+find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> end_evts);
 
 } // namespace detail
 

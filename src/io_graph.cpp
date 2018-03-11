@@ -29,10 +29,10 @@ find_root(const IoGraph& graph)
 
 
 std::uint64_t
-num_procs(IoGraph& graph) noexcept
+num_procs(const IoGraph& graph) noexcept
 {
     const auto root = find_root(graph);
-    return static_cast<std::uint64_t>(boost::out_degree(root, *graph.get()));
+    return static_cast<std::uint64_t>(graph.out_degree(root));
 }
 
 std::vector<std::uint64_t>
@@ -89,7 +89,7 @@ get_io_events_by_kind(const IoGraph& graph, const std::vector<io_event_kind>& ki
 }
 
 sync_scope
-classify_sync(IoGraph& g, const sync_event_property& sevt)
+classify_sync(const IoGraph& g, const sync_event_property& sevt)
 {
     const auto np = num_procs(g);
     const auto inv = num_procs_in_sync_involved(sevt);
@@ -97,13 +97,13 @@ classify_sync(IoGraph& g, const sync_event_property& sevt)
 }
 
 sync_scope
-classify_sync(IoGraph& g, const VertexDescriptor& v)
+classify_sync(const IoGraph& g, const VertexDescriptor& v)
 {
     if (g[v].type == vertex_kind::synthetic)
     {
         return sync_scope::Global;
     }
-    const auto& sync_evt_p = boost::get<sync_event_property>(g[v].property);
+    const auto& sync_evt_p = get_sync_property(g, v);
     return classify_sync(g, sync_evt_p);
 }
 

@@ -115,11 +115,11 @@ make_local_pgmap(IoGraph& graph)
 
 // set-api
 process_group_t
-pg_group(IoGraph& graph, const VertexDescriptor& vd)
+pg_group(const IoGraph& graph, const VertexDescriptor& vd)
 {
     if (graph[vd].type == vertex_kind::sync_event)
     {
-        const auto& evt_property = boost::get<sync_event_property>(graph[vd].property);
+        const auto& evt_property = get_sync_property(graph, vd);
         const auto& inv_proc_v = procs_in_sync_involved(evt_property);
         const auto& scope = classify_sync(graph, evt_property);
         if (scope == sync_scope::Local)
@@ -149,7 +149,7 @@ pg_group(IoGraph& graph, const VertexDescriptor& vd)
 
 std::vector<VertexDescriptor>
 // IoGraph const?!?
-do_merge(IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
+do_merge(const IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
     std::vector<VertexDescriptor> end_evts;
@@ -185,7 +185,7 @@ do_merge(IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
 }
 
 void
-process_sets(IoGraph& graph, map_view_t<VertexDescriptor> map_view,
+process_sets(const IoGraph& graph, map_view_t<VertexDescriptor> map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
     bool on_end = std::all_of(map_view.begin(), map_view.end(),
@@ -206,7 +206,7 @@ process_sets(IoGraph& graph, map_view_t<VertexDescriptor> map_view,
 }
 
 inline set_container_t<VertexDescriptor>
-merge_sets_impl(IoGraph& graph, set_map_t<VertexDescriptor>& set_map)
+merge_sets_impl(const IoGraph& graph, set_map_t<VertexDescriptor>& set_map)
 {
     set_container_t<VertexDescriptor> merged_sets;
     auto map_view = make_mapview(set_map);
@@ -217,7 +217,7 @@ merge_sets_impl(IoGraph& graph, set_map_t<VertexDescriptor>& set_map)
 }
 
 set_container_t<VertexDescriptor>
-merge_sets(IoGraph& graph, set_map_t<VertexDescriptor>& set_map)
+merge_sets(const IoGraph& graph, set_map_t<VertexDescriptor>& set_map)
 {
     return merge_sets_impl(graph, set_map);
 }
@@ -253,7 +253,7 @@ find_cio_sets(IoGraph& graph)
 }
 
 set_container_t<VertexDescriptor>
-find_cio_sets(IoGraph& graph, set_map_t<VertexDescriptor>& sets_per_process)
+find_cio_sets(const IoGraph& graph, set_map_t<VertexDescriptor>& sets_per_process)
 {
     auto merged_sets = merge_sets(graph, sets_per_process);
     //logging::debug() << "Resulting Sets:\n" << "raw size: " << merged_sets.size();
@@ -359,16 +359,16 @@ can_update_end_event(const process_group_t& pgroup, const std::vector<VertexDesc
 
 bool
 can_update_end_event(
-    IoGraph& graph, const std::vector<VertexDescriptor>& end_evts, const VertexDescriptor& pivot)
+    const IoGraph& graph, const std::vector<VertexDescriptor>& end_evts, const VertexDescriptor& pivot)
 {
     const auto pgroup = pg_group(graph, pivot);
     return can_update_end_event(pgroup, end_evts, pivot);
 }
 
 std::vector<VertexDescriptor>
-find_end_events_to_update(IoGraph& graph, std::vector<VertexDescriptor> end_evts)
+find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> end_evts)
 {
-    auto check_update_func = [end_evts](IoGraph& graph, const std::set<VertexDescriptor>& try_s) {
+    auto check_update_func = [end_evts](const IoGraph& graph, const std::set<VertexDescriptor>& try_s) {
         for (const VertexDescriptor& vd : try_s)
         {
             bool update = can_update_end_event(graph, end_evts, vd);
@@ -379,7 +379,7 @@ find_end_events_to_update(IoGraph& graph, std::vector<VertexDescriptor> end_evts
         }
     };
 
-    auto check_update_func_single = [end_evts](IoGraph& graph, const VertexDescriptor& vd) {
+    auto check_update_func_single = [end_evts](const IoGraph& graph, const VertexDescriptor& vd) {
         return can_update_end_event(graph, end_evts, vd);
     };
 

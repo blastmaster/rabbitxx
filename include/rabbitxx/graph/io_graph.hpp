@@ -144,7 +144,7 @@ VertexDescriptor find_root(const IoGraph& graph);
  * @param graph: A reference to the graph.
  * @return The number of processes that have events in the graph.
  */
-std::uint64_t num_procs(IoGraph& graph) noexcept;
+std::uint64_t num_procs(const IoGraph& graph) noexcept;
 
 /**
  * @brief Get all processes which are involved in a given synchronization event.
@@ -246,13 +246,13 @@ get_io_events_by_kind(const IoGraph& graph, const std::vector<io_event_kind>& ki
  * Either `sync_scope::local` or `sync_scope::global`.
  */
 sync_scope
-classify_sync(IoGraph& g, const sync_event_property& sevt);
+classify_sync(const IoGraph& g, const sync_event_property& sevt);
 
 // What should be returned in the case that `v` is referencing an I/O-Event?
 // One option might be to throw an exception.
 // Another option might be to introduce a `sync_scope::None` enumeration. On
 // which can be checked outside.
-sync_scope classify_sync(IoGraph& g, const VertexDescriptor& v);
+sync_scope classify_sync(const IoGraph& g, const VertexDescriptor& v);
 
 } // namespace rabbitxx
 
