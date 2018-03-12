@@ -9,6 +9,14 @@
 
 using rabbitxx::logging;
 
+/**
+ * FIXME: This test will not be build!
+ * The `collect_root_sync_events` function is deprecated and removed.
+ * Therefore this test needs to be updated.
+ * When root of synchronizations are stored in the end-events directly or in the
+ * corresponding property. We could use this for testing.
+ */
+
 TEST_CASE("[trace-simple]", "Find correct root of synchronization events")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/24.10/trace-simple/traces.otf2"};

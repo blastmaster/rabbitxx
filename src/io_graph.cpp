@@ -57,37 +57,6 @@ num_procs_in_sync_involved(const sync_event_property& sevt)
     return procs_in_sync_involved(sevt).size();
 }
 
-std::vector<VertexDescriptor>
-get_events_by_kind(const IoGraph& graph, const std::vector<vertex_kind>& kinds)
-{
-    using vertex_descriptor = VertexDescriptor;
-    const auto vp = graph.vertices();
-    std::vector<vertex_descriptor> events;
-    std::copy_if(vp.first, vp.second, std::back_inserter(events),
-        [&kinds, &graph](const vertex_descriptor& vd) {
-            return std::any_of(kinds.begin(), kinds.end(), [&vd, &graph](const vertex_kind& kind) {
-                return graph[vd].type == kind;
-
-            });
-        });
-    return events;
-}
-
-std::vector<VertexDescriptor>
-get_io_events_by_kind(const IoGraph& graph, const std::vector<io_event_kind>& kinds)
-{
-    const auto io_events = get_events_by_kind(graph, { vertex_kind::io_event });
-    std::vector<VertexDescriptor> io_evts_by_kind;
-    std::copy_if(io_events.begin(), io_events.end(), std::back_inserter(io_evts_by_kind),
-            [&kinds, &graph](const VertexDescriptor& vd) {
-                return std::any_of(kinds.begin(), kinds.end(),
-                        [&vd, &graph](const io_event_kind& kind) {
-                            return boost::get<io_event_property>(graph[vd].property).kind = kind;
-                        });
-                });
-    return io_evts_by_kind;
-}
-
 sync_scope
 classify_sync(const IoGraph& g, const sync_event_property& sevt)
 {

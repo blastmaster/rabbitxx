@@ -16,21 +16,11 @@ void remove_empty_sets(set_map_t<VertexDescriptor>& sets);
 
 void remove_empty_sets(set_container_t<VertexDescriptor>& sets);
 
-/**
- * TODO: eventually we could use a set as container and get rid of the sort and
- * the erase + unique too.
- */
-std::vector<VertexDescriptor> collect_root_sync_events(IoGraph& graph);
-
 // set-api
 map_view_t<VertexDescriptor> make_mapview(set_map_t<VertexDescriptor>& smap);
 
 // set-api
 map_view_t<VertexDescriptor> update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view);
-
-
-//TODO: needed?!?
-pg_map_t<VertexDescriptor> make_local_pgmap(IoGraph& graph);
 
 // set-api
 process_group_t pg_group(const IoGraph& graph, const VertexDescriptor& vd);
@@ -77,8 +67,6 @@ set_container_t<VertexDescriptor> find_cio_sets(IoGraph& graph);
 set_container_t<VertexDescriptor> find_cio_sets(const IoGraph& graph,
         set_map_t<VertexDescriptor>& cio_set_pp);
 
-//FIXME ambigious overload, same function is already defined in `io_graph` 
-//but just works on graph instead of cio_sets.
 std::vector<VertexDescriptor> get_io_events_by_kind(const IoGraph& graph,
         const set_t<VertexDescriptor>& cio_set,
         io_event_kind kind);

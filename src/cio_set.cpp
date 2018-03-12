@@ -22,38 +22,6 @@ remove_empty_sets(set_container_t<VertexDescriptor>& sets)
         sets.end());
 }
 
-/**
- * TODO: eventually we could use a set as container and get rid of the sort and
- * the erase + unique too.
- */
-std::vector<VertexDescriptor>
-collect_root_sync_events(IoGraph& graph)
-{
-    using vertex_descriptor = VertexDescriptor;
-    std::vector<vertex_descriptor> result;
-    // get all sync and synthetic events in the graph
-    const auto sync_events =
-        get_events_by_kind(graph, { vertex_kind::sync_event, vertex_kind::synthetic });
-    // store the root-sync-event in result vector
-    std::transform(sync_events.begin(), sync_events.end(), std::back_inserter(result),
-        [&graph](const vertex_descriptor& vd) {
-            if (graph[vd].type == vertex_kind::sync_event)
-            {
-                return root_of_sync(vd, *graph.get());
-            }
-            return vd;
-        });
-    // sort the events if necessary
-    if (!std::is_sorted(result.begin(), result.end()))
-    {
-        std::sort(result.begin(), result.end());
-    }
-    // delete everything but hold unique ones
-    result.erase(std::unique(result.begin(), result.end()), result.end());
-
-    return result;
-}
-
 // set-api
 map_view_t<VertexDescriptor>
 make_mapview(set_map_t<VertexDescriptor>& smap)
@@ -81,36 +49,6 @@ update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view)
     }
 
     return map_view;
-}
-
-//TODO: needed?!?
-pg_map_t<VertexDescriptor>
-make_local_pgmap(IoGraph& graph)
-{
-    using vertex_descriptor = VertexDescriptor;
-    pg_map_t<vertex_descriptor> pg_map;
-    const auto sync_evt_roots_v = collect_root_sync_events(graph);
-    // needs to be sorted?!?
-    for (const auto& vd : sync_evt_roots_v)
-    {
-        if (graph[vd].type == vertex_kind::sync_event)
-        {
-            const auto evt_property = boost::get<sync_event_property>(graph[vd].property);
-            const auto inv_proc_v = procs_in_sync_involved(evt_property);
-            const auto s_scope = classify_sync(graph, evt_property);
-            if (s_scope == sync_scope::Local)
-            {
-                pg_map.insert(
-                    std::make_pair(vd, process_group_t(inv_proc_v.begin(), inv_proc_v.end())));
-            }
-        }
-        else
-        {
-            logging::fatal() << "not a sync event: " << vd << " in make_local_pg_map";
-        }
-    }
-
-    return pg_map;
 }
 
 // set-api

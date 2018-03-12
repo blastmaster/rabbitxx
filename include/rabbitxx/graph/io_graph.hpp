@@ -213,30 +213,6 @@ is_adjacent_event_of(const Vertex of_v, const Vertex cur_v, const Graph& g)
 }
 
 /**
- * @brief Get vertice descriptors by kind.
- *
- * @param graph: An `IoGraph` object.
- * @param kinds: A `std::vector` of `vertex_kind` objects.
- *
- * @return A vector containing all vertices of the `vertex_kind` in the `kinds` vector.
- */
-// XXX: should maybe a variadic template
-std::vector<VertexDescriptor>
-get_events_by_kind(const IoGraph& graph, const std::vector<vertex_kind>& kinds);
-
-/**
- * @brief Get the vertice descriptor by `io_event_kind`
- *
- * @param graph: An `IoGraph` object.
- * @param A `std::vector` of `io_event_kind` objects.
- *
- * @return A vector containing all verices with an `io_event_kind` from the
- * `kinds` vector.
- */
-std::vector<VertexDescriptor>
-get_io_events_by_kind(const IoGraph& graph, const std::vector<io_event_kind>& kinds);
-
-/**
  * @brief Get the `sync_scope` of a synchronization event.
  *
  * @param g: An `IoGraph` object.
