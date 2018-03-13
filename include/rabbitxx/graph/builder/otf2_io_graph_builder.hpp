@@ -747,6 +747,12 @@ struct stack_frame
                         }
                     }
                 }
+                // setting graph properties
+                // TODO this may look nicer if we get rid of the unique_ptr
+                // graph here for this class holding the graph by value would be fine.
+                (*graph_).get()->operator[](boost::graph_bundle).total_time = total_time_;
+                (*graph_).get()->operator[](boost::graph_bundle).io_time = total_file_io_time_;
+                (*graph_).get()->operator[](boost::graph_bundle).io_metadata_time = total_file_io_metadata_time_;
             }
         }
 

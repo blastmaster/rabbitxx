@@ -15,7 +15,9 @@ namespace graph { namespace detail {
                                                     boost::vecS, // store vertices in a std::vector
                                                     //boost::directedS, // the graph is directed
                                                     boost::bidirectionalS, // the graph is directed
-                                                    otf2_trace_event>; // use otf2_trace_event as vertex property
+                                                    otf2_trace_event, // use otf2_trace_event as vertex property
+                                                    boost::no_property, // no edge property
+                                                    app_info>; // use app_info as graph property
 }} // namespace graph::detail
 
 using IoGraph = graph::graph<graph::detail::io_graph_impl>;

@@ -21,6 +21,7 @@ namespace rabbitxx { namespace graph {
             using adjacency_iterator = typename boost::graph_traits<GraphImpl>::adjacency_iterator;
             using vertex_type = typename boost::vertex_bundle_type<GraphImpl>::type;
             using edge_type = typename boost::vertex_bundle_type<GraphImpl>::type;
+            using graph_property_type = typename boost::graph_bundle_type<GraphImpl>::type;
             using vertex_range = std::pair<vertex_iterator, vertex_iterator>;
             using edge_range = std::pair<edge_iterator, edge_iterator>;
             using edge_add_t = std::pair<edge_descriptor, bool>;
@@ -106,6 +107,11 @@ namespace rabbitxx { namespace graph {
             {
                 assert(vd != null_vertex());
                 return graph_->operator[](vd);
+            }
+
+            graph_property_type graph_properties() const
+            {
+                return graph_->operator[](boost::graph_bundle);
             }
 
         private:

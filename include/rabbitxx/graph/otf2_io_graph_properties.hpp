@@ -540,6 +540,17 @@ inline std::ostream& operator<<(std::ostream& os, const rabbitxx::otf2_trace_eve
     return os;
 }
 
+/**
+ * Graph property class, stores information about the overall program that are
+ * gathered during construction.
+ */
+struct app_info
+{
+    otf2::chrono::duration total_time = otf2::chrono::duration(0);
+    otf2::chrono::duration io_time = otf2::chrono::duration(0);
+    otf2::chrono::duration io_metadata_time = otf2::chrono::duration(0);
+};
+
 template<typename G>
 class otf2_trace_event_writer
 {
