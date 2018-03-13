@@ -21,6 +21,18 @@
 
 namespace rabbitxx { namespace graph {
 
+struct stack_frame
+{
+    stack_frame() = default;
+    explicit stack_frame(otf2::chrono::time_point tp, otf2::chrono::duration dur)
+        : enter(tp), duration(dur)
+    {}
+
+    otf2::chrono::time_point enter = otf2::chrono::armageddon();
+    otf2::chrono::duration duration = otf2::chrono::duration(0);
+    VertexDescriptor vertex = IoGraph::null_vertex();
+};
+
     template<typename Graph>
     class simple_graph_builder : public rabbitxx::trace::base
     {
@@ -151,6 +163,7 @@ namespace rabbitxx { namespace graph {
 
             FILTER_RANK
 
+            call_stack_.enqueue(location, stack_frame(evt.timestamp(), otf2::chrono::duration(0)));
             // TODO: not sure if just save the name as string is that clever
             region_name_queue_.enqueue(location, evt.region().name().str());
         }
@@ -163,8 +176,32 @@ namespace rabbitxx { namespace graph {
 
             FILTER_RANK
 
+            auto cur_frame = call_stack_.front(location);
+            auto duration = evt.timestamp() - cur_frame.enter;
+            if (cur_frame.vertex != IoGraph::null_vertex())
+            {
+                logging::debug() << "cur_frame vertex: " << cur_frame.vertex;
+                auto& cur_vertex = graph_->operator[](cur_frame.vertex);
+                cur_vertex.duration = duration;
+            }
+            else {
+                logging::debug() << "Invalid vertex descriptor";
+            }
+
+            total_time_ += duration;
+
+            if (evt.region().role() == otf2::common::role_type::file_io)
+            {
+                total_file_io_time_ += duration;
+            }
+            else if (evt.region().role() == otf2::common::role_type::file_io_metadata)
+            {
+                total_file_io_metadata_time_ += duration;
+            }
+
             // delete saved region name if leave event is reached
             region_name_queue_.dequeue(location);
+            call_stack_.dequeue(location);
         }
 
         void event(const otf2::definition::location& location,
@@ -220,6 +257,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
             io_ops_started_.dequeue(location);
         }
 
@@ -271,6 +309,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -299,6 +338,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -328,6 +368,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -348,6 +389,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -408,6 +450,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -474,6 +517,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -493,6 +537,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -522,6 +567,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -550,6 +596,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -586,6 +633,7 @@ namespace rabbitxx { namespace graph {
             const auto& descriptor = graph_->add_vertex(otf2_trace_event(vt));
             build_edge(descriptor, location);
             events_.enqueue(location, descriptor);
+            call_stack_.front(location).vertex = descriptor;
         }
 
         void event(const otf2::definition::location& location,
@@ -764,6 +812,10 @@ namespace rabbitxx { namespace graph {
         std::unique_ptr<Graph> graph_;
         typename Graph::vertex_descriptor root_;
         std::vector<otf2::definition::location> locations_;
+        location_queue<stack_frame> call_stack_;
+        otf2::chrono::duration total_time_ = otf2::chrono::duration(0);
+        otf2::chrono::duration total_file_io_time_ = otf2::chrono::duration(0);
+        otf2::chrono::duration total_file_io_metadata_time_ = otf2::chrono::duration(0);
     };
 
     struct OTF2_Io_Graph_Builder

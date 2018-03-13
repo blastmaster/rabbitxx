@@ -439,6 +439,7 @@ struct otf2_trace_event
                                             synthetic_event_property>;
     vertex_kind type = vertex_kind::none;
     vertex_property property;
+    otf2::chrono::duration duration = otf2::chrono::duration(0);
 
     otf2_trace_event() = default;
 
@@ -535,6 +536,7 @@ inline std::ostream& operator<<(std::ostream& os, const rabbitxx::otf2_trace_eve
             os << "None";
             break;
     }
+    os << "Event duration: " << vertex.duration << "\n";
     return os;
 }
 
