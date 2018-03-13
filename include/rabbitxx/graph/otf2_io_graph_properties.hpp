@@ -375,7 +375,7 @@ struct comm_type_printer : boost::static_visitor<std::string>
         //std::copy(comm_data.members().begin(),
                     //comm_data.members().end(),
                     //std::ostream_iterator<std::uint64_t>(sstr, ", "));
-        sstr << "[Member Size]: " << comm_data.members().size();
+        sstr << "[Member Size]: " << comm_data.members().size() << "\n";
         return sstr.str();
     }
 
@@ -398,7 +398,7 @@ inline std::ostream& operator<<(std::ostream& os, const sync_event_property& ver
         << "[Kind]: "
         << (vertex.comm_kind == sync_event_kind::p2p ? "p2p" : "collective") << "\n"
         << boost::apply_visitor(comm_type_printer(), vertex.op_data) << "\n"
-        << "[Timestamp]: " << vertex.timestamp;
+        << "[Timestamp]: " << vertex.timestamp << "\n";
     return os;
 }
 
@@ -422,7 +422,7 @@ inline std::ostream& operator<<(std::ostream& os, const synthetic_event_property
 {
     os << "[Synthetic-Event]\n"
         << "[Name]: " << vertex.name << "\n"
-        << "[Timestamp]: " << vertex.timestamp;
+        << "[Timestamp]: " << vertex.timestamp << "\n";
     return os;
 }
 
