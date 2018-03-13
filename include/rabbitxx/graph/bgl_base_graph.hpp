@@ -26,6 +26,11 @@ namespace rabbitxx { namespace graph {
             using edge_add_t = std::pair<edge_descriptor, bool>;
             using degree_size_t = typename boost::graph_traits<GraphImpl>::degree_size_type;
 
+            static constexpr vertex_descriptor null_vertex()
+            {
+                return boost::graph_traits<GraphImpl>::null_vertex();
+            }
+
             graph() noexcept : graph_(std::make_unique<GraphImpl>())
             {
             }
@@ -44,6 +49,8 @@ namespace rabbitxx { namespace graph {
             edge_add_t add_edge(const vertex_descriptor& vd_from,
                                 const vertex_descriptor& vd_to)
             {
+                assert(vd_from != null_vertex());
+                assert(vd_to != null_vertex());
                 return boost::add_edge(vd_from, vd_to, *graph_);
             }
 
@@ -89,13 +96,15 @@ namespace rabbitxx { namespace graph {
                 return boost::num_edges(*graph_);
             }
 
-            degree_size_t out_degree(vertex_descriptor v) const
+            degree_size_t out_degree(vertex_descriptor vd) const
             {
-                return boost::out_degree(v, *graph_);
+                assert(vd != null_vertex());
+                return boost::out_degree(vd, *graph_);
             }
 
             vertex_type& operator[](const vertex_descriptor& vd) const
             {
+                assert(vd != null_vertex());
                 return graph_->operator[](vd);
             }
 
