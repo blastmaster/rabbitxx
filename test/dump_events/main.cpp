@@ -29,10 +29,29 @@ get_io_events(Graph& g)
     return io_events;
 }
 
+template<typename DurationT=otf2::chrono::milliseconds>
+void print_info_as(const rabbitxx::app_info& info)
+{
+    std::cout << "total time: " << otf2::chrono::duration_cast<DurationT>(info.total_time) << "\n";
+    std::cout << "total file io time: " << otf2::chrono::duration_cast<DurationT>(info.io_time) << "\n";
+    std::cout << "total file io metadata time: " << otf2::chrono::duration_cast<DurationT>(info.io_metadata_time) << "\n";
+}
+
+void print_graph_properties(const rabbitxx::IoGraph& graph)
+{
+    auto info = graph.graph_properties();
+    std::cout << "info default as milliseconds:\n";
+    print_info_as(info);
+    std::cout << "info as microseconds:\n";
+    print_info_as<otf2::chrono::microseconds>(info);
+    std::cout << "info as seconds:\n";
+    print_info_as<otf2::chrono::seconds>(info);
+}
+
 int main(int argc, char** argv)
 {
     if (argc < 2) {
-        logging::fatal() << "usage: ./" << argv[0] << " <input-trace> [<filter=[io|sync]>]";
+        logging::fatal() << "usage: ./" << argv[0] << " <input-trace> [<filter=[io|sync|all]>]";
         return 1;
     }
 
@@ -53,6 +72,15 @@ int main(int argc, char** argv)
         else if (filter == "sync") {
             auto sync_evts = get_sync_events(*g);
             print(sync_evts);
+        }
+        else if (filter == "all") {
+            auto vip = g->vertices();
+            for (auto it = vip.first; it != vip.second; ++it)
+            {
+                auto trc_evt = g->operator[](*it);
+                std::cout << trc_evt << "\n";
+            }
+            print_graph_properties(*g);
         }
     }
 
