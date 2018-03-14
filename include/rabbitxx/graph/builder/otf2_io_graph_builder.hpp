@@ -142,6 +142,17 @@ struct stack_frame
             return edge_desc;
         }
 
+        void set_graph_properties()
+        {
+            assert(total_time_ > total_file_io_time_);
+            assert(total_time_ > total_file_io_metadata_time_);
+            // TODO this may look nicer if we get rid of the unique_ptr
+            // graph here for this class holding the graph by value would be fine.
+            (*graph_).get()->operator[](boost::graph_bundle).total_time = total_time_;
+            (*graph_).get()->operator[](boost::graph_bundle).io_time = total_file_io_time_;
+            (*graph_).get()->operator[](boost::graph_bundle).io_metadata_time = total_file_io_metadata_time_;
+        }
+
         //FIXME: get_io_handle_name would be a better name since we actually work on a `io_handle`.
         std::string get_handle_name(const otf2::definition::io_handle& handle) const
         {
@@ -748,11 +759,7 @@ struct stack_frame
                     }
                 }
                 // setting graph properties
-                // TODO this may look nicer if we get rid of the unique_ptr
-                // graph here for this class holding the graph by value would be fine.
-                (*graph_).get()->operator[](boost::graph_bundle).total_time = total_time_;
-                (*graph_).get()->operator[](boost::graph_bundle).io_time = total_file_io_time_;
-                (*graph_).get()->operator[](boost::graph_bundle).io_metadata_time = total_file_io_metadata_time_;
+                set_graph_properties();
             }
         }
 
