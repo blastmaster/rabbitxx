@@ -146,13 +146,25 @@ struct stack_frame
         {
             assert(total_time_ > total_file_io_time_);
             assert(total_time_ > total_file_io_metadata_time_);
+            assert(max_tp_ > min_tp_);
             // TODO this may look nicer if we get rid of the unique_ptr
             // graph here for this class holding the graph by value would be fine.
             (*graph_).get()->operator[](boost::graph_bundle).total_time = total_time_;
             (*graph_).get()->operator[](boost::graph_bundle).io_time = total_file_io_time_;
             (*graph_).get()->operator[](boost::graph_bundle).io_metadata_time = total_file_io_metadata_time_;
+            (*graph_).get()->operator[](boost::graph_bundle).first_event_time = min_tp_;
+            (*graph_).get()->operator[](boost::graph_bundle).last_event_time = max_tp_;
             // set clock properties
             (*graph_).get()->operator[](boost::graph_bundle).clock_props = clock_props_;
+        }
+
+        void check_time(otf2::chrono::time_point tp)
+        {
+            using std::max;
+            using std::min;
+
+            min_tp_ = min(min_tp_, tp);
+            max_tp_ = max(max_tp_, tp);
         }
 
         //FIXME: get_io_handle_name would be a better name since we actually work on a `io_handle`.
@@ -176,6 +188,7 @@ struct stack_frame
 
             FILTER_RANK
 
+            check_time(evt.timestamp());
             call_stack_.enqueue(location, stack_frame(evt.timestamp(), otf2::chrono::duration(0)));
             // TODO: not sure if just save the name as string is that clever
             region_name_queue_.enqueue(location, evt.region().name().str());
@@ -189,6 +202,7 @@ struct stack_frame
 
             FILTER_RANK
 
+            check_time(evt.timestamp());
             auto cur_frame = call_stack_.front(location);
             auto duration = evt.timestamp() - cur_frame.enter;
             if (cur_frame.vertex != IoGraph::null_vertex())
@@ -838,6 +852,8 @@ struct stack_frame
         otf2::chrono::duration total_time_ = otf2::chrono::duration(0);
         otf2::chrono::duration total_file_io_time_ = otf2::chrono::duration(0);
         otf2::chrono::duration total_file_io_metadata_time_ = otf2::chrono::duration(0);
+        otf2::chrono::time_point min_tp_ = otf2::chrono::genesis();
+        otf2::chrono::time_point max_tp_ = otf2::chrono::armageddon();
         otf2::definition::clock_properties clock_props_;
     };
 
