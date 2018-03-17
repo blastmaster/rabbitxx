@@ -193,12 +193,13 @@ struct stack_frame
             auto duration = evt.timestamp() - cur_frame.enter;
             if (cur_frame.vertex != IoGraph::null_vertex())
             {
-                logging::debug() << "cur_frame vertex: " << cur_frame.vertex;
+                //logging::debug() << "cur_frame vertex: " << cur_frame.vertex;
                 auto& cur_vertex = graph_->operator[](cur_frame.vertex);
-                cur_vertex.duration = duration;
+                //cur_vertex.duration = duration;
+                cur_vertex.duration = {duration, cur_frame.enter, evt.timestamp()};
             }
             else {
-                logging::debug() << "Invalid vertex descriptor";
+                logging::trace() << "Invalid vertex descriptor";
             }
 
             total_time_ += duration;

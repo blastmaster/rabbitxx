@@ -426,6 +426,21 @@ inline std::ostream& operator<<(std::ostream& os, const synthetic_event_property
     return os;
 }
 
+struct timespan
+{
+    otf2::chrono::duration duration = otf2::chrono::duration(0);
+    otf2::chrono::time_point enter = otf2::chrono::armageddon();
+    otf2::chrono::time_point leave = otf2::chrono::armageddon();
+};
+
+inline std::ostream& operator<<(std::ostream& os, const timespan& ts)
+{
+    os << "Enter: " << ts.enter << "\n"
+        << "Leave: " << ts.leave << "\n"
+        << "Duration: " << ts.duration << "\n";
+    return os;
+}
+
 /**
     * TODO:
     * Could it be clever to inherit from boost::variant<io_event_property, sync_event_property> ???
@@ -439,7 +454,8 @@ struct otf2_trace_event
                                             synthetic_event_property>;
     vertex_kind type = vertex_kind::none;
     vertex_property property;
-    otf2::chrono::duration duration = otf2::chrono::duration(0);
+    //otf2::chrono::duration duration = otf2::chrono::duration(0);
+    timespan duration;
 
     otf2_trace_event() = default;
 
