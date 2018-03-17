@@ -782,11 +782,6 @@ struct stack_frame
 
         // Definitions
 
-        void definition(const otf2::definition::string& definition) override
-        {
-            logging::trace() << "Found string defintion";
-        }
-
         void definition(const otf2::definition::location& definition) override
         {
             logging::trace() << "Found location defintion";
