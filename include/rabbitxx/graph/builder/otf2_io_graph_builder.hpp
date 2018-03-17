@@ -151,6 +151,8 @@ struct stack_frame
             (*graph_).get()->operator[](boost::graph_bundle).total_time = total_time_;
             (*graph_).get()->operator[](boost::graph_bundle).io_time = total_file_io_time_;
             (*graph_).get()->operator[](boost::graph_bundle).io_metadata_time = total_file_io_metadata_time_;
+            // set clock properties
+            (*graph_).get()->operator[](boost::graph_bundle).clock_props = clock_props_;
         }
 
         //FIXME: get_io_handle_name would be a better name since we actually work on a `io_handle`.
@@ -801,6 +803,12 @@ struct stack_frame
             logging::trace() << "Found io_file_property defintion";
         }
 
+        void definition(const otf2::definition::clock_properties& definition) override
+        {
+            logging::trace() << "Found clock_properties definition";
+            clock_props_ = definition;
+        }
+
         void definition(const otf2::definition::unknown& definition) override
         {
             logging::warn() << "Found unknown defintion";
@@ -829,6 +837,7 @@ struct stack_frame
         otf2::chrono::duration total_time_ = otf2::chrono::duration(0);
         otf2::chrono::duration total_file_io_time_ = otf2::chrono::duration(0);
         otf2::chrono::duration total_file_io_metadata_time_ = otf2::chrono::duration(0);
+        otf2::definition::clock_properties clock_props_;
     };
 
     struct OTF2_Io_Graph_Builder

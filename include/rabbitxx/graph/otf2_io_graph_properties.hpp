@@ -549,6 +549,7 @@ struct app_info
     otf2::chrono::duration total_time = otf2::chrono::duration(0);
     otf2::chrono::duration io_time = otf2::chrono::duration(0);
     otf2::chrono::duration io_metadata_time = otf2::chrono::duration(0);
+    otf2::definition::clock_properties clock_props;
 };
 
 template<typename G>
