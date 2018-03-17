@@ -2,7 +2,7 @@
 #define RABBITXX_LOG_HPP
 
 #include <nitro/log/log.hpp>
-#include <nitro/log/sink/stdout.hpp>
+#include <nitro/log/sink/stderr.hpp>
 
 #include <nitro/log/attribute/message.hpp>
 #include <nitro/log/attribute/hostname.hpp>
@@ -56,7 +56,7 @@ namespace rabbitxx
         } // namespace detail
 
         typedef nitro::log::logger<detail::record, detail::rabbitxx_log_formater,
-                                   nitro::log::sink::StdOut, detail::rabbitxx_log_filter> logging;
+                                   nitro::log::sink::StdErr, detail::rabbitxx_log_filter> logging;
 
         inline void set_min_severity_level(nitro::log::severity_level sev)
         {
