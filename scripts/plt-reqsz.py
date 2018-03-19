@@ -40,5 +40,6 @@ ax.xaxis.set_ticklabels(reqsz, rotation=45)
 ax.xaxis.set_ticks(ind)
 plt.ylabel('Count', fontsize=16)
 plt.xlabel('Request Sizes in Kilobytes', fontsize=16)
+plt.grid(True)
 plt.show()
 
