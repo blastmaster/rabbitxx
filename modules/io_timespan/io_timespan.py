@@ -51,15 +51,20 @@ process, unique_idx = np.unique(proc, True)
 y = (proc + 1) / float(len(process) + 1)
 yticks = y[unique_idx]
 timelines(y, start, stop)
+if start_time < 0:
+    start_time = 0
 delta = (end_time - start_time) / 10
 # xfmt = mdates.DateFormatter("%10.2f")
 # xfmt = matplotlib.ticker.FuncFormatter(lambda x, p: format(x, '.2f8'))
 ax = plt.gca()
 # ax.xaxis.set_major_formatter(xfmt)
-plt.title('I/O Timespan', fontsize=20)
+# plt.title('I/O Timespan', fontsize=20)
 plt.yticks(yticks, process)
 plt.ylim(0, 1)
-plt.ylabel('Processes', fontsize=16)
+plt.ylabel('Processes', fontsize=24)
+print("start_time: {}".format(start_time))
+print("end_time: {}".format(end_time))
 plt.xlim(start_time-delta, end_time+delta)
-plt.xlabel('Time in Milliseconds', fontsize=16)
+plt.xlabel('Time in Milliseconds', fontsize=24)
+# plt.grid(True)
 plt.show()
