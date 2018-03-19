@@ -191,7 +191,7 @@ struct stack_frame
             check_time(evt.timestamp());
             call_stack_.enqueue(location, stack_frame(evt.timestamp(), otf2::chrono::duration(0)));
             // TODO: not sure if just save the name as string is that clever
-            region_name_queue_.enqueue(location, evt.region().name().str());
+            region_name_queue_.push(location, evt.region().name().str());
         }
 
         void event(const otf2::definition::location& location,
@@ -228,7 +228,7 @@ struct stack_frame
             }
 
             // delete saved region name if leave event is reached
-            region_name_queue_.dequeue(location);
+            region_name_queue_.pop(location);
             call_stack_.dequeue(location);
         }
 
@@ -257,7 +257,7 @@ struct stack_frame
             // matching id seems to be always the same, check for equality anyhow.
             assert(evt.matching_id() == begin_evt.matching_id());
             const auto name = get_handle_name(evt.handle());
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             //Check whether this is a read, write or flush event.
             io_event_kind kind = io_event_kind::none;
             switch (begin_evt.operation_mode())
@@ -325,7 +325,7 @@ struct stack_frame
             }
 
             const auto name = get_handle_name(evt.handle());
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             const auto vt = io_event_property(location.ref(), name,
                                             region_name, 0, 0, 0,
                                             rabbitxx::io_creation_option_container(
@@ -358,7 +358,7 @@ struct stack_frame
                 logging::warn() << "No filename for delete file event!";
             }
 
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             const auto vt = io_event_property(location.ref(), name, region_name,
                                          0, 0, 0, io_operation_option_container(),
                                          io_event_kind::delete_or_close,
@@ -387,7 +387,7 @@ struct stack_frame
             }
 
             const auto name = get_handle_name(evt.handle());
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             const auto vt = io_event_property(location.ref(), name,
                                             region_name, 0, 0, 0,
                                             io_operation_option_container(),
@@ -408,7 +408,7 @@ struct stack_frame
             FILTER_RANK
 
             const auto name = get_handle_name(evt.new_handle());
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             const auto vt = io_event_property(location.ref(), name,
                                             region_name, 0, 0, 0,
                                             io_creation_option_container(evt.status_flags()),
@@ -465,7 +465,7 @@ struct stack_frame
             FILTER_RANK
 
             const auto name = get_handle_name(evt.handle());
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             // NOTE: Mapping:
             //       request_size = offset_request
             //       response_size = offset_result
@@ -511,7 +511,7 @@ struct stack_frame
             //TODO: begin event is unused atm. but we could use the timestamp to claculate time range.
             //const auto& begin_evt = mpi_coll_started_.front(location);
 
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             std::vector<std::uint64_t> members;
             if (evt.comm().has_self_group()) {
                 // TODO: skip sync event if no members are involved!
@@ -556,7 +556,7 @@ struct stack_frame
 
             FILTER_RANK
 
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             const auto vt = sync_event_property(location.ref(), region_name,
                                                 peer2peer(evt.sender(), evt.msg_tag(),
                                                           evt.msg_length(),
@@ -586,7 +586,7 @@ struct stack_frame
 
             FILTER_RANK
 
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             const auto vt = sync_event_property(location.ref(), region_name,
                                                 peer2peer(evt.receiver(), evt.msg_tag(),
                                                           evt.msg_length(),
@@ -616,7 +616,7 @@ struct stack_frame
 
             FILTER_RANK
 
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             const auto vt = sync_event_property(location.ref(), region_name,
                                                 peer2peer(evt.sender(), evt.msg_tag(),
                                                           evt.msg_length()),
@@ -653,7 +653,7 @@ struct stack_frame
 
             FILTER_RANK
 
-            const auto region_name = region_name_queue_.front(location);
+            const auto region_name = region_name_queue_.top(location);
             const auto vt = sync_event_property(location.ref(), region_name,
                                                 peer2peer(evt.receiver(), evt.msg_tag(),
                                                           evt.msg_length()),
@@ -838,7 +838,8 @@ struct stack_frame
         location_queue<otf2::event::mpi_collective_begin> mpi_coll_started_;
         mapping_type mapping_;
         location_queue<typename Graph::vertex_descriptor> edge_points_;
-        location_queue<std::string> region_name_queue_;
+        //location_queue<std::string> region_name_queue_;
+        location_stack<std::string> region_name_queue_;
         location_queue<typename Graph::vertex_descriptor> events_;
         std::unique_ptr<Graph> graph_;
         typename Graph::vertex_descriptor root_;

@@ -3,6 +3,7 @@
 
 #include <map>
 #include <deque>
+#include <stack>
 
 namespace rabbitxx {
 
@@ -47,6 +48,78 @@ namespace rabbitxx {
         std::size_t count(const otf2::definition::location& location) const
         {
             return map_.count(location.ref());
+        }
+
+        std::deque<value_type>& operator[](const key_type& key)
+        {
+            return map_[key];
+        }
+
+        const std::deque<value_type>& operator[](const key_type& key) const
+        {
+            return map_[key];
+        }
+
+        auto begin()
+        {
+            return map_.begin();
+        }
+
+        auto end()
+        {
+            return map_.end();
+        }
+
+        //auto begin(const otf2::definition::location& location)
+        //{
+            //return map_[location.ref()].begin();
+        //}
+
+        //auto end(const otf2::definition::location& location)
+        //{
+            //return map_[location.ref()].end();
+        //}
+
+    private:
+        container map_;
+    };
+
+    template<typename QType>
+    class location_stack
+    {
+    public:
+        using value_type = QType;
+        using key_type = otf2::reference<otf2::definition::location>::ref_type;
+        using container = std::map<key_type, std::stack<value_type>>;
+
+        void push(const otf2::definition::location& location, const value_type& value)
+        {
+            map_[location.ref()].push(value);
+        }
+
+        void pop(const otf2::definition::location& location)
+        {
+            map_[location.ref()].pop();
+        }
+
+        value_type& top(const otf2::definition::location& location)
+        {
+            return map_[location.ref()].top();
+        }
+
+        const value_type& top(const otf2::definition::location& location) const
+        {
+            return map_[location.ref()].top();
+        }
+
+        std::size_t size(const otf2::definition::location& location) //const noexcept
+        {
+            return map_[location.ref()].size();
+        }
+
+        bool empty(const otf2::definition::location& location) //const noexcept
+        {
+            return map_[location.ref()].empty();
         }
 
         std::deque<value_type>& operator[](const key_type& key)
