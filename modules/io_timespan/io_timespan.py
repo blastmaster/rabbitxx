@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
 
+fig_width = 10.82
+fig_height = 6.1
+plt.rcParams['figure.figsize'] = fig_width, fig_height
+
 def make_line_generator(filename):
 
     with open(filename, 'r') as f:
@@ -44,6 +48,7 @@ if len(sys.argv) < 2:
     print("Error input file needed")
     sys.exit(1)
 
+fig = plt.figure()
 filename = sys.argv[1]
 start_time, end_time, data = read_file(filename)
 proc, start, stop = data['process'], data['start'], data['stop']
@@ -66,7 +71,7 @@ print("start_time: {}".format(start_time))
 print("end_time: {}".format(end_time))
 plt.xlim(start_time-delta, end_time+delta)
 plt.xlabel('Time in Milliseconds', fontsize=24)
-ax.tick_params(axis='x', labelsize=24)
-ax.tick_params(axis='y', labelsize=24)
+ax.tick_params(axis='x', labelsize=12)
+ax.tick_params(axis='y', labelsize=12)
 # plt.grid(True)
-plt.show()
+fig.savefig('io_timespan.png', bbox_inches='tight')

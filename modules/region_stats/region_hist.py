@@ -5,6 +5,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
+fig_width = 10.82
+fig_height = 6.1
+plt.rcParams['figure.figsize'] = fig_width, fig_height
 
 def read_file(filename):
 
@@ -42,5 +45,9 @@ for rect, noi in zip(rects, regions_count):
             # ha='center', va='bottom')
     ax.text(rect.get_x() + rect.get_width() / 2, height + 5, noi,
             ha='center', va='bottom')
-plt.grid(True)
-plt.show()
+
+ax.tick_params(axis='x', labelsize=12)
+ax.tick_params(axis='y', labelsize=12)
+# plt.grid(True)
+# plt.show()
+fig.savefig('regionstats.png', bbox_inches='tight')
