@@ -24,7 +24,6 @@ void print_total_duration(const rabbitxx::app_info& info)
         << otf2::chrono::duration_cast<DurationT>(info.last_event_time.time_since_epoch()) << "\n";
 }
 
-
 void dump_table(const rabbitxx::otf2_trace_event& evt)
 {
     if (evt.type == rabbitxx::vertex_kind::io_event)
@@ -34,10 +33,11 @@ void dump_table(const rabbitxx::otf2_trace_event& evt)
         if (evt.duration.enter == otf2::chrono::armageddon() || evt.duration.leave == otf2::chrono::armageddon()) {
             return;
         }
+        auto kind = boost::get<rabbitxx::io_event_property>(evt.property).kind; 
         std::cout << evt.id() << " " 
             << rabbitxx::duration_to_string<otf2::chrono::nanoseconds>(evt.duration.enter.time_since_epoch()) << " "
             << rabbitxx::duration_to_string<otf2::chrono::nanoseconds>(evt.duration.leave.time_since_epoch()) << " "
-            << evt.name() << "\n";
+            << evt.name() << " " << kind << "\n";
     }
 }
 

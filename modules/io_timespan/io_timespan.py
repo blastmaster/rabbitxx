@@ -33,15 +33,15 @@ def read_file(filename):
     pconv = lambda s: int(s)
     dconv = lambda s: int(s[:-2]) / 1000000
     data = np.genfromtxt(gen, converters={0: pconv, 1: dconv, 2: dconv},
-            names=['process', 'start', 'stop', 'region'], dtype=None)
+            names=['process', 'start', 'stop', 'region', 'color'], dtype=None)
     return (start_time, end_time, data)
 
 
 def timelines(y, xstart, xstop, color='b'):
 
     plt.hlines(y, xstart, xstop, color, lw=2)
-    plt.vlines(xstart, y+0.03, y-0.03, color, lw=2)
-    plt.vlines(xstop, y+0.03, y-0.03, color, lw=2)
+    # plt.vlines(xstart, y+0.03, y-0.03, color, lw=2)
+    # plt.vlines(xstop, y+0.03, y-0.03, color, lw=2)
 
 
 if len(sys.argv) < 2:
@@ -51,11 +51,23 @@ if len(sys.argv) < 2:
 fig = plt.figure()
 filename = sys.argv[1]
 start_time, end_time, data = read_file(filename)
-proc, start, stop = data['process'], data['start'], data['stop']
+proc, start, stop, color = data['process'], data['start'], data['stop'], data['color']
+
+# print(data['kind'])
+# is_read = (data['kind'] == 'read')
+# is_write = (data['kind'] == 'write')
+# print("is_read: ".format(is_read))
+# print("is_write: ".format(is_write))
+
 process, unique_idx = np.unique(proc, True)
 y = (proc + 1) / float(len(process) + 1)
 yticks = y[unique_idx]
+
 timelines(y, start, stop)
+# timelines(y, start, stop, color)
+# timelines(y[is_read], start[is_read], stop[is_read], 'k')
+# timelines(y[is_write], start[is_write], stop[is_write], 'r')
+
 if start_time < 0:
     start_time = 0
 delta = (end_time - start_time) / 10
@@ -66,12 +78,13 @@ ax = plt.gca()
 # plt.title('I/O Timespan', fontsize=20)
 plt.yticks(yticks, process)
 plt.ylim(0, 1)
-plt.ylabel('Processes', fontsize=24)
+plt.ylabel('Processes', fontsize=20)
 print("start_time: {}".format(start_time))
 print("end_time: {}".format(end_time))
 plt.xlim(start_time-delta, end_time+delta)
-plt.xlabel('Time in Milliseconds', fontsize=24)
+plt.xlabel('Time (ms)', fontsize=20)
 ax.tick_params(axis='x', labelsize=12)
 ax.tick_params(axis='y', labelsize=12)
 # plt.grid(True)
-fig.savefig('io_timespan.png', bbox_inches='tight')
+plt.show()
+# fig.savefig('io_timespan.svg', bbox_inches='tight')

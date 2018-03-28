@@ -32,7 +32,7 @@ fig, ax = plt.subplots()
 ind = np.arange(regions.size)
 width=0.35
 # ax.barh(regions, regions_count)
-ax.bar(regions, regions_count)
+ax.barh(regions, regions_count)
 plt.ylabel('Function names')
 plt.xlabel('Number of Invocations')
 
@@ -43,8 +43,11 @@ for rect, noi in zip(rects, regions_count):
     # ax.text(rect.get_y() + rect.get_width() / 2, 5+rect.get_x(), noi,
     # ax.text(rect.get_y() + rect.get_width() / 2, 5+rect.get_x(), noi)
             # ha='center', va='bottom')
-    ax.text(rect.get_x() + rect.get_width() / 2, height + 5, noi,
+    # ax.text(rect.get_x() + rect.get_width() + 150, rect.get_y() + rect.get_height() / 2, noi,
+    ax.text(rect.get_x() + rect.get_width() + 300 , rect.get_y() + rect.get_height() / 2, noi,
             ha='center', va='bottom')
+    # ax.text(rect.get_x() + rect.get_width() / 2, height + 5, noi,
+            # ha='center', va='bottom')
 
 ax.tick_params(axis='x', labelsize=12)
 ax.tick_params(axis='y', labelsize=12)

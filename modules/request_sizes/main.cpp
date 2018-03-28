@@ -113,8 +113,9 @@ void request_size_column(const rabbitxx::otf2_trace_event& evt)
     {
         if (io_evt.filename != "stdout") // FIXME URGHHSS
         {
-            std::cout << io_evt.proc_id << " " << io_evt.request_size << " " 
-                << evt.duration.duration << " " << io_evt.region_name << "\n";
+            std::cout << io_evt.proc_id << " " << io_evt.request_size << " "
+                << evt.duration.duration << " " << io_evt.region_name << " "
+                << io_evt.kind << "\n";
         }
     }
 }
