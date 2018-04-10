@@ -81,7 +81,15 @@ struct stack_frame
         create_synthetic_root()
         {
             assert(graph_->num_vertices() == 0);
-            const auto& vt = synthetic_event_property("Root", otf2::chrono::time_point::min());
+            //const auto& vt = synthetic_event_property("Root", otf2::chrono::time_point::min());
+            /**
+             * FIXME:
+             * The timestamp argument is rather a hack to avoid having larger timestamps for the
+             * start event than for succeeding one.
+             * One possible solution may to get the correct start time from the clock properties.
+             * But since this method is called in the constructors initialisation list.
+             **/
+            const auto& vt = synthetic_event_property("Root", otf2::chrono::time_point(otf2::chrono::duration(0)));
             return graph_->add_vertex(otf2_trace_event(vt));
         }
 
