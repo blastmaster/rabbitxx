@@ -33,6 +33,15 @@ bool has_events(const std::vector<Set>& proc_sets, const std::vector<std::vector
     return true;
 }
 
+void sets_are_closed(const rabbitxx::set_map_t<rabbitxx::VertexDescriptor>& sets_pp)
+{
+    for (const auto& set_kvp : sets_pp)
+    {
+        std::for_each(set_kvp.second.begin(), set_kvp.second.end(),
+                [](const auto& set) { REQUIRE(set.state() == rabbitxx::State::Close);});
+    }
+}
+
 TEST_CASE("trace-simple", "[create sets per process]")
 {
     // we need an absolute path here
@@ -42,6 +51,7 @@ TEST_CASE("trace-simple", "[create sets per process]")
 
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
+    sets_are_closed(io_sets_pp);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 2); // size of map is 2, because we have 2 processes
@@ -66,6 +76,7 @@ TEST_CASE("trace-own", "[create sets per process]")
     static const std::string trc_file {"/home/soeste/traces/trace-own_trace-20171116_1704_50058813361150354/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
+    sets_are_closed(io_sets_pp);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 4); // size of map is 4, because we have 4 processes
@@ -90,7 +101,7 @@ TEST_CASE("trace-own", "[create sets per process]")
         }
     }
 
-    SECTION("set event ids")
+    SECTION("test cio-set event ids")
     {
         for (std::size_t proc = 0; proc < io_sets_pp.size(); ++proc)
         {
@@ -122,6 +133,7 @@ TEST_CASE("[ec]", "[create sets per process]")
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-edgecase/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
+    sets_are_closed(io_sets_pp);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 4); // size of map is 4, because we have 4 processes
@@ -150,7 +162,7 @@ TEST_CASE("[ec]", "[create sets per process]")
         }
     }
 
-    SECTION("set event ids")
+    SECTION("test cio-set event ids")
     {
         for (std::size_t proc = 0; proc < io_sets_pp.size(); ++proc)
         {
@@ -183,6 +195,7 @@ TEST_CASE("[ech]", "[create sets per process]")
     static const std::string trc_file {"/home/soeste/traces/dios/edge_case_hard/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
+    sets_are_closed(io_sets_pp);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 4); // size of map is 4, because we have 4 processes
@@ -211,7 +224,7 @@ TEST_CASE("[ech]", "[create sets per process]")
         }
     }
 
-    SECTION("set event ids")
+    SECTION("test cio-set event ids")
     {
         for (std::size_t proc = 0; proc < io_sets_pp.size(); ++proc)
         {
@@ -243,6 +256,7 @@ TEST_CASE("[trace-own-advanced6]", "Sets per Process")
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto io_sets_pp = rabbitxx::cio_sets_per_process(*graph);
+    sets_are_closed(io_sets_pp);
 
     REQUIRE(!io_sets_pp.empty());
     REQUIRE(io_sets_pp.size() == 6); // size of map is 6, because we have 6 processes
@@ -277,7 +291,7 @@ TEST_CASE("[trace-own-advanced6]", "Sets per Process")
         }
     }
 
-    SECTION("set event ids")
+    SECTION("test cio-set event ids")
     {
         for (std::size_t proc = 0; proc < io_sets_pp.size(); ++proc)
         {
