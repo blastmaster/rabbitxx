@@ -355,14 +355,16 @@ private:
         {
             return nullptr;
         }
-        auto it = std::find_if(set_cnt_ptr_->operator[](proc_id).begin(),
-            set_cnt_ptr_->operator[](proc_id).end(),
-            [](typename Cont::mapped_type::value_type& set) { return State::Open == set.state(); });
-        if (it == set_cnt_ptr_->operator[](proc_id).end())
+        if (set_cnt_ptr_->operator[](proc_id).empty())
         {
             return nullptr;
         }
-        return &(*it);
+        auto it2 = std::prev(set_cnt_ptr_->operator[](proc_id).end());
+        if (it2->state() != State::Open)
+        {
+            return nullptr;
+        }
+        return &(*it2);
     }
 
 private:
