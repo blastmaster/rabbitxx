@@ -79,7 +79,7 @@ private:
     //mentioning that the edge_add_t type consists of an
     //pair<edge_descriptor, bool> where the bool indicates whether edge
     //adding was successful or not.
-    boost::optional<IoGraph::edge_add_t>
+    void
     build_edge(const VertexDescriptor& descriptor,
                 const otf2::definition::location& location);
 

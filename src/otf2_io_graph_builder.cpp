@@ -58,7 +58,7 @@ void io_graph_builder::create_synthetic_end()
 //mentioning that the edge_add_t type consists of an
 //pair<edge_descriptor, bool> where the bool indicates whether edge
 //adding was successful or not.
-boost::optional<IoGraph::edge_add_t>
+void
 io_graph_builder::build_edge(const VertexDescriptor& descriptor,
             const otf2::definition::location& location)
 {
@@ -75,7 +75,8 @@ io_graph_builder::build_edge(const VertexDescriptor& descriptor,
         // add edge from synthetic root-vertex to the first vertex on
         // this location.
         graph_.add_edge(root_, descriptor);
-        return boost::none;
+        //return boost::none;
+        return;
     }
 
     if (edge_points_.size(location) > 1) {
@@ -92,7 +93,7 @@ io_graph_builder::build_edge(const VertexDescriptor& descriptor,
     // Store descriptor in queue, for adding edges later.
     edge_points_.enqueue(location, descriptor);
 
-    return edge_desc;
+    return;
 }
 
 void io_graph_builder::set_graph_properties()
