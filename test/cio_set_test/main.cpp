@@ -30,11 +30,9 @@ int main(int argc, char** argv)
 
     // create graph
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
-    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
     // find concurrent I/O-Sets
     auto io_sets = rabbitxx::find_cio_sets(graph);
 
-    std::cout << "FINAL SETS!!!\o/1\n";
     for (const auto& set : io_sets)
     {
         std::cout << set;

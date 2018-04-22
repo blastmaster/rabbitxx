@@ -16,10 +16,10 @@ TEST_CASE("[trace-simple]", "Find concurrent I/O sets")
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto cio_sets = rabbitxx::find_cio_sets(graph);
 
-    static const std::vector<typename decltype(graph)::element_type::vertex_descriptor> exp_evts_s1 {
+    static const std::vector<rabbitxx::VertexDescriptor> exp_evts_s1 {
         2, 4, 5, 6 };
 
-    static const std::vector<typename decltype(graph)::element_type::vertex_descriptor> exp_evts_s2 {
+    static const std::vector<rabbitxx::VertexDescriptor> exp_evts_s2 {
         11, 12, 13, 14, 15, 16 };
 
     REQUIRE(cio_sets.size() == 2);
@@ -57,7 +57,7 @@ TEST_CASE("[trace-own]", "Find concurrent I/O sets")
     auto cio_sets = rabbitxx::find_cio_sets(graph);
 
     const std::vector<
-        std::set<typename decltype(graph)::element_type::vertex_descriptor>>
+        std::set<rabbitxx::VertexDescriptor>>
         exp_sets {
             { 5, 6, 7, 14 },
             { 7, 10, 13, 14 },
@@ -88,7 +88,7 @@ TEST_CASE("[ec]", "Find concurrent I/O sets")
     auto cio_sets = rabbitxx::find_cio_sets(graph);
 
     const std::vector<
-        std::set<typename decltype(graph)::element_type::vertex_descriptor>>
+        std::set<rabbitxx::VertexDescriptor>>
         exp_sets {
             { 5, 6, 7, 8 },
             { 5, 7, 15, 25 },
@@ -124,7 +124,7 @@ TEST_CASE("[ech]", "Find concurrent I/O sets")
     auto cio_sets = rabbitxx::find_cio_sets(graph);
 
     const std::vector<
-        std::set<typename decltype(graph)::element_type::vertex_descriptor>>
+        std::set<rabbitxx::VertexDescriptor>>
         exp_sets {
             { 5, 6, 7, 8 },
             { 5, 8, 11, 12, 23 },
@@ -156,10 +156,9 @@ TEST_CASE("[trace-own-advanced6]", "Find concurrent I/O sets")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
     auto cio_sets = rabbitxx::find_cio_sets(graph);
     const std::vector<
-        std::set<vertex_descriptor>>
+        std::set<rabbitxx::VertexDescriptor>>
         exp_sets {
             { 7, 8, 9, 10, 11, 12 },
             { 7, 8, 9, 10, 22, 23, 33, 34 },
@@ -192,19 +191,19 @@ TEST_CASE("[trace-own-advanced6]", "Find concurrent I/O sets")
     // LOL, all things must satisfy anything! Too lazy for sorting.
     bool res = std::all_of(cio_sets.begin(), cio_sets.end(),
             // all cio-sets must statisfy ...
-            [&exp_sets](const rabbitxx::set_t<vertex_descriptor>& set)
+            [&exp_sets](const rabbitxx::set_t<rabbitxx::VertexDescriptor>& set)
             {
                 // that in any expected-set ...
                 return std::any_of(exp_sets.begin(), exp_sets.end(),
-                        [&set](const std::set<vertex_descriptor>& eset)
+                        [&set](const std::set<rabbitxx::VertexDescriptor>& eset)
                         {
                             // all events in the cio-set satisfy ...
                             return std::all_of(set.begin(), set.end(),
-                                    [&eset](const vertex_descriptor& v)
+                                    [&eset](const rabbitxx::VertexDescriptor& v)
                                     {
                                         // that they are equal to some element in the expected-set.
                                         return std::any_of(eset.begin(), eset.end(),
-                                            [&v](const vertex_descriptor& d) {
+                                            [&v](const rabbitxx::VertexDescriptor& d) {
                                                 return v == d;
                                             });
                                     });

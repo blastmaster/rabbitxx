@@ -9,9 +9,8 @@
 
 using rabbitxx::logging;
 
-template <typename VertexDescriptor>
 void
-dump_set_map(const rabbitxx::set_map_t<VertexDescriptor>& set_map)
+dump_set_map(const rabbitxx::set_map_t<rabbitxx::VertexDescriptor>& set_map)
 {
     logging::debug() << "DUMP SET MAP end events";
     for (const auto& proc_set : set_map)

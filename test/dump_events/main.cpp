@@ -3,27 +3,25 @@
 
 using rabbitxx::logging;
 
-template<typename Graph>
 auto
-get_sync_events(Graph& g)
+get_sync_events(rabbitxx::IoGraph& g)
 {
     const auto vip = g.vertices();
-    std::vector<typename Graph::vertex_descriptor> sync_events;
+    std::vector<rabbitxx::VertexDescriptor> sync_events;
     std::copy_if(vip.first, vip.second, std::back_inserter(sync_events),
-            [&g](const typename Graph::vertex_descriptor& vd) {
+            [&g](const rabbitxx::VertexDescriptor& vd) {
                 return g[vd].type == rabbitxx::vertex_kind::sync_event;
             });
     return sync_events;
 }
 
-template<typename Graph>
 auto
-get_io_events(Graph& g)
+get_io_events(rabbitxx::IoGraph& g)
 {
     const auto vip = g.vertices();
-    std::vector<typename Graph::vertex_descriptor> io_events;
+    std::vector<rabbitxx::VertexDescriptor> io_events;
     std::copy_if(vip.first, vip.second, std::back_inserter(io_events),
-                [&g](const typename Graph::vertex_descriptor& vd) {
+                [&g](const rabbitxx::VertexDescriptor& vd) {
                     return g[vd].type == rabbitxx::vertex_kind::io_event;
                 });
     return io_events;

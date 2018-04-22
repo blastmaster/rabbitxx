@@ -7,15 +7,13 @@
 
 using rabbitxx::logging;
 
-template<typename Graph>
 std::vector<std::pair<int, std::string>>
-get_out_degrees(Graph& graph)
+get_out_degrees(rabbitxx::IoGraph& graph)
 {
-    using descriptor = typename Graph::vertex_descriptor;
     std::vector<std::pair<int, std::string>> out_degrees(graph.num_vertices());
     const auto vertices = graph.vertices();
     std::transform(vertices.first, vertices.second, std::begin(out_degrees),
-                [&graph](const descriptor& vd)
+                [&graph](const rabbitxx::VertexDescriptor& vd)
                 {
                     return std::make_pair(
                         static_cast<int>(boost::out_degree(vd, *(graph.get()))),

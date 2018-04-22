@@ -21,11 +21,10 @@ TEST_CASE("[trace-simple]", "Find local Process Groups of Synchronization Events
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     //auto lpgs = rabbitxx::make_local_pgmap(*graph);
 
-    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
 
     // here we have just two processes therefore every synchronization is
     // global! so for *local* process groups we get the empty set!
-    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap { };
+    rabbitxx::pg_map_t<rabbitxx::VertexDescriptor> exp_local_pgmap { };
 
     REQUIRE(exp_local_pgmap == lpgs);
 }
@@ -36,9 +35,8 @@ TEST_CASE("[trace-own]", "Find local Process Groups of Synchronization Events")
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     //auto lpgs = rabbitxx::make_local_pgmap(*graph);
 
-    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
 
-    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap {
+    rabbitxx::pg_map_t<rabbitxx::VertexDescriptor> exp_local_pgmap {
         { 12, { 0, 2 } },
         { 17, { 0, 3 } },
         { 18, { 0, 1 } }
@@ -53,9 +51,8 @@ TEST_CASE("[ec]", "Find local Process Groups of Synchronization Events")
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     //auto lpgs = rabbitxx::make_local_pgmap(*graph);
 
-    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
 
-    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap {
+    rabbitxx::pg_map_t<rabbitxx::VertexDescriptor> exp_local_pgmap {
         { 19, { 0, 1 } },
         { 21, { 2, 3 } },
         { 22, { 0, 1 } },
@@ -67,7 +64,7 @@ TEST_CASE("[ec]", "Find local Process Groups of Synchronization Events")
     {
         std::cout << "[" << pg.first << "] ";
         std::copy(pg.second.begin(), pg.second.end(),
-                std::ostream_iterator<vertex_descriptor>(std::cout, ", "));
+                std::ostream_iterator<rabbitxx::VertexDescriptor>(std::cout, ", "));
         std::cout << "\n";
     }
 
@@ -80,9 +77,8 @@ TEST_CASE("[ech]", "Find local Process Groups of Synchronization Events")
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     //auto lpgs = rabbitxx::make_local_pgmap(*graph);
 
-    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
 
-    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap {
+    rabbitxx::pg_map_t<rabbitxx::VertexDescriptor> exp_local_pgmap {
         { 21, { 0, 1 } },
         { 22, { 2, 3 } },
         { 26, { 0, 2 } },
@@ -99,9 +95,8 @@ TEST_CASE("[trace-own-advanced6]", "Find local Process Groups of Synchronization
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     //auto lpgs = rabbitxx::make_local_pgmap(*graph);
 
-    using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
 
-    rabbitxx::pg_map_t<vertex_descriptor> exp_local_pgmap {
+    rabbitxx::pg_map_t<rabbitxx::VertexDescriptor> exp_local_pgmap {
         { 25, { 4, 5 } },
         { 29, { 0, 1 } },
         { 30, { 2, 3 } },
