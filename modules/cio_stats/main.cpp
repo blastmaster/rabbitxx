@@ -5,8 +5,7 @@
 
 #include <iostream>
 
-using rabbitxx::logging;
-using rabbitxx::VertexDescriptor;
+using namespace rabbitxx;
 
 /**
  * raw size: 53[DEBUG]: w/o empty sets: 13[DEBUG]: unique sets: 13Number of Cio-Sets: 13
@@ -15,9 +14,9 @@ using rabbitxx::VertexDescriptor;
 **/
 
 std::set<std::string>
-region_names_by_io_event_kind(const rabbitxx::IoGraph& graph,
-        const std::vector<rabbitxx::VertexDescriptor>& events,
-        const rabbitxx::io_event_kind kind)
+region_names_by_io_event_kind(const IoGraph& graph,
+        const std::vector<VertexDescriptor>& events,
+        const io_event_kind kind)
 {
     std::set<std::string> names;
     for (VertexDescriptor vd : events)
@@ -28,9 +27,9 @@ region_names_by_io_event_kind(const rabbitxx::IoGraph& graph,
     return names;
 }
 
-void print_stats_per_io_event_kind(const rabbitxx::IoGraph& graph,
-        const std::vector<rabbitxx::VertexDescriptor>& events,
-        const rabbitxx::io_event_kind kind)
+void print_stats_per_io_event_kind(const IoGraph& graph,
+        const std::vector<VertexDescriptor>& events,
+        const io_event_kind kind)
 {
     std::cout << "Number of " << kind << "-events: " << events.size() << std::endl;
     const auto io_funcs = region_names_by_io_event_kind(graph, events, kind);
@@ -39,14 +38,12 @@ void print_stats_per_io_event_kind(const rabbitxx::IoGraph& graph,
     std::cout << " ]" << std::endl;
 }
 
-void print_single_cio_set_stats(const rabbitxx::IoGraph& graph,
-        const rabbitxx::set_t<VertexDescriptor>& cio_set)
+void print_single_cio_set_stats(const IoGraph& graph,
+        const set_t<VertexDescriptor>& cio_set)
 {
-    rabbitxx::CIO_Stats rw_statistic(graph, cio_set);
+    CIO_Stats rw_statistic(graph, cio_set);
     auto num_events = cio_set.size();
-    //TODO:
-    //auto io_evt_hist = get_io_event_histogram(cio_set);
-    auto io_evt_kind_map = rabbitxx::kind_map(graph, cio_set);
+    auto io_evt_kind_map = kind_map(graph, cio_set);
     std::cout << "Number of events in Cio-Set: " << num_events << std::endl;
     for (auto kvp : io_evt_kind_map)
     {
@@ -61,8 +58,8 @@ void print_single_cio_set_stats(const rabbitxx::IoGraph& graph,
     std::cout << std::endl;
 }
 
-void print_cio_set_stats(const rabbitxx::IoGraph& graph,
-    const rabbitxx::set_container_t<VertexDescriptor>& cio_sets)
+void print_cio_set_stats(const IoGraph& graph,
+    const set_container_t<VertexDescriptor>& cio_sets)
 {
     auto n_sets = cio_sets.size();
     std::vector<VertexDescriptor> set_sizes(n_sets);
@@ -90,11 +87,11 @@ void print_cio_set_stats(const rabbitxx::IoGraph& graph,
     }
 }
 
-void print_cio_set_per_process_stats(rabbitxx::IoGraph& graph,
-        rabbitxx::set_map_t<rabbitxx::VertexDescriptor> sets_per_proc)
+void print_cio_set_per_process_stats(IoGraph& graph,
+        set_map_t<VertexDescriptor> sets_per_proc)
 {
     int cnt {0};
-    rabbitxx::remove_empty_sets(sets_per_proc); //Thats the reason for taking the parameter by value!
+    remove_empty_sets(sets_per_proc); //Thats the reason for taking the parameter by value!
     std::cout << "==================== Cio-Set per process stats ====================" << std::endl;
     for (const auto& set_pp_kvp : sets_per_proc)
     {
@@ -114,12 +111,12 @@ int main(int argc, char** argv)
     }
 
     std::string trc_file(argv[1]);
-    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
+    auto graph = make_graph<graph::OTF2_Io_Graph_Builder>(trc_file);
     // get cio-sets per process
-    auto cio_sets_pp = rabbitxx::cio_sets_per_process(graph);
+    auto cio_sets_pp = cio_sets_per_process(graph);
     print_cio_set_per_process_stats(graph, cio_sets_pp);
     // get cio-sets
-    auto cio_sets = rabbitxx::find_cio_sets(graph, cio_sets_pp);
+    auto cio_sets = find_cio_sets(graph, cio_sets_pp);
     print_cio_set_stats(graph, cio_sets);
 
     return EXIT_SUCCESS;
