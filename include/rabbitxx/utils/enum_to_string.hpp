@@ -293,4 +293,64 @@ std::string to_string(const otf2::common::paradigm_type& para_type) noexcept
     }
 }
 
+inline
+std::string to_string(const otf2::common::type& type) noexcept
+{
+    switch (type)
+    {
+        case otf2::common::type::none:
+            return {"none"};
+        case otf2::common::type::uint8:
+            return {"uint8"};
+        case otf2::common::type::uint16:
+            return {"uint16"};
+        case otf2::common::type::uint32:
+            return {"uint32"};
+        case otf2::common::type::uint64:
+            return {"uint64"};
+        case otf2::common::type::int8:
+            return {"int8"};
+        case otf2::common::type::int16:
+            return {"int16"};
+        case otf2::common::type::int32:
+            return {"int32"};
+        case otf2::common::type::int64:
+            return {"int64"};
+        case otf2::common::type::Float:
+            return {"float"};
+        case otf2::common::type::Double:
+            return {"double"};
+        case otf2::common::type::string:
+            return {"string"};
+        case otf2::common::type::attribute:
+            return {"attribute"};
+        case otf2::common::type::location:
+            return {"location"};
+        case otf2::common::type::region:
+            return {"region"};
+        case otf2::common::type::group:
+            return {"group"};
+        case otf2::common::type::metric:
+            return {"metric"};
+        case otf2::common::type::comm:
+            return {"comm"};
+        case otf2::common::type::parameter:
+            return {"parameter"};
+        case otf2::common::type::rma_win:
+            return {"rma_win"};
+        case otf2::common::type::source_code_location:
+            return {"source_code_location"};
+        case otf2::common::type::calling_context:
+            return {"calling context"};
+        case otf2::common::type::interrupt_generator:
+            return {"interrupt generator"};
+        case otf2::common::type::io_file:
+            return {"io file"};
+        case otf2::common::type::io_handle:
+            return {"io handle"};
+        default:
+            return {"Undefined"};
+    }
+}
+
 #endif /* __ENUM_TO_STRING_HPP__ */
