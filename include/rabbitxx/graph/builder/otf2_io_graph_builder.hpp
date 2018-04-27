@@ -208,6 +208,7 @@ private:
     otf2::chrono::time_point min_tp_ = otf2::chrono::genesis();
     otf2::chrono::time_point max_tp_ = otf2::chrono::armageddon();
     otf2::definition::clock_properties clock_props_;
+    std::map<std::string, std::string> file_to_fs_map_ {};
 };
 
 struct OTF2_Io_Graph_Builder

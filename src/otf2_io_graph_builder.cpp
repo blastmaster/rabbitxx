@@ -110,6 +110,7 @@ void io_graph_builder::set_graph_properties()
     graph_.get()->operator[](boost::graph_bundle).last_event_time = max_tp_;
     // set clock properties
     graph_.get()->operator[](boost::graph_bundle).clock_props = clock_props_;
+    graph_.get()->operator[](boost::graph_bundle).file_to_fs = file_to_fs_map_;
 }
 
 void io_graph_builder::check_time(otf2::chrono::time_point tp)
@@ -794,6 +795,20 @@ void io_graph_builder::definitions_done(const otf2::reader::reader& rdr)
         //do rank mapping!
         mapping_.register_location(location);
         rdr.register_location(location);
+    }
+
+    const auto str_refs = rdr.strings();
+    for (const auto& fp : rdr.io_file_properties())
+    {
+        if (fp.name().str() == "File system")
+        {
+            auto fs_str = str_refs[fp.value().stringRef];
+            if (fs_str.str() == "proc" || fs_str.str() == "sysfs")
+            {
+                continue;
+            }
+            file_to_fs_map_[fp.def().name().str()] = fs_str.str();
+        }
     }
 }
 

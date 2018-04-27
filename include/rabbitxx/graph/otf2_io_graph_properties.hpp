@@ -567,6 +567,7 @@ struct app_info
     otf2::chrono::time_point first_event_time = otf2::chrono::genesis();
     otf2::chrono::time_point last_event_time = otf2::chrono::armageddon();
     otf2::definition::clock_properties clock_props;
+    std::map<std::string, std::string> file_to_fs;
 };
 
 template<typename G>
