@@ -10,40 +10,34 @@ using rabbitxx::logging;
 namespace rabbitxx
 {
 
-double avg_request_size(const IoGraph& graph, const std::vector<VertexDescriptor>& events)
+
+class File
 {
-    if (events.empty())
+public:
+    File(std::string filename, std::string file_system) : filename_(filename), file_system_(file_system)
+    {}
+
+    File(std::string filename, const IoGraph& graph) : filename_(filename)
     {
-        return 0.0;
+        auto fs_map = graph.graph_properties().file_to_fs;
+        file_system_ = fs_map[filename];
     }
-    std::uint64_t res = std::accumulate(events.begin(), events.end(), 0,
-            [&graph](std::uint64_t init, VertexDescriptor vd)
-            {
-                const auto io_evt = boost::get<io_event_property>(graph[vd].property);
-                return init + io_evt.request_size;
-            });
 
-    std::cout << "sum responses: " << res << " num events: " << events.size() << "\n";
-    return static_cast<double>(res / events.size());
-}
-
-double avg_response_size(const IoGraph& graph, const std::vector<VertexDescriptor>& events)
-{
-    if (events.empty())
+    const std::string filename() const
     {
-        return 0.0;
+        return filename_;
     }
-    std::uint64_t res = std::accumulate(events.begin(), events.end(), 0,
-            [&graph](std::uint64_t init, VertexDescriptor vd)
-            {
-                const auto io_evt = boost::get<io_event_property>(graph[vd].property);
-                return init + io_evt.response_size;
-            });
 
+    const std::string file_system() const
+    {
+        return file_system_;
+    }
 
-    std::cout << "sum responses: " << res << " num events: " << events.size() << "\n";
-    return static_cast<double>(res / events.size());
-}
+private:
+    std::string filename_;
+    std::string file_system_;
+};
+
 
 std::map<std::string, std::vector<VertexDescriptor>>
 write_functions(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)

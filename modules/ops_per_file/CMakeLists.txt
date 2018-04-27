@@ -2,8 +2,8 @@ set(SOURCES
     main.cpp
 )
 
-add_executable(request_sizes ${SOURCES})
-target_link_libraries(request_sizes
+add_executable(ops_per_file ${SOURCES})
+target_link_libraries(ops_per_file
     ${RABBITXX_LIBRARIES}
     ${OTF2_LIBRARIES}
     ${Boost_LIBRARIES}
