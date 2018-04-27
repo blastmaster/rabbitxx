@@ -62,11 +62,6 @@ void
 io_graph_builder::build_edge(const VertexDescriptor& descriptor,
             const otf2::definition::location& location)
 {
-    if (edge_points_.count(location) == 0) {
-        //logging::debug() << "First `edge_points_` location #" << location.ref()
-            //<< " entry! try access...";
-    }
-
     if (edge_points_.empty(location)) {
         //logging::debug() << "No vertex in edge_points_ queue.";
         // We cannot add an edge if only one vertex are given.
@@ -78,12 +73,7 @@ io_graph_builder::build_edge(const VertexDescriptor& descriptor,
         //return boost::none;
         return;
     }
-
-    if (edge_points_.size(location) > 1) {
-        logging::warn() << "More than one vertex in the edge_points_ queue.";
-        //XXX: does this case matter, can this ever happen?
-    }
-
+    assert(edge_points_.size(location) <= 1);
     const auto& from_vertex = edge_points_.front(location);
     const auto edge_desc = graph_.add_edge(from_vertex, descriptor);
     if (! edge_desc.second) {
