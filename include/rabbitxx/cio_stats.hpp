@@ -10,7 +10,6 @@ using rabbitxx::logging;
 namespace rabbitxx
 {
 
-
 class File
 {
 public:
@@ -38,38 +37,71 @@ private:
     std::string file_system_;
 };
 
-
-std::map<std::string, std::vector<VertexDescriptor>>
-write_functions(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
+/**
+ * Function object to filter for certain `io_event_kind` types.
+ */
+struct Io_Operation_Filter
 {
-    std::map<std::string, std::vector<VertexDescriptor>> write_fn_map;
-    for (auto vd : cio_set)
+    Io_Operation_Filter(const IoGraph& graph, const io_event_kind filter_kind) : kind_(filter_kind), graph_(graph) {}
+    bool operator() (const VertexDescriptor& vd) const
     {
-        const auto io_evt = boost::get<io_event_property>(graph[vd].property);
-        if (io_evt.kind == io_event_kind::write)
-        {
-            write_fn_map[io_evt.region_name].push_back(vd);
-        }
+        auto io_prop = get_io_property(graph_, vd);
+        return io_prop.kind == kind_;
     }
 
-    return write_fn_map;
-}
+    io_event_kind kind_;
+    const IoGraph& graph_;
+};
 
-std::map<std::string, std::vector<VertexDescriptor>>
-read_functions(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
+/**
+ * Take a file and track accesses within a cio-set on that file.
+ */
+class FileAccessTracker
 {
-    std::map<std::string, std::vector<VertexDescriptor>> read_fn_map;
-    for (auto vd : cio_set)
+public:
+    explicit FileAccessTracker(std::string filename) : filename_(filename)
+    {}
+
+    std::size_t operator()(const IoGraph& graph, const set_t<VertexDescriptor> cio_set)
     {
-        const auto io_evt = boost::get<io_event_property>(graph[vd].property);
-        if (io_evt.kind == io_event_kind::read)
+        for (const auto& evt : cio_set)
         {
-            read_fn_map[io_evt.region_name].push_back(vd);
+            auto io_evt = get_io_property(graph, evt);
+            if (io_evt.filename == filename_)
+            {
+                accessing_events_.push_back(evt);
+            }
         }
+
+        return accessing_events_.size();
     }
 
-    return read_fn_map;
-}
+    // filter overload
+    std::size_t operator()(const IoGraph& graph, const set_t<VertexDescriptor> cio_set,
+            const Io_Operation_Filter& filter)
+    {
+        std::copy_if(cio_set.begin(), cio_set.end(),
+                std::back_inserter(accessing_events_),
+                filter);
+
+        return accessing_events_.size();
+    }
+
+    std::string filename()
+    {
+        return filename_;
+    }
+
+    std::vector<VertexDescriptor> accessing_events()
+    {
+        return accessing_events_;
+    }
+
+private:
+    std::string filename_;
+    std::vector<VertexDescriptor> accessing_events_ {};
+};
+
 
 std::map<std::string, std::vector<VertexDescriptor>>
 region_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
@@ -84,6 +116,15 @@ region_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
     return rm;
 }
 
+/**
+ * Build a map of keys of `io_event_kind` and a vector of vertex descriptors from a given set
+ * belong the the `io_event_kind`.
+ *
+ * @param IoGraph a const reference to an IoGraph object.
+ * @param cio_set a const reference to a CIO-Set.
+ * @return A std::map with the `io_event_kind` as key, and a vector of
+ * all operations belong to this kind as a value.
+ */
 std::map<io_event_kind, std::vector<VertexDescriptor>>
 kind_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
 {
@@ -122,6 +163,18 @@ kind_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
     return io_evt_kind_map;
 }
 
+/**
+ * Print how many operation of a `io_event_kind` happen in a cio-set.
+ */
+void event_kinds_per_set(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
+{
+    const auto km = kind_map(graph, cio_set);
+    for (const auto& kvp : km)
+    {
+        std::cout << kvp.first << ": " << kvp.second.size() << "\n";
+    }
+}
+
 std::map<std::string, std::vector<VertexDescriptor>>
 file_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
 {
@@ -134,6 +187,39 @@ file_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
     return f_map;
 }
 
+/**
+ * Get the set of processes accessing a given file within the same cio-set.
+ */
+std::set<std::uint64_t> concurrent_accessing_processes(const IoGraph& graph,
+        const set_t<VertexDescriptor>& set,
+        const std::string& filename)
+{
+    auto fm = file_map(graph, set);
+    std::set<std::uint64_t> procs;
+    for (const auto evt : fm[filename])
+    {
+        auto pid = graph[evt].id();
+        procs.insert(pid);
+    }
+
+    return procs;
+}
+
+/**
+ * check wether the given file is accessed by more than one process within this set.
+ */
+bool file_has_shared_access(const IoGraph& graph,
+        const set_t<VertexDescriptor>& set,
+        const std::string& filename)
+{
+    const auto procs = concurrent_accessing_processes(graph, set, filename);
+    return (procs.size() > 1);
+}
+
+/**
+ * Get the duration of a cio-set in microseconds.
+ * The duration is the difference between the end_event timestamp and the start_event timestamp.
+ */
 otf2::chrono::microseconds
 get_set_duration(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
 {
@@ -253,14 +339,14 @@ void dump_stats(const CIO_Stats& stats)
     const auto& write_stats = stats.get_total_write_stats();
     std::cout << "Set Duration: " << stats.set_duration() << "\n";
     std::cout << "Read-Stats: " << "\n" <<
-        " Number of read events: " << read_stats.total << 
+        " Number of read events: " << read_stats.total <<
         " min: " << read_stats.min_size <<
         " max: " << read_stats.max_size <<
         " sum: " << read_stats.sum_size <<
         " avg: " << read_stats.avg_size << "\n";
 
     std::cout << "Write-Stats: " << "\n" <<
-        " Number of write events: " << write_stats.total << 
+        " Number of write events: " << write_stats.total <<
         " min: " << write_stats.min_size <<
         " max: " << write_stats.max_size <<
         " sum: " << write_stats.sum_size <<

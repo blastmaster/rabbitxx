@@ -15,8 +15,7 @@ using namespace rabbitxx;
 
 std::set<std::string>
 region_names_by_io_event_kind(const IoGraph& graph,
-        const std::vector<VertexDescriptor>& events,
-        const io_event_kind kind)
+        const std::vector<VertexDescriptor>& events)
 {
     std::set<std::string> names;
     for (VertexDescriptor vd : events)
@@ -32,7 +31,7 @@ void print_stats_per_io_event_kind(const IoGraph& graph,
         const io_event_kind kind)
 {
     std::cout << "Number of " << kind << "-events: " << events.size() << std::endl;
-    const auto io_funcs = region_names_by_io_event_kind(graph, events, kind);
+    const auto io_funcs = region_names_by_io_event_kind(graph, events);
     std::cout << kind << "-funcs: [ ";
     std::copy(io_funcs.begin(), io_funcs.end(), std::ostream_iterator<std::string>(std::cout, ", "));
     std::cout << " ]" << std::endl;
@@ -54,7 +53,7 @@ void print_single_cio_set_stats(const IoGraph& graph,
                 return init + kvp.second.size();
             });
     assert(sum_evts == num_events);
-    rabbitxx::dump_stats(rw_statistic);
+    dump_stats(rw_statistic);
     std::cout << std::endl;
 }
 
