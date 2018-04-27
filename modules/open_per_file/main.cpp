@@ -1,7 +1,6 @@
 #include <rabbitxx/cio_set.hpp>
 #include <rabbitxx/graph.hpp>
 #include <rabbitxx/utils.hpp>
-#include <rabbitxx/log.hpp>
 
 #include <string>
 #include <iostream>
@@ -41,9 +40,6 @@ print_open_per_file(const IoGraph& graph, const std::map<fs::path, std::vector<V
     {
         std::cout << "--------------------------------------------------------------------------------\n";
         std::cout << "File: " << kvp.first << "\n";
-        //TODO: Need an rabbitxx::io_event_stream_iterator
-        //std::copy(kvp.second.begin(), kvp.second.end(),
-                //std::ostream_iterator<io_event_property>(std::cout, "\n"));
         for (VertexDescriptor vd : kvp.second)
         {
             auto io_evt = get_io_property(graph, vd);
@@ -80,7 +76,6 @@ int main(int argc, char** argv)
     int set_cnt = 0;
     for (auto& cio_set : cio_sets)
     {
-        std::cout << "start event " << (graph)[cio_set.start_event()].timestamp() << "\n";
         const auto create_evts = get_io_events_by_kind(graph, cio_set, rabbitxx::io_event_kind::create);
         auto opf = open_per_file(graph, create_evts);
         print_open_per_file_count(opf);

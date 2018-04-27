@@ -16,7 +16,8 @@ int main(int argc, char** argv)
     // create graph
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
     // find concurrent I/O-Sets
-    auto io_sets = rabbitxx::cio_sets_per_process(graph);
+    //auto io_sets = rabbitxx::cio_sets_per_process(graph);
+    auto io_sets = rabbitxx::find_cio_sets(graph);
 
     return 0;
 }
