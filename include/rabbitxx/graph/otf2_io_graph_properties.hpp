@@ -212,6 +212,7 @@ struct io_event_property
     std::uint64_t proc_id = std::numeric_limits<std::uint64_t>::max();
     std::string filename;
     std::string region_name;
+    std::string paradigm;
     std::uint64_t request_size {0}; // bytes requested by an I/O operation
     std::uint64_t response_size {0}; // bytes actually touched by this I/O operation
     std::uint64_t offset {0};
@@ -222,12 +223,12 @@ struct io_event_property
     io_event_property() = default;
 
     explicit io_event_property(std::uint64_t process_id, const std::string& fname,
-                        const std::string& reg_name, std::uint64_t req_size,
+                        const std::string& reg_name, const std::string& paradigm, std::uint64_t req_size,
                         std::uint64_t resp_size,
                         std::uint64_t off, option_type mode,
                         io_event_kind event_kind,
                         const otf2::chrono::time_point ts) noexcept
-    : proc_id(process_id), filename(fname), region_name(reg_name), request_size(req_size),
+    : proc_id(process_id), filename(fname), region_name(reg_name), paradigm(paradigm), request_size(req_size),
         response_size(resp_size), offset(off), option(mode), kind(event_kind), timestamp(ts)
     {
     }
@@ -238,6 +239,7 @@ inline std::ostream& operator<<(std::ostream& os, const io_event_property& verte
     return os << "process id: " << vertex.proc_id << "\n"
                 << "filename: " << vertex.filename << "\n"
                 << "region: " << vertex.region_name << "\n"
+                << "paradigm: " << vertex.paradigm << "\n"
                 << "request_size:  " << vertex.request_size << "\n"
                 << "response size: " << vertex.response_size << "\n"
                 << "offset: " << vertex.offset << "\n"

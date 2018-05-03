@@ -219,6 +219,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     //FIXME: which timestamp should we use? start? or end?
     const auto vt = io_event_property(location.ref(), name, region_name,
+                                            evt.handle().paradigm().name().str(),
                                             begin_evt.bytes_request(),
                                             evt.bytes_request(), 0,
                                             io_operation_option_container(
@@ -270,8 +271,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     const auto name = get_handle_name(evt.handle());
     const auto region_name = region_name_queue_.top(location);
-    const auto vt = io_event_property(location.ref(), name,
-                                    region_name, 0, 0, 0,
+    const auto vt = io_event_property(location.ref(), name, region_name,
+                                    evt.handle().paradigm().name().str(),
+                                    0, 0, 0,
                                     rabbitxx::io_creation_option_container(
                                         evt.status_flags(),
                                         evt.creation_flags(),
@@ -304,6 +306,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     const auto region_name = region_name_queue_.top(location);
     const auto vt = io_event_property(location.ref(), name, region_name,
+                                    evt.paradigm().name().str(),
                                     0, 0, 0, io_operation_option_container(),
                                     io_event_kind::delete_or_close,
                                     evt.timestamp());
@@ -333,7 +336,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
     const auto name = get_handle_name(evt.handle());
     const auto region_name = region_name_queue_.top(location);
     const auto vt = io_event_property(location.ref(), name,
-                                    region_name, 0, 0, 0,
+                                    region_name,
+                                    evt.handle().paradigm().name().str(),
+                                    0, 0, 0,
                                     io_operation_option_container(),
                                     io_event_kind::delete_or_close,
                                     evt.timestamp());
@@ -354,7 +359,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
     const auto name = get_handle_name(evt.new_handle());
     const auto region_name = region_name_queue_.top(location);
     const auto vt = io_event_property(location.ref(), name,
-                                    region_name, 0, 0, 0,
+                                    region_name,
+				    evt.new_handle().paradigm().name().str(),
+				    0, 0, 0,
                                     io_creation_option_container(evt.status_flags()),
                                     io_event_kind::dup,
                                     evt.timestamp());
@@ -414,7 +421,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
     //       request_size = offset_request
     //       response_size = offset_result
     //       offset = offset_result
-    auto vt = io_event_property(location.ref(), name, region_name, evt.offset_request(),
+    auto vt = io_event_property(location.ref(), name, region_name,
+                                    evt.handle().paradigm().name().str(),
+                                    evt.offset_request(),
                                     evt.offset_result(), evt.offset_result(),
                                     evt.seek_option(),
                                     io_event_kind::seek,
