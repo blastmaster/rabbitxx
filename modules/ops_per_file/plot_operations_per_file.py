@@ -59,17 +59,17 @@ def main():
     for idx, op in enumerate(ops):
         print("Set {}: filename: {} operations {} cnts {}".format(idx+1, op.filename, op.operations, op.counts))
 
-    # fig = plt.figure()
-    # for idx, ops in enumerate(ops):
-        # # pltidx = 220 + (idx  % 4) + 1
-        # # ax = fig.add_subplot(pltidx)
-        # # ax.xlabel('I/O Operation')
-        # # ax.ylabel('Number of Invocations within Set')
-        # print(ops.files, ops.counts)
-        # plt.bar(ops.files, ops.counts)
-        # # ax.bar(ops.files, ops.counts)
-        # name = 'ops_per_file-{}.png'.format(idx)
-        # plt.savefig(name, bbox_inces='tight')
+    for idx, ops in enumerate(ops):
+        fig, ax = plt.subplots()
+        # pltidx = 220 + (idx  % 4) + 1
+        # ax = fig.add_subplot(pltidx)
+        # ax.xlabel('I/O Operation')
+        # ax.ylabel('Number of Invocations within Set')
+        print(ops.operations, ops.counts)
+        ax.bar(ops.operations, ops.counts)
+        # ax.bar(ops.files, ops.counts)
+        name = 'ops_per_file-{}.png'.format(idx)
+        plt.savefig(name, bbox_inces='tight')
 
 
 if __name__ == '__main__':
