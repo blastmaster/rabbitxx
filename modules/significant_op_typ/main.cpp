@@ -145,6 +145,52 @@ void dump_kind_time_map(const IoGraph& graph, const set_container_t<VertexDescri
             std::ostream_iterator<KindTimeMap>(std::cout, "\n"));
 }
 
+void dump_csv(const IoGraph& graph, const set_container_t<VertexDescriptor>& sets)
+{
+    const std::array<std::string, 9> head {
+        "set",
+        "create",
+        "dup",
+        "seek",
+        "read",
+        "write",
+        "flush",
+        "close/delete",
+        "sum"
+    };
+    const std::array<io_event_kind, 7> kinds {
+        io_event_kind::create,
+        io_event_kind::dup,
+        io_event_kind::seek,
+        io_event_kind::read,
+        io_event_kind::write,
+        io_event_kind::flush,
+        io_event_kind::delete_or_close
+    };
+    std::copy(head.begin(), head.end(), std::ostream_iterator<std::string>(std::cout, ","));
+    std::cout << "\n";
+    std::uint64_t sidx {1};
+    for (const auto& set : sets)
+    {
+        KindTimeMap cur(graph, set);
+        std::cout << sidx << ", ";
+        for (const auto& kind : kinds)
+        {
+            auto km = cur.kind_map();
+            if (km.find(kind) != km.end())
+            {
+                std::cout << km[kind] << ", ";
+            }
+            else
+            {
+                std::cout << otf2::chrono::picoseconds(0) << ", ";
+            }
+        }
+        std::cout << cur.sum() << "\n";
+        ++sidx;
+    }
+}
+
 
 int main(int argc, char** argv)
 {
@@ -166,9 +212,10 @@ int main(int argc, char** argv)
         //list_event_durations(graph, set);
     //}
 
-    dump_region_time_map(graph, io_sets);
-    std::cout << "\n\n";
-    dump_kind_time_map(graph, io_sets);
+    //dump_region_time_map(graph, io_sets);
+    //std::cout << "\n\n";
+    //dump_kind_time_map(graph, io_sets);
+    dump_csv(graph, io_sets);
 
     return EXIT_SUCCESS;
 }
