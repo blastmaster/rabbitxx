@@ -9,7 +9,7 @@
 #include <otf2xx/otf2.hpp>
 
 #include <rabbitxx/log.hpp>
-#include <rabbitxx/utils/enum_to_string.hpp>
+#include <rabbitxx/utils.hpp>
 
 #include <limits>
 

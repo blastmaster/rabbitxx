@@ -1,6 +1,8 @@
 #ifndef RABBITXX_UTILS_HPP
 #define RABBITXX_UTILS_HPP
 
+#include<rabbitxx/utils/enum_to_string.hpp>
+
 #include <boost/filesystem.hpp>
 
 namespace rabbitxx {
