@@ -81,11 +81,18 @@ void set2csv(const IoGraph& graph, const set_t<VertexDescriptor>& set, std::ostr
     {
         const auto& ioevt = get_io_property(graph, evt);
         io_event_2_csv_stream(ioevt, out);
-        std::cout << "\n";
+        out << "\n";
     }
 
 }
 
+static std::string create_filename(std::uint64_t sidx)
+{
+    std::stringstream sstr;
+    sstr << "set-" << sidx << ".csv";
+
+    return sstr.str();
+}
 
 int main(int argc, char** argv)
 {
@@ -100,9 +107,13 @@ int main(int argc, char** argv)
     auto cio_sets = find_cio_sets(graph);
 
     //header();
+    std::uint64_t idx = 1;
     for (const auto& set : cio_sets)
     {
-        set2csv(graph, set);
+        std::string filename = create_filename(idx);
+        std::ofstream ofile(filename);
+        set2csv(graph, set, ofile);
+        ++idx;
     }
 
     return EXIT_SUCCESS;
