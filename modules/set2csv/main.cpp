@@ -59,18 +59,21 @@ struct option_csv_printer : boost::static_visitor<std::string>
     }
 };
 
-std::ostream& io_event_2_csv_stream(const io_event_property& evt, std::ostream& out)
+std::ostream& io_event_2_csv_stream(const IoGraph& graph, const VertexDescriptor& evt, std::ostream& out)
 {
-    out << evt.proc_id << ", "
-        << evt.filename << ", "
-        << evt.region_name << ", "
-        << evt.paradigm << ", "
-        << evt.request_size << ", "
-        << evt.response_size << ", "
-        << evt.offset << ", "
+    const auto& io_evt = get_io_property(graph, evt);
+    out << io_evt.proc_id << ", "
+        << io_evt.filename << ", "
+        << io_evt.region_name << ", "
+        << io_evt.paradigm << ", "
+        << io_evt.request_size << ", "
+        << io_evt.response_size << ", "
+        << io_evt.offset << ", "
         //<< boost::apply_visitor(option_csv_printer(), evt.option) << ", "
-        << evt.kind << ", "
-        << evt.timestamp;
+        << io_evt.kind << ", "
+        //<< graph[evt].duration.duration << ", "
+        << otf2::chrono::duration_cast<otf2::chrono::nanoseconds>(graph[evt].duration.duration).count() << ", "
+        << io_evt.timestamp;
 
     return out;
 }
@@ -79,8 +82,7 @@ void set2csv(const IoGraph& graph, const set_t<VertexDescriptor>& set, std::ostr
 {
     for (auto evt : set)
     {
-        const auto& ioevt = get_io_property(graph, evt);
-        io_event_2_csv_stream(ioevt, out);
+        io_event_2_csv_stream(graph, evt, out);
         out << "\n";
     }
 
