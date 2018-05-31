@@ -195,7 +195,6 @@ private:
     location_queue<otf2::event::mpi_collective_begin> mpi_coll_started_;
     mapping_type mapping_;
     location_queue<VertexDescriptor> edge_points_;
-    //location_queue<std::string> region_name_queue_;
     location_stack<std::string> region_name_queue_;
     location_queue<VertexDescriptor> synchronizations_;
     IoGraph graph_;

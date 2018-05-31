@@ -1,6 +1,5 @@
-#include <rabbitxx/cio_stats.hpp>
-
 #include <chrono>
+#include <rabbitxx/cio_stats.hpp>
 
 using namespace rabbitxx;
 
@@ -34,9 +33,9 @@ int main(int argc, char** argv)
     auto sets_pp_elapsed = end_set_per_proc - start_set_per_proc;
     auto merge_elapsed = end_set_merge - start_set_merge;
 
-    std::cout << "Time for Graph construction: " << graph_elapsed << "\n";
-    std::cout << "Time for Sets per Process: " << sets_pp_elapsed << "\n";
-    std::cout << "Time for Set merge: " << merge_elapsed << "\n";
+    std::cout << "Time for Graph construction: " << otf2::chrono::duration_cast<otf2::chrono::microseconds>(graph_elapsed) << "\n";
+    std::cout << "Time for Sets per Process: " << otf2::chrono::duration_cast<otf2::chrono::microseconds>(sets_pp_elapsed) << "\n";
+    std::cout << "Time for Set merge: " << otf2::chrono::duration_cast<otf2::chrono::microseconds>(merge_elapsed) << "\n";
 
     return EXIT_SUCCESS;
 }
