@@ -57,7 +57,7 @@ if __name__ == '__main__':
         values = df.loc[idx].drop('set').values.flatten().tolist()[:-1]
         print(df.loc[idx])
         pvalues = percentage(values)
-        str_label = "Set {}".format(idx)
+        str_label = "Set {}".format(idx+1)
         print(pvalues)
         pvalues += pvalues[:1]
         ax.plot(angles, pvalues, linewidth=1, linestyle='solid', label=str_label)
