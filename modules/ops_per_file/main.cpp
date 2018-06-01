@@ -59,7 +59,6 @@ void dump_per_file_ops(const std::vector<PerFileOps>& fops)
     }
 }
 
-
 int main(int argc, char** argv)
 {
     if (argc < 2)
@@ -70,9 +69,9 @@ int main(int argc, char** argv)
     }
 
     // create graph
-    auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
+    auto graph = make_graph<graph::OTF2_Io_Graph_Builder>(argv[1]);
     // find concurrent I/O-Sets
-    auto io_sets = rabbitxx::find_cio_sets(graph);
+    auto io_sets = find_cio_sets(graph);
 
     for (const auto& set : io_sets)
     {

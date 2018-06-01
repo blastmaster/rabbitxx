@@ -4,6 +4,7 @@ import sys
 from subprocess import Popen, PIPE
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from pprint import pprint
 
@@ -60,30 +61,43 @@ def percentage_times(kt):
 
     return res
 
+def plot_pie_charts():
 
-def main():
-
-    # if len(sys.argv) < 2:
-        # sys.exit("Error not enough arguments. Usage: {} <tracfile>".format(sys.argv[0]));
-
-    cmd = './modules/significant_op_typ/significant_op_type'
-    # output = process(cmd, sys.argv[1])
-    file = 'madbench_sig_kinds.txt'
-    output = read_file(file)
-
-    ops = list(read_set(output))
-    for idx, op in enumerate(ops):
-        print("Set {}: kinds {} times {} total {}".format(idx+1, op.kinds, op.times, op.total))
-
-    p = percentage_times(ops[-1])
-    print(p)
     for idx, op in enumerate(ops):
         fig1, ax1 = plt.subplots()
         ax1.pie(percentage_times(op), labels=op.kinds, autopct='%1.1f%%')
         ax1.axis('equal') # needed that it looks like a circle
-        # plt.show()
         name = 'significant_kind-{}.png'.format(idx)
         plt.savefig(name, bbox_inces='tight')
+
+
+def main():
+
+    '''
+    create,             // create or open a new handle
+    dup,                // duplicate a handle
+    seek,               // seek
+    read,               // read operation
+    write,              // write operation
+    flush,              // flush
+    delete_or_close,    // delete or close handle
+    '''
+
+    if len(sys.argv) < 2:
+        sys.exit("Error not enough arguments. Usage: {} <tracfile>".format(sys.argv[0]));
+
+    cmd = './modules/significant_op_typ/significant_op_type'
+
+    output = process(cmd, sys.argv[1])
+    ops = list(read_set(output))
+    # plotting significant ops as pie chart
+    # plot_pie_charts(ops)
+
+    for idx, op in enumerate(ops):
+        print("Set {}: kinds {} times {} total {}".format(idx+1, op.kinds, op.times, op.total))
+        p = percentage_times(op)
+        print("Percentage: {}".format(p))
+
 
 if __name__ == '__main__':
     main()
