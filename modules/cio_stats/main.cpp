@@ -1,6 +1,3 @@
-#include <rabbitxx/log.hpp>
-#include <rabbitxx/graph.hpp>
-#include <rabbitxx/cio_set.hpp>
 #include <rabbitxx/cio_stats.hpp>
 
 #include <iostream>
@@ -30,7 +27,7 @@ void print_stats_per_io_event_kind(const IoGraph& graph,
         const std::vector<VertexDescriptor>& events,
         const io_event_kind kind)
 {
-    std::cout << "Number of " << kind << "-events: " << events.size() << std::endl;
+    std::cout << "Number of " << kind << "-operations: " << events.size() << std::endl;
     const auto io_funcs = region_names_by_io_event_kind(graph, events);
     std::cout << kind << "-funcs: [ ";
     std::copy(io_funcs.begin(), io_funcs.end(), std::ostream_iterator<std::string>(std::cout, ", "));
@@ -40,24 +37,27 @@ void print_stats_per_io_event_kind(const IoGraph& graph,
 void print_single_cio_set_stats(const IoGraph& graph,
         const set_t<VertexDescriptor>& cio_set)
 {
-    CIO_Stats rw_statistic(graph, cio_set);
+    std::cout << "Set duration: " << get_set_duration(graph, cio_set) << "\n";
     auto num_events = cio_set.size();
-    auto io_evt_kind_map = kind_map(graph, cio_set);
+    auto km = kind_map(graph, cio_set);
     std::cout << "Number of events in Cio-Set: " << num_events << std::endl;
-    for (auto kvp : io_evt_kind_map)
+    for (const auto& kvp : km)
     {
         print_stats_per_io_event_kind(graph, kvp.second, kvp.first);
     }
-    auto sum_evts = std::accumulate(io_evt_kind_map.begin(), io_evt_kind_map.end(), 0,
-            [](const int& init, const auto& kvp) {
-                return init + kvp.second.size();
-            });
-    assert(sum_evts == num_events);
+
+
+    // Check for read / write events
+    if (km[io_event_kind::read].empty() && km[io_event_kind::write].empty())
+    {
+        // There are wether read or write events in the set so skip read / write stats
+        return;
+    }
+    CIO_Stats rw_statistic(graph, cio_set);
     dump_stats(rw_statistic);
-    std::cout << std::endl;
 }
 
-void print_cio_set_stats(const IoGraph& graph,
+void print_cio_set_summary_stats(const IoGraph& graph,
     const set_container_t<VertexDescriptor>& cio_sets)
 {
     auto n_sets = cio_sets.size();
@@ -75,18 +75,9 @@ void print_cio_set_stats(const IoGraph& graph,
     std::copy(set_sizes.begin(), set_sizes.end(),
             std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
     std::cout << std::endl;
-    std::cout << "==================== Stats per Cio-Set ====================" << std::endl;
-    int set_cnt {0};
-    for (const auto& cio_set : cio_sets)
-    {
-        std::cout << "==================== Set " << set_cnt << " ====================" << std::endl;
-        print_single_cio_set_stats(graph, cio_set);
-        std::cout << std::endl;
-        ++set_cnt;
-    }
 }
 
-void print_cio_set_per_process_stats(IoGraph& graph,
+void print_cio_set_per_process_stats(const IoGraph& graph,
         set_map_t<VertexDescriptor> sets_per_proc)
 {
     int cnt {0};
@@ -116,7 +107,18 @@ int main(int argc, char** argv)
     print_cio_set_per_process_stats(graph, cio_sets_pp);
     // get cio-sets
     auto cio_sets = find_cio_sets(graph, cio_sets_pp);
-    print_cio_set_stats(graph, cio_sets);
+    print_cio_set_summary_stats(graph, cio_sets);
+
+    // more detailed stats
+    std::cout << "==================== Stats per Cio-Set ====================" << std::endl;
+    int set_cnt {0};
+    for (const auto& cio_set : cio_sets)
+    {
+        std::cout << "==================== Set " << set_cnt << " ====================" << std::endl;
+        print_single_cio_set_stats(graph, cio_set);
+        std::cout << std::endl;
+        ++set_cnt;
+    }
 
     return EXIT_SUCCESS;
 }

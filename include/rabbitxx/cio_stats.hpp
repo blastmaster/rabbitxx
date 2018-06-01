@@ -165,7 +165,9 @@ kind_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
 
 /**
  * Print how many operation of a `io_event_kind` happen in a cio-set.
+ * TODO just printing ... put me somewhere else!
  */
+[[deprecated]]
 void event_kinds_per_set(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
 {
     const auto km = kind_map(graph, cio_set);
@@ -189,7 +191,10 @@ file_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
 
 /**
  * Get the set of processes accessing a given file within the same cio-set.
+ * TODO: take a vector of vds and a file.
+ * Then we don't have to call `file_map` every time, which is useless since we are just interesseted in one single file.
  */
+[[deprecated]]
 std::set<std::uint64_t> concurrent_accessing_processes(const IoGraph& graph,
         const set_t<VertexDescriptor>& set,
         const std::string& filename)
@@ -208,6 +213,7 @@ std::set<std::uint64_t> concurrent_accessing_processes(const IoGraph& graph,
 /**
  * check wether the given file is accessed by more than one process within this set.
  */
+[[deprecated]]
 bool file_has_shared_access(const IoGraph& graph,
         const set_t<VertexDescriptor>& set,
         const std::string& filename)
@@ -217,9 +223,14 @@ bool file_has_shared_access(const IoGraph& graph,
 }
 
 /**
- * Get the duration of a cio-set in microseconds.
+ * @brief Get the duration of a cio-set in microseconds.
  * The duration is the difference between the end_event timestamp and the start_event timestamp.
+ *
+ * @param graph an IoGraph const-ref
+ * @param cio_set the cio set container
+ * @return the duration of the cio-set container in `otf2::chrono::microseconds`.
  */
+// TODO: timestamp of the first and the last I/O event within the set.
 otf2::chrono::microseconds
 get_set_duration(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
 {
@@ -245,6 +256,9 @@ get_set_duration(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
     return otf2::chrono::duration_cast<otf2::chrono::microseconds>(dur_diff);
 }
 
+/**
+ * @class CIO_Stats gathers general statistics about a given set.
+ */
 class CIO_Stats
 {
     struct rw_stats
@@ -315,11 +329,6 @@ public:
         duration = get_set_duration(graph, cio_set);
         write_stats = make_rw_stats(graph, k_map[io_event_kind::write]);
         read_stats = make_rw_stats(graph, k_map[io_event_kind::read]);
-        auto rw_map = region_map(graph, cio_set);
-        for (const auto& kvp : rw_map)
-        {
-            region_stats[kvp.first] = make_rw_stats(graph, kvp.second);
-        }
     }
 
 
@@ -346,12 +355,27 @@ public:
     }
 };
 
+void dump_region_stats(const CIO_Stats& stats)
+{
+    //TODO split region
+    std::cout << "====================" << " Read / Write - Stats per region " << "====================" << "\n";
+    const auto& region_stats_map = stats.rw_region_stats();
+    for (const auto& region_st : region_stats_map)
+    {
+        std::cout << region_st.first << " " <<
+            " min: " << region_st.second.min_size <<
+            " max: " << region_st.second.max_size <<
+            " sum: " << region_st.second.sum_size <<
+            " avg: " << region_st.second.avg_size << "\n";
+    }
+    std::cout << "\n";
+}
+
 
 void dump_stats(const CIO_Stats& stats)
 {
     const auto& read_stats = stats.get_total_read_stats();
     const auto& write_stats = stats.get_total_write_stats();
-    std::cout << "Set Duration: " << stats.set_duration() << "\n";
     std::cout << "Read-Stats: " << "\n" <<
         " Number of read events: " << read_stats.total <<
         " min: " << read_stats.min_size <<
@@ -366,16 +390,7 @@ void dump_stats(const CIO_Stats& stats)
         " sum: " << write_stats.sum_size <<
         " avg: " << write_stats.avg_size << "\n";
 
-    std::cout << "====================" << " Read / Write - Stats per region " << "====================" << "\n";
-    const auto& region_stats_map = stats.rw_region_stats();
-    for (const auto& region_st : region_stats_map)
-    {
-        std::cout << region_st.first << " " <<
-            " min: " << region_st.second.min_size <<
-            " max: " << region_st.second.max_size <<
-            " sum: " << region_st.second.sum_size <<
-            " avg: " << region_st.second.avg_size << "\n";
-    }
+    std::cout << "\n";
 }
 
 } // namespace rabbitxx
