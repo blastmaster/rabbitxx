@@ -48,7 +48,7 @@ TEST_CASE("[ec]", "Find independent process groups")
     auto cio_sets_pp = rabbitxx::cio_sets_per_process(graph);
     logging::debug() << "BEFORE SORTING!";
     dump_set_map(cio_sets_pp);
-    rabbitxx::detail::sort_set_map_chrono(*graph, cio_sets_pp);
+    rabbitxx::detail::sort_set_map_chrono(graph, cio_sets_pp);
     logging::debug() << "AFTER SORTING!";
     dump_set_map(cio_sets_pp);
 }
