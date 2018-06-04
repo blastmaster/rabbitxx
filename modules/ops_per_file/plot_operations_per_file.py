@@ -42,6 +42,8 @@ def read(gen):
             filename = next(gen)
             # print("filename: {}".format(filename))
             ops, cnts = parse_ops(next(gen))
+            if filename.startswith('/sys') or filename.startswith('/proc'):
+                continue
             res.append(OpsPerFile(filename, ops, cnts))
         except StopIteration:
             return res
