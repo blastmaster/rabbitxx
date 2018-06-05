@@ -131,11 +131,11 @@ int main(int argc, char** argv)
 
     std::string trc_file(argv[1]);
     auto graph = make_graph<graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto vip = graph->vertices();
+    auto vip = graph.vertices();
     print_header();
     for (auto it = vip.first; it != vip.second; ++it)
     {
-        auto evt = graph->operator[](*it);
+        auto evt = graph[*it];
         request_size_column(evt);
     }
 

@@ -76,13 +76,13 @@ int main(int argc, char** argv)
     std::string trc_file(argv[1]);
     auto graph = make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     // get cio-sets
-    auto cio_sets = find_cio_sets(*graph);
+    auto cio_sets = find_cio_sets(graph);
     int set_cnt = 0;
     for (auto& cio_set : cio_sets)
     {
-        std::cout << "start event " << (*graph)[cio_set.start_event()].timestamp() << "\n";
-        const auto create_evts = get_io_events_by_kind(*graph, cio_set, rabbitxx::io_event_kind::create);
-        auto opf = open_per_file(*graph, create_evts);
+        std::cout << "start event " << (graph)[cio_set.start_event()].timestamp() << "\n";
+        const auto create_evts = get_io_events_by_kind(graph, cio_set, rabbitxx::io_event_kind::create);
+        auto opf = open_per_file(graph, create_evts);
         print_open_per_file_count(opf);
         set_cnt++;
     }

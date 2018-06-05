@@ -20,10 +20,10 @@ int main(int argc, char** argv)
     }
 
     auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
-    auto vip = g->vertices();
+    auto vip = g.vertices();
     for (auto it = vip.first; it != vip.second; ++it)
     {
-        auto trc_evt = g->operator[](*it);
+        auto trc_evt = g[*it];
         dump_regions(trc_evt);
     }
 

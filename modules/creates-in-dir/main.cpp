@@ -88,13 +88,13 @@ int main(int argc, char** argv)
     std::string trc_file(argv[1]);
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     // get cio-sets
-    auto cio_sets = rabbitxx::find_cio_sets(*graph);
+    auto cio_sets = rabbitxx::find_cio_sets(graph);
     int set_cnt = 0;
     for (auto& cio_set : cio_sets)
     {
-        const auto create_evts = rabbitxx::get_io_events_by_kind(*graph, cio_set, rabbitxx::io_event_kind::create);
-        auto cpd = creates_per_dir(*graph, create_evts);
-        print_creates_in_dir(*graph, cpd, set_cnt);
+        const auto create_evts = rabbitxx::get_io_events_by_kind(graph, cio_set, rabbitxx::io_event_kind::create);
+        auto cpd = creates_per_dir(graph, create_evts);
+        print_creates_in_dir(graph, cpd, set_cnt);
         set_cnt++;
     }
 

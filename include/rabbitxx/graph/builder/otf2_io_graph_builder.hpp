@@ -37,14 +37,14 @@ public:
 
     explicit io_graph_builder(boost::mpi::communicator& comm, int num_locations)
     : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
-        edge_points_(), region_name_queue_(), synchronizations_(), graph_(std::make_unique<Graph>()),
+        edge_points_(), region_name_queue_(), synchronizations_(), graph_(),
         root_(create_synthetic_root())
     {
     }
 
     explicit io_graph_builder(int num_locations)
     : base(), io_ops_started_(), mpi_coll_started_(), mapping_(num_locations),
-        edge_points_(), region_name_queue_(), synchronizations_(), graph_(std::make_unique<Graph>()),
+        edge_points_(), region_name_queue_(), synchronizations_(), graph_(),
         root_(create_synthetic_root())
     {
     }
@@ -198,7 +198,7 @@ private:
     //location_queue<std::string> region_name_queue_;
     location_stack<std::string> region_name_queue_;
     location_queue<VertexDescriptor> synchronizations_;
-    std::unique_ptr<IoGraph> graph_;
+    IoGraph graph_;
     VertexDescriptor root_;
     std::vector<otf2::definition::location> locations_;
     location_queue<stack_frame> call_stack_;

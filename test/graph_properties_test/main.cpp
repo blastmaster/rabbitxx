@@ -37,7 +37,7 @@ int main(int argc, char** argv)
     }
 
     auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
-    print_graph_properties(*g);
+    print_graph_properties(g);
 
     return 0;
 }

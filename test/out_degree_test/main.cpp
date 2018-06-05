@@ -38,9 +38,9 @@ int main(int argc, char** argv)
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
 
     logging::debug() << "Try to read first vertex";
-    std::cout << graph->operator[](0) << std::endl;
+    std::cout << graph[0] << std::endl;
 
-    const auto out_degrees = get_out_degrees(*graph);
+    const auto out_degrees = get_out_degrees(graph);
     for (const auto& out_d : out_degrees)
     {
         std::cout << out_d.second << " " << out_d.first << std::endl;

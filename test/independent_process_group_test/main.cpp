@@ -46,7 +46,7 @@ TEST_CASE("[ec]", "Find independent process groups")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-edgecase/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph);
+    auto cio_sets_pp = rabbitxx::cio_sets_per_process(graph);
     logging::debug() << "BEFORE SORTING!";
     dump_set_map(cio_sets_pp);
     rabbitxx::detail::sort_set_map_chrono(*graph, cio_sets_pp);
@@ -58,19 +58,19 @@ TEST_CASE("[trace-own6-advanced]", "Find independent process groups")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph);
+    auto cio_sets_pp = rabbitxx::cio_sets_per_process(graph);
     logging::debug() << "BEFORE SORTING!";
     dump_set_map(cio_sets_pp);
-    rabbitxx::detail::sort_set_map_chrono(*graph, cio_sets_pp);
+    rabbitxx::detail::sort_set_map_chrono(graph, cio_sets_pp);
     logging::debug() << "AFTER SORTING!";
     dump_set_map(cio_sets_pp);
 
     // test timestamps for event (42, 31) and (39, 17)
-    const auto t42 = graph->operator[](42).timestamp();
-    const auto t31 = graph->operator[](31).timestamp();
-    const auto t39 = graph->operator[](39).timestamp();
-    const auto t17 = graph->operator[](17).timestamp();
-    const auto t15 = graph->operator[](15).timestamp();
+    const auto t42 = graph[42].timestamp();
+    const auto t31 = graph[31].timestamp();
+    const auto t39 = graph[39].timestamp();
+    const auto t17 = graph[17].timestamp();
+    const auto t15 = graph[15].timestamp();
 
     //REQUIRE(t42 < t39); //FAIL!
     //REQUIRE(t42 < t17); //FAIL!

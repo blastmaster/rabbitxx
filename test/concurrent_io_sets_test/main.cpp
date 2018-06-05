@@ -14,7 +14,7 @@ TEST_CASE("[trace-simple]", "Find concurrent I/O sets")
     static const std::string trc_file {"/home/soeste/traces/dios/24.10/trace-simple/traces.otf2"};
 
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto cio_sets = rabbitxx::find_cio_sets(*graph);
+    auto cio_sets = rabbitxx::find_cio_sets(graph);
 
     static const std::vector<typename decltype(graph)::element_type::vertex_descriptor> exp_evts_s1 {
         2, 4, 5, 6 };
@@ -54,7 +54,7 @@ TEST_CASE("[trace-own]", "Find concurrent I/O sets")
 {
     static const std::string trc_file {"/home/soeste/traces/trace-own_trace-20171116_1704_50058813361150354/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto cio_sets = rabbitxx::find_cio_sets(*graph);
+    auto cio_sets = rabbitxx::find_cio_sets(graph);
 
     const std::vector<
         std::set<typename decltype(graph)::element_type::vertex_descriptor>>
@@ -85,7 +85,7 @@ TEST_CASE("[ec]", "Find concurrent I/O sets")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-edgecase/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto cio_sets = rabbitxx::find_cio_sets(*graph);
+    auto cio_sets = rabbitxx::find_cio_sets(graph);
 
     const std::vector<
         std::set<typename decltype(graph)::element_type::vertex_descriptor>>
@@ -121,7 +121,7 @@ TEST_CASE("[ech]", "Find concurrent I/O sets")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/edge_case_hard/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto cio_sets = rabbitxx::find_cio_sets(*graph);
+    auto cio_sets = rabbitxx::find_cio_sets(graph);
 
     const std::vector<
         std::set<typename decltype(graph)::element_type::vertex_descriptor>>
@@ -156,8 +156,8 @@ TEST_CASE("[trace-own-advanced6]", "Find concurrent I/O sets")
 {
     static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace6_advanced/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
-    auto cio_sets = rabbitxx::find_cio_sets(*graph);
     using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
+    auto cio_sets = rabbitxx::find_cio_sets(graph);
     const std::vector<
         std::set<vertex_descriptor>>
         exp_sets {

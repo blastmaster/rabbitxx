@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
     using vertex_descriptor = typename decltype(graph)::element_type::vertex_descriptor;
     // find concurrent I/O-Sets per process
-    auto io_sets = rabbitxx::cio_sets_per_process(*graph);
+    auto io_sets = rabbitxx::cio_sets_per_process(graph);
 
     for (const auto& proc_sets : io_sets)
     {

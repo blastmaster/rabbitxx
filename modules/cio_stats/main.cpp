@@ -116,11 +116,11 @@ int main(int argc, char** argv)
     std::string trc_file(argv[1]);
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     // get cio-sets per process
-    auto cio_sets_pp = rabbitxx::cio_sets_per_process(*graph);
-    print_cio_set_per_process_stats(*graph, cio_sets_pp);
+    auto cio_sets_pp = rabbitxx::cio_sets_per_process(graph);
+    print_cio_set_per_process_stats(graph, cio_sets_pp);
     // get cio-sets
-    auto cio_sets = rabbitxx::find_cio_sets(*graph, cio_sets_pp);
-    print_cio_set_stats(*graph, cio_sets);
+    auto cio_sets = rabbitxx::find_cio_sets(graph, cio_sets_pp);
+    print_cio_set_stats(graph, cio_sets);
 
     return EXIT_SUCCESS;
 }

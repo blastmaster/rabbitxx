@@ -65,28 +65,28 @@ int main(int argc, char** argv)
     auto print = [&g](const auto& evt_vec)
     {
         for (const auto evt : evt_vec) {
-            std::cout << g->operator[](evt) << std::endl;
+            std::cout << g[evt] << std::endl;
         }
     };
 
     if (argc == 3) {
         std::string filter {argv[2]};
         if (filter == "io") {
-            auto io_evts = get_io_events(*g);
+            auto io_evts = get_io_events(g);
             print(io_evts);
         }
         else if (filter == "sync") {
-            auto sync_evts = get_sync_events(*g);
+            auto sync_evts = get_sync_events(g);
             print(sync_evts);
         }
         else if (filter == "all") {
-            auto vip = g->vertices();
+            auto vip = g.vertices();
             for (auto it = vip.first; it != vip.second; ++it)
             {
-                auto trc_evt = g->operator[](*it);
+                auto trc_evt = g[*it];
                 std::cout << trc_evt << "\n";
             }
-            print_graph_properties(*g);
+            print_graph_properties(g);
         }
     }
 

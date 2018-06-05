@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 
     auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
     bfs_print_visitor vis;
-    boost::breadth_first_search(*g->get(), vertex(0, *g->get()), boost::visitor(vis));
+    boost::breadth_first_search(*g.get(), vertex(0, *g.get()), boost::visitor(vis));
 
     return 0;
 }
