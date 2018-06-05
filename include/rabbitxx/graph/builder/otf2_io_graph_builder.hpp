@@ -26,7 +26,7 @@ struct stack_frame
     VertexDescriptor vertex = IoGraph::null_vertex();
 };
 
-class simple_graph_builder : public rabbitxx::trace::base
+class io_graph_builder : public rabbitxx::trace::base
 {
     typedef rabbitxx::trace::base base;
 
@@ -35,14 +35,14 @@ public:
     using otf2::reader::callback::definition;
     using mapping_type = mapping<rabbitxx::detail::round_robin_mapping>;
 
-    explicit simple_graph_builder(boost::mpi::communicator& comm, int num_locations)
+    explicit io_graph_builder(boost::mpi::communicator& comm, int num_locations)
     : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
         edge_points_(), region_name_queue_(), synchronizations_(), graph_(std::make_unique<Graph>()),
         root_(create_synthetic_root())
     {
     }
 
-    explicit simple_graph_builder(int num_locations)
+    explicit io_graph_builder(int num_locations)
     : base(), io_ops_started_(), mpi_coll_started_(), mapping_(num_locations),
         edge_points_(), region_name_queue_(), synchronizations_(), graph_(std::make_unique<Graph>()),
         root_(create_synthetic_root())
@@ -219,7 +219,7 @@ struct OTF2_Io_Graph_Builder
     {
         otf2::reader::reader trc_reader(trace_file);
         auto num_locations = trc_reader.num_locations();
-        simple_graph_builder builder(comm, num_locations);
+        io_graph_builder builder(comm, num_locations);
         trc_reader.set_callback(builder);
         trc_reader.read_definitions();
         comm.barrier();
@@ -234,7 +234,7 @@ struct OTF2_Io_Graph_Builder
     {
         otf2::reader::reader trc_reader(trace_file);
         auto num_locations = trc_reader.num_locations();
-        simple_graph_builder builder(num_locations);
+        io_graph_builder builder(num_locations);
         trc_reader.set_callback(builder);
         trc_reader.read_definitions();
         trc_reader.read_events();
