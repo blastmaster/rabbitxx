@@ -5,7 +5,6 @@ List of currently available analysis modules. Most of them follow the syntax.
 
 | Module | Description |
 | ------ | ----------- |
-| cio stats | general set statistics |
 | cio timing | measurement of each single step |
 | concurrent_io_sets | just build cio sets |
 | creates_in_dir | gather concurrent creates within the same directory per cio set |

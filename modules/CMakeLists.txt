@@ -1,5 +1,4 @@
 
-add_subdirectory(cio_stats)
 add_subdirectory(print_graph)
 add_subdirectory(set2csv)
 add_subdirectory(cio_timing)
