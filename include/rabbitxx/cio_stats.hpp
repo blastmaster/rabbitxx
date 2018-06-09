@@ -3,6 +3,7 @@
 
 #include <rabbitxx/cio_set.hpp>
 #include <rabbitxx/graph.hpp>
+#include <rabbitxx/utils.hpp>
 #include <rabbitxx/log.hpp>
 
 using rabbitxx::logging;
@@ -10,6 +11,7 @@ using rabbitxx::logging;
 namespace rabbitxx
 {
 
+[[deprecated]]
 class File
 {
 public:
@@ -40,6 +42,7 @@ private:
 /**
  * Function object to filter for certain `io_event_kind` types.
  */
+[[deprecated]]
 struct Io_Operation_Filter
 {
     Io_Operation_Filter(const IoGraph& graph, const io_event_kind filter_kind) : kind_(filter_kind), graph_(graph) {}
@@ -53,174 +56,10 @@ struct Io_Operation_Filter
     const IoGraph& graph_;
 };
 
-/**
- * Take a file and track accesses within a cio-set on that file.
- */
-class FileAccessTracker
-{
-public:
-    explicit FileAccessTracker(std::string filename) : filename_(filename)
-    {}
-
-    std::size_t operator()(const IoGraph& graph, const set_t<VertexDescriptor> cio_set)
-    {
-        for (const auto& evt : cio_set)
-        {
-            auto io_evt = get_io_property(graph, evt);
-            if (io_evt.filename == filename_)
-            {
-                accessing_events_.push_back(evt);
-            }
-        }
-
-        return accessing_events_.size();
-    }
-
-    // filter overload
-    std::size_t operator()(const IoGraph& graph, const set_t<VertexDescriptor> cio_set,
-            const Io_Operation_Filter& filter)
-    {
-        std::copy_if(cio_set.begin(), cio_set.end(),
-                std::back_inserter(accessing_events_),
-                filter);
-
-        return accessing_events_.size();
-    }
-
-    std::string filename()
-    {
-        return filename_;
-    }
-
-    std::vector<VertexDescriptor> accessing_events()
-    {
-        return accessing_events_;
-    }
-
-private:
-    std::string filename_;
-    std::vector<VertexDescriptor> accessing_events_ {};
-};
-
 
 std::map<std::string, std::vector<VertexDescriptor>>
-region_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
-{
-    std::map<std::string, std::vector<VertexDescriptor>> rm;
-    for (auto vd : cio_set)
-    {
-        const auto io_evt = get_io_property(graph, vd);
-        rm[io_evt.region_name].push_back(vd);
-    }
+file_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set);
 
-    return rm;
-}
-
-/**
- * Build a map of keys of `io_event_kind` and a vector of vertex descriptors from a given set
- * belong the the `io_event_kind`.
- *
- * @param IoGraph a const reference to an IoGraph object.
- * @param cio_set a const reference to a CIO-Set.
- * @return A std::map with the `io_event_kind` as key, and a vector of
- * all operations belong to this kind as a value.
- */
-std::map<io_event_kind, std::vector<VertexDescriptor>>
-kind_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
-{
-    std::map<io_event_kind, std::vector<VertexDescriptor>> io_evt_kind_map;
-    for (const auto& evt_vd : cio_set)
-    {
-        auto io_evt = boost::get<io_event_property>(graph[evt_vd].property);
-        switch(io_evt.kind)
-        {
-            case io_event_kind::create:
-                io_evt_kind_map[io_event_kind::create].push_back(evt_vd);
-                break;
-            case io_event_kind::dup:
-                io_evt_kind_map[io_event_kind::dup].push_back(evt_vd);
-                break;
-            case io_event_kind::read:
-                io_evt_kind_map[io_event_kind::read].push_back(evt_vd);
-                break;
-            case io_event_kind::write:
-                io_evt_kind_map[io_event_kind::write].push_back(evt_vd);
-                break;
-            case io_event_kind::seek:
-                io_evt_kind_map[io_event_kind::seek].push_back(evt_vd);
-                break;
-            case io_event_kind::flush:
-                io_evt_kind_map[io_event_kind::flush].push_back(evt_vd);
-                break;
-            case io_event_kind::delete_or_close:
-                io_evt_kind_map[io_event_kind::delete_or_close].push_back(evt_vd);
-                break;
-            default:
-                logging::debug() << "Ambigious I/O-Event in CIO_Set\n" << io_evt;
-        }
-    }
-
-    return io_evt_kind_map;
-}
-
-/**
- * Print how many operation of a `io_event_kind` happen in a cio-set.
- * TODO just printing ... put me somewhere else!
- */
-[[deprecated]]
-void event_kinds_per_set(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
-{
-    const auto km = kind_map(graph, cio_set);
-    for (const auto& kvp : km)
-    {
-        std::cout << kvp.first << ": " << kvp.second.size() << "\n";
-    }
-}
-
-std::map<std::string, std::vector<VertexDescriptor>>
-file_map(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
-{
-    std::map<std::string, std::vector<VertexDescriptor>> f_map;
-    for (VertexDescriptor vd : cio_set)
-    {
-        auto io_evt = get_io_property(graph, vd);
-        f_map[io_evt.filename].push_back(vd);
-    }
-    return f_map;
-}
-
-/**
- * Get the set of processes accessing a given file within the same cio-set.
- * TODO: take a vector of vds and a file.
- * Then we don't have to call `file_map` every time, which is useless since we are just interesseted in one single file.
- */
-[[deprecated]]
-std::set<std::uint64_t> concurrent_accessing_processes(const IoGraph& graph,
-        const set_t<VertexDescriptor>& set,
-        const std::string& filename)
-{
-    auto fm = file_map(graph, set);
-    std::set<std::uint64_t> procs;
-    for (const auto evt : fm[filename])
-    {
-        auto pid = graph[evt].id();
-        procs.insert(pid);
-    }
-
-    return procs;
-}
-
-/**
- * check wether the given file is accessed by more than one process within this set.
- */
-[[deprecated]]
-bool file_has_shared_access(const IoGraph& graph,
-        const set_t<VertexDescriptor>& set,
-        const std::string& filename)
-{
-    const auto procs = concurrent_accessing_processes(graph, set, filename);
-    return (procs.size() > 1);
-}
 
 /**
  * @brief Get the duration of a cio-set in microseconds.
@@ -232,165 +71,215 @@ bool file_has_shared_access(const IoGraph& graph,
  */
 // TODO: timestamp of the first and the last I/O event within the set.
 otf2::chrono::microseconds
-get_set_duration(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
+get_set_duration(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set);
+
+
+/**
+ * @class Type gathering general statistics of `CIO_Sets`.
+ *
+ **/
+class CIO_Stats
 {
-    auto start_vd = cio_set.start_event();
-    auto end_vd = cio_set.end_event().value();
-    auto ts_start = graph[start_vd].timestamp();
-    auto ts_end = graph[end_vd].timestamp();
-    if (graph[start_vd].type == vertex_kind::synthetic)
+public:
+
+    CIO_Stats(const IoGraph& graph, const set_container_t<VertexDescriptor>& cio_sets,
+            const otf2::chrono::duration& build_tm) :
+        num_cio_sets_(cio_sets.size()), set_durations_(cio_sets.size()), build_time_(build_tm)
     {
-        //take timestamp of first event in set
-        //std::cerr << "set start event ts from: " << ts_start;
-        ts_start = graph[*cio_set.begin()].timestamp();
-        //std::cerr << " to " << ts_start << "\n";
+        std::transform(cio_sets.begin(), cio_sets.end(), std::back_inserter(set_durations_),
+                [&graph](const auto& set) { return get_set_duration(graph, set); });
     }
-    if (graph[end_vd].type == vertex_kind::synthetic)
+
+    std::uint64_t number_of_cio_sets() const
     {
-        //std::cerr << "set end event ts from: " << ts_end;
-        ts_end = graph[*std::prev(cio_set.end())].timestamp();
-        //std::cerr << " to " << ts_end << "\n";
+        return num_cio_sets_;
     }
-    assert(ts_end > ts_start);
-    auto dur_diff = ts_end - ts_start;
-    return otf2::chrono::duration_cast<otf2::chrono::microseconds>(dur_diff);
+
+    otf2::chrono::duration get_nth_set_duration(std::size_t n) const
+    {
+        return set_durations_[n];
+    }
+
+    std::vector<otf2::chrono::duration> get_set_durations() const
+    {
+        return set_durations_;
+    }
+
+    otf2::chrono::duration build_time() const
+    {
+        return build_time_;
+    }
+
+private:
+    std::uint64_t num_cio_sets_;
+    std::vector<otf2::chrono::duration> set_durations_;
+    otf2::chrono::duration build_time_;
+};
+
+inline std::ostream& operator<<(std::ostream& os, const CIO_Stats& stats)
+{
+    os << "========== CIO-Set Stats ==========\n"
+        << "Number of CIO-Sets: " << stats.number_of_cio_sets() << "\n"
+        << "CIO-Stats build time: " << stats.build_time() << "\n";
+    const auto set_durs = stats.get_set_durations();
+    std::copy(set_durs.begin(), set_durs.end(), std::ostream_iterator<otf2::chrono::duration>(os, ", "));
+    os << "\n";
+
+    return os;
 }
 
 /**
- * @class CIO_Stats gathers general statistics about a given set.
- */
-class CIO_Stats
+ * @class Type gathering general statistics of `PIO_Sets`
+ *
+ **/
+class PIO_Stats
 {
-    struct rw_stats
-    {
-        std::uint64_t total {0};
-        std::uint64_t max_size {0};
-        std::uint64_t min_size {0};
-        std::uint64_t sum_size {0};
-        double avg_size {0.0};
-        std::vector<std::uint64_t> response_sizes;
-
-        rw_stats() = default;
-
-        explicit rw_stats(std::uint64_t num_evts, std::uint64_t max_sz, std::uint64_t min_sz,
-                std::uint64_t sum, double avg, std::vector<std::uint64_t> resp_sizes) noexcept
-            : total(num_evts), max_size(max_sz), min_size(min_sz), sum_size(sum),
-            avg_size(avg), response_sizes(std::move(resp_sizes))
-        {
-        }
-    };
-
-    otf2::chrono::microseconds duration;
-    rw_stats write_stats;
-    rw_stats read_stats;
-    // read / write stats per read / write region
-    std::map<std::string, rw_stats> region_stats;
-
-    // NOTE: Take the response sizes, since that is whats actually written or read.
-    rw_stats make_rw_stats(const IoGraph& graph,
-            const std::vector<VertexDescriptor>& events)
-    {
-        std::uint64_t max_sz {0};
-        std::uint64_t min_sz {0};
-        double avg_sz {0.0};
-        std::vector<std::uint64_t> response_sizes;
-        std::transform(events.begin(), events.end(), std::back_inserter(response_sizes),
-                [&graph](const VertexDescriptor vd)
-                {
-                    auto io_evt = get_io_property(graph, vd);
-                    return io_evt.response_size;
-                });
-        auto min_sz_it = std::min_element(response_sizes.begin(), response_sizes.end());
-        if (min_sz_it != events.end())
-        {
-            min_sz = *min_sz_it;
-        }
-
-        auto max_sz_it = std::max_element(response_sizes.begin(), response_sizes.end());
-        if (max_sz_it != events.end())
-        {
-            max_sz = *max_sz_it;
-        }
-        std::uint64_t sum_sz = std::accumulate(response_sizes.begin(), response_sizes.end(), 0);
-        std::uint64_t size = static_cast<std::uint64_t>(events.size());
-        if (size > 0) {
-            avg_sz = static_cast<double>(sum_sz / size);
-        }
-        return rw_stats(size, max_sz, min_sz, sum_sz, avg_sz, response_sizes);
-    }
-
-
 public:
-
-    explicit CIO_Stats(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
+    PIO_Stats(const IoGraph& graph, const set_map_t<VertexDescriptor>& pio_sets,
+            const otf2::chrono::duration& build_tm) :
+        num_pio_sets_(pio_sets.size()), build_time_(build_tm)
     {
-        auto k_map = kind_map(graph, cio_set);
-
-        duration = get_set_duration(graph, cio_set);
-        write_stats = make_rw_stats(graph, k_map[io_event_kind::write]);
-        read_stats = make_rw_stats(graph, k_map[io_event_kind::read]);
     }
 
-
-    const rw_stats& get_total_read_stats() const noexcept
+    std::uint64_t number_of_pio_sets() const
     {
-        return read_stats;
+        return num_pio_sets_;
     }
 
-    const rw_stats& get_total_write_stats() const noexcept
+    otf2::chrono::duration build_time() const
     {
-        return write_stats;
+        return build_time_;
     }
 
-    const std::map<std::string, rw_stats>&
-    rw_region_stats() const noexcept
-    {
-        return region_stats;
-    }
-
-    otf2::chrono::microseconds
-    set_duration() const noexcept
-    {
-        return duration;
-    }
+private:
+    //std::vector<otf2::chrono::duration> set_durations_;
+    std::uint64_t num_pio_sets_;
+    otf2::chrono::duration build_time_;
 };
 
-void dump_region_stats(const CIO_Stats& stats)
+inline std::ostream& operator<<(std::ostream& os, const PIO_Stats& stats)
 {
-    //TODO split region
-    std::cout << "====================" << " Read / Write - Stats per region " << "====================" << "\n";
-    const auto& region_stats_map = stats.rw_region_stats();
-    for (const auto& region_st : region_stats_map)
-    {
-        std::cout << region_st.first << " " <<
-            " min: " << region_st.second.min_size <<
-            " max: " << region_st.second.max_size <<
-            " sum: " << region_st.second.sum_size <<
-            " avg: " << region_st.second.avg_size << "\n";
-    }
-    std::cout << "\n";
+    os <<  "========== PIO-Sets Stats ==========\n"
+        << "Number of PIO-Sets: " << stats.number_of_pio_sets() << "\n"
+        << "PIO-Sets Build time: " << stats.build_time() << "\n";
+
+    return os;
 }
 
-
-void dump_stats(const CIO_Stats& stats)
+class Graph_Stats
 {
-    const auto& read_stats = stats.get_total_read_stats();
-    const auto& write_stats = stats.get_total_write_stats();
-    std::cout << "Read-Stats: " << "\n" <<
-        " Number of read events: " << read_stats.total <<
-        " min: " << read_stats.min_size <<
-        " max: " << read_stats.max_size <<
-        " sum: " << read_stats.sum_size <<
-        " avg: " << read_stats.avg_size << "\n";
+public:
+    explicit Graph_Stats(const IoGraph& graph, const otf2::chrono::duration& build_tm) : 
+        num_vertices_(graph.num_vertices()), num_edges_(graph.num_edges()),
+        clock_properties_(graph.graph_properties().clock_props), build_time_(build_tm)
+    {
+    }
 
-    std::cout << "Write-Stats: " << "\n" <<
-        " Number of write events: " << write_stats.total <<
-        " min: " << write_stats.min_size <<
-        " max: " << write_stats.max_size <<
-        " sum: " << write_stats.sum_size <<
-        " avg: " << write_stats.avg_size << "\n";
+    std::uint64_t number_of_vertices() const
+    {
+        return num_vertices_;
+    }
 
-    std::cout << "\n";
+    std::uint64_t number_of_edges() const
+    {
+        return num_edges_;
+    }
+
+    otf2::chrono::duration build_time() const
+    {
+        return build_time_;
+    }
+
+    otf2::chrono::ticks ticks_per_second() const
+    {
+        return clock_properties_.ticks_per_second();
+    }
+
+    otf2::chrono::ticks start_time() const
+    {
+        return clock_properties_.start_time();
+    }
+
+    otf2::chrono::ticks length() const
+    {
+        return clock_properties_.length();
+    }
+
+private:
+    std::uint64_t num_vertices_;
+    std::uint64_t num_edges_;
+    otf2::definition::clock_properties clock_properties_;
+    otf2::chrono::duration build_time_;
+};
+
+inline std::ostream& operator<<(std::ostream& os, const Graph_Stats& stats)
+{
+    os << "========== Graph Stats ==========\n"
+        << "Number of Vertices: " << stats.number_of_vertices() << "\n"
+        << "Number of Edges: " << stats.number_of_edges() << "\n"
+        << "Graph Build time: " << stats.build_time() << "\n"
+        << "Ticks per Second: " << stats.ticks_per_second().count() << "\n"
+        << "Start Time: " << stats.start_time().count() << "\n"
+        << "length: " << stats.length().count() << "\n";
+
+    return os;
+}
+
+class Experiment_Stats
+{
+public:
+    Experiment_Stats(const fs::path& input_trace, const Graph_Stats& graph_stats,
+            const CIO_Stats& cio_stats, const PIO_Stats& pio_stats)
+        : trace_file_(input_trace), graph_stats_(graph_stats),
+        cio_stats_(cio_stats), pio_stats_(pio_stats)
+    {
+    }
+
+    fs::path trace_file() const
+    {
+        return trace_file_;
+    }
+
+    Graph_Stats graph_stats() const
+    {
+        return graph_stats_;
+    }
+
+    CIO_Stats cio_stats() const
+    {
+        return cio_stats_;
+    }
+
+    PIO_Stats pio_stats() const
+    {
+        return pio_stats_;
+    }
+
+    otf2::chrono::duration experiment_duration() const
+    {
+        return experiment_duration_;
+    }
+
+    void set_experiment_duration(const otf2::chrono::duration& experiment_dur)
+    {
+        experiment_duration_ = experiment_dur;
+    }
+
+private:
+    fs::path trace_file_;
+    Graph_Stats graph_stats_;
+    CIO_Stats cio_stats_;
+    PIO_Stats pio_stats_;
+    otf2::chrono::duration experiment_duration_ = otf2::chrono::duration(0);
+};
+
+inline std::ostream& operator<<(std::ostream& os, const Experiment_Stats& stats)
+{
+    os << "========== Experiment Stats ==========\n"
+        << "Input trace file: " << stats.trace_file() << "\n"
+        << "Experiment Duration: " << stats.experiment_duration() << "\n"
+        << stats.graph_stats() << stats.pio_stats() <<  stats.cio_stats();
+    return os;
 }
 
 } // namespace rabbitxx
