@@ -1,7 +1,5 @@
-
 add_subdirectory(print_graph)
 add_subdirectory(set2csv)
-add_subdirectory(cio_timing)
 add_subdirectory(concurrent_io_sets)
 add_subdirectory(creates-in-dir)
 add_subdirectory(io_timespan)
