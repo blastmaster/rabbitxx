@@ -11,7 +11,6 @@ List of currently available analysis modules. Most of them follow the syntax.
 | global_vs_local | files accessed on local vs file accessed on global parallel file system per cio set |
 | io_per_process | counts the number of I/O events per cio set |
 | io_timespan | durations for each I/O event *not bound on cio sets* |
-| num_vertices | Prints the number of vertices and edges after building the graph. |
 | open_per_file | Prints how often a file were opened. |
 | ops_per_file | Prints for each file which operations how often are executed. |
 | posix_functions | Print `region names` with respective `paradigm` for events per set. |
