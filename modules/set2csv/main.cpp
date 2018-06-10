@@ -124,7 +124,7 @@ void pio_sets_2_csv(const IoGraph& graph, const set_map_t<VertexDescriptor>& pio
 void cio_stats_2_csv(const CIO_Stats& stats, std::ostream& out)
 {
     out << "Number of CIO-Sets," << stats.number_of_cio_sets() << "\n"
-        << "Build time," << stats.build_time() << "\n"
+        << "CIO-Sets build time," << otf2::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n"
         << "Set Durations,";
     const auto set_durs = stats.get_set_durations();
     // one comma to much
@@ -136,14 +136,14 @@ void cio_stats_2_csv(const CIO_Stats& stats, std::ostream& out)
 void pio_stats_2_csv(const PIO_Stats& stats, std::ostream& out)
 {
     out << "Number of PIO-Sets," << stats.number_of_pio_sets() << "\n"
-        << "PIO-Sets build time," << stats.build_time() << "\n";
+        << "PIO-Sets build time," << otf2::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n";
 }
 
 void graph_stats_2_csv(const Graph_Stats& stats, std::ostream& out)
 {
     out << "Number of Vertices," << stats.number_of_vertices() << "\n"
         << "Number of Edges," << stats.number_of_edges() << "\n"
-        << "Graph Build Time," << stats.build_time() << "\n"
+        << "Graph Build Time," << otf2::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n"
         << "Ticks per Second," << stats.ticks_per_second().count() << "\n"
         << "Start Time," << stats.start_time().count() << "\n"
         << "Length," << stats.length().count() << "\n";

@@ -120,7 +120,7 @@ inline std::ostream& operator<<(std::ostream& os, const CIO_Stats& stats)
 {
     os << "========== CIO-Set Stats ==========\n"
         << "Number of CIO-Sets: " << stats.number_of_cio_sets() << "\n"
-        << "CIO-Stats build time: " << stats.build_time() << "\n";
+        << "CIO-Stats build time: " << otf2::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n";
     const auto set_durs = stats.get_set_durations();
     std::copy(set_durs.begin(), set_durs.end(), std::ostream_iterator<otf2::chrono::duration>(os, ", "));
     os << "\n";
@@ -161,7 +161,7 @@ inline std::ostream& operator<<(std::ostream& os, const PIO_Stats& stats)
 {
     os <<  "========== PIO-Sets Stats ==========\n"
         << "Number of PIO-Sets: " << stats.number_of_pio_sets() << "\n"
-        << "PIO-Sets Build time: " << stats.build_time() << "\n";
+        << "PIO-Sets Build time: " << otf2::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n";
 
     return os;
 }
@@ -217,7 +217,7 @@ inline std::ostream& operator<<(std::ostream& os, const Graph_Stats& stats)
     os << "========== Graph Stats ==========\n"
         << "Number of Vertices: " << stats.number_of_vertices() << "\n"
         << "Number of Edges: " << stats.number_of_edges() << "\n"
-        << "Graph Build time: " << stats.build_time() << "\n"
+        << "Graph Build time: " << otf2::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n"
         << "Ticks per Second: " << stats.ticks_per_second().count() << "\n"
         << "Start Time: " << stats.start_time().count() << "\n"
         << "length: " << stats.length().count() << "\n";
