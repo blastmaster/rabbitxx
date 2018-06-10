@@ -3,7 +3,7 @@
 
 #include <rabbitxx/graph.hpp>
 #include <rabbitxx/cio_types.hpp>
-#include <rabbitxx/cio_stats.hpp>
+#include <rabbitxx/stats.hpp>
 #include <rabbitxx/utils.hpp>
 #include <functional>
 

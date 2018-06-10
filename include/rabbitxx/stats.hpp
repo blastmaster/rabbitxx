@@ -1,5 +1,5 @@
-#ifndef RABBITXX_CIO_STATS_HPP
-#define RABBITXX_CIO_STATS_HPP
+#ifndef RABBITXX_STATS_HPP
+#define RABBITXX_STATS_HPP
 
 #include <rabbitxx/cio_set.hpp>
 #include <rabbitxx/graph.hpp>
@@ -284,4 +284,4 @@ inline std::ostream& operator<<(std::ostream& os, const Experiment_Stats& stats)
 
 } // namespace rabbitxx
 
-#endif // RABBITXX_CIO_STATS_HPP
+#endif // RABBITXX_STATS_HPP

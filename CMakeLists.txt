@@ -56,7 +56,7 @@ set(RABBITXX_SOURCES
     ${CMAKE_SOURCE_DIR}/src/cio_set.cpp
     ${CMAKE_SOURCE_DIR}/src/io_graph.cpp
     ${CMAKE_SOURCE_DIR}/src/otf2_io_graph_builder.cpp
-    ${CMAKE_SOURCE_DIR}/src/cio_stats.cpp
+    ${CMAKE_SOURCE_DIR}/src/stats.cpp
     ${CMAKE_SOURCE_DIR}/src/experiment.cpp
 )
 

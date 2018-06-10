@@ -1,4 +1,4 @@
-#include <rabbitxx/cio_stats.hpp>
+#include <rabbitxx/stats.hpp>
 #include <rabbitxx/utils.hpp>
 
 using namespace rabbitxx;

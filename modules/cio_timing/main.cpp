@@ -1,5 +1,5 @@
 #include <chrono>
-#include <rabbitxx/cio_stats.hpp>
+#include <rabbitxx/stats.hpp>
 
 using namespace rabbitxx;
 
