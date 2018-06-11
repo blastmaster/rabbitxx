@@ -1,5 +1,7 @@
 #include <rabbitxx/experiment.hpp>
 
+#include <boost/program_options.hpp>
+
 /**
  * Module to serialize sets to csv
  * This module prints all io events within a set into csv.
@@ -10,6 +12,7 @@
  */
 
 using namespace rabbitxx;
+namespace po = boost::program_options;
 
 //TODO unused, one comma to much.
 void header(std::ostream& os=std::cout)
@@ -185,14 +188,93 @@ void csv_output(const Experiment::experiment_results& res,
 
 int main(int argc, char** argv)
 {
-    if (argc < 2)
+    fs::path base_path;
+    fs::path trc_file;
+    std::string experiment_name;
+    bool with_summary;
+    bool cio_set_out, pio_set_out;
+
+    po::options_description description("set2csv - Output CIO-Sets as csv");
+
+    // clang-format off
+    description.add_options()
+        ("help,h", "Display help message")
+        ("summary,s",
+            po::bool_switch(&with_summary)->default_value(true),
+            "Output summary")
+        ("out-dir,o",
+            po::value<fs::path>(&base_path)->default_value(fs::current_path()),
+            "Output base path")
+        ("name,n",
+            po::value<std::string>(&experiment_name)
+            ->default_value(Experiment::make_default_experiment_name()),
+            "Experiment name")
+        ("cio-sets,c",
+            po::bool_switch(&cio_set_out)->default_value(true),
+            "Output CIO-Sets, global Concurrent I/O Sets")
+        ("pio-sets,p",
+            po::bool_switch(&pio_set_out)->default_value(false),
+            "Output PIO-Sets, local sets per-process")
+        ("trace-file",
+            po::value<fs::path>(&trc_file),
+            "Input trace file *.otf2");
+    // clang-formant on
+
+    po::positional_options_description pd;
+    pd.add("trace-file", -1);
+
+    po::variables_map vm;
+
+    po::store(po::command_line_parser(argc, argv).options(description).positional(pd).run(), vm);
+    po::notify(vm);
+
+    if (vm.count("help"))
     {
-        std::cerr << "Error!\nUsage: ./" << argv[0] << " <trace-file>\n";
+        std::cerr << description;
+        return EXIT_SUCCESS;
+    }
+
+    if (with_summary)
+    {
+        // enable or disable summary
+        logging::debug() << "enable summary";
+    }
+
+    if (cio_set_out)
+    {
+        // enable or disable cio-set output
+        logging::debug() << "enable cio-set output";
+    }
+
+    if (pio_set_out)
+    {
+        // enable or disable pio-set output
+        logging::debug() << "enable pio-set output";
+    }
+
+    experiment_config e_conf {with_summary, pio_set_out, cio_set_out};
+    logging::debug() << "created config: " << e_conf;
+
+    if (vm.count("out-dir"))
+    {
+        // set base path to out-dir
+        logging::debug() << "using outdir: " << base_path.string();
+    }
+
+    if (!vm.count("trace-file"))
+    {
+        logging::error() << "need trace file!";
         return EXIT_FAILURE;
     }
 
-    fs::path trc_file(argv[1]);
-    Experiment exp(trc_file); // just trace file use default config
+    if (vm.count("trace-file"))
+    {
+        // tracefile given, otherwise this is an error!
+        logging::debug() << "using tracefile: " << trc_file.string();
+    }
+
+    //Experiment exp(trc_file); // just trace file use default config
+    Experiment exp(trc_file, base_path, experiment_name, e_conf);
     auto stats = exp.run(csv_output);
     return EXIT_SUCCESS;
 }
