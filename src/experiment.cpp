@@ -49,16 +49,6 @@ fs::path Experiment::make_path(const fs::path& p) const
     return p / experiment_name_;
 }
 
-std::string Experiment::default_experiment_name() const
-{
-    auto time = std::chrono::system_clock::to_time_t(
-            std::chrono::system_clock::now());
-    std::stringstream exp_name;
-    exp_name << "rabbitxx-" << std::put_time(
-            std::localtime(&time), "%F-%H-%M-%S");
-    return exp_name.str();
-}
-
 Experiment_Stats Experiment::run_experiment(experiment_results& results)
 {
     // graph construction

@@ -30,11 +30,18 @@ namespace rabbitxx
 
 struct experiment_config
 {
+    bool with_summary = true;
     bool pio_sets = false;
     bool cio_sets = true;
-    bool with_summary = true;
 };
 
+inline std::ostream& operator<<(std::ostream& os, const experiment_config& ec)
+{
+    os << std::boolalpha << "with_summary: " << ec.with_summary
+        << "pio_set: " << ec.pio_sets
+        << "cio_set: " << ec.cio_sets;
+    return os;
+}
 
 class Experiment
 {
@@ -58,20 +65,30 @@ public:
         return experiment_config();
     }
 
+    static std::string make_default_experiment_name()
+    {
+        auto time = std::chrono::system_clock::to_time_t(
+                std::chrono::system_clock::now());
+        std::stringstream exp_name;
+        exp_name << "rabbitxx-" << std::put_time(
+                std::localtime(&time), "%F-%H-%M-%S");
+        return exp_name.str();
+    }
+
     explicit Experiment(const fs::path& input_trace) : trace_file_(input_trace),
-        experiment_name_(default_experiment_name()), experiment_dir_(make_default_path()),
+        experiment_name_(make_default_experiment_name()), experiment_dir_(make_default_path()),
         config_(Experiment::make_default_config())
     {
     }
 
     Experiment(const fs::path& input_trace, const fs::path& out_dir) : trace_file_(input_trace),
-        experiment_name_(default_experiment_name()), experiment_dir_(make_path(out_dir)),
+        experiment_name_(make_default_experiment_name()), experiment_dir_(make_path(out_dir)),
         config_(Experiment::make_default_config())
     {
     }
 
-    Experiment(const fs::path& input_trace, const fs::path& out_dir, const experiment_config& conf) : trace_file_(input_trace),
-        experiment_name_(default_experiment_name()), experiment_dir_(make_path(out_dir)),
+    Experiment(const fs::path& input_trace, const fs::path& out_dir, const std::string& name, const experiment_config& conf) : trace_file_(input_trace),
+        experiment_name_(name), experiment_dir_(make_path(out_dir)),
         config_(conf)
     {
     }
@@ -85,8 +102,6 @@ private:
     fs::path make_default_path() const;
 
     fs::path make_path(const fs::path& p) const;
-
-    std::string default_experiment_name() const;
 
     Experiment_Stats run_experiment(experiment_results& results);
 
