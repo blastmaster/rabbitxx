@@ -14,6 +14,7 @@ option(BUILD_MODULES "build modules" ON)
 option(BUILD_DEBUG "enable debug mode" ON)
 
 set(RABBITXX_CXX_FLAGS "-Wall -pedantic -Wextra -std=c++14")
+add_compile_options(-Wall -pedantic -Wextra -std=c++14)
 set(RABBITXX_C_FLAGS "-Wall -pedantic -Wextra")
 
 if(${BUILD_DEBUG})
@@ -36,18 +37,14 @@ list(LENGTH SUBMODULE_FILES COUNT_OTF2XX)
 file(GLOB SUBMODULE_FILES "external/catch/*")
 list(LENGTH SUBMODULE_FILES COUNT_CATCH)
 if(${COUNT_NITRO} EQUAL 0 OR ${COUNT_OTF2XX} EQUAL 0 OR ${COUNT_CATCH} EQUAL 0)
-    #TODO: using wrong branch of otf2xx
     message(STATUS "Initializing submodules")
     execute_process(COMMAND "git submodule update --init --recursive" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
 
-include(external/nitro/Nitro.cmake)
+add_subdirectory(external/nitro)
 
-set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI support or not (Requires Boost.MPI)" FORCE)
-include(external/otf2xx/OTF2XX.cmake)
-set(OTF2XX_CHRONO_DURATION_TYPE nanoseconds)
-#add_subdirectory(external/otf2xx)
-set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI support or not (Requires Boost.MPI)" FORCE)
+add_subdirectory(external/otf2xx)
+mark_as_advanced(OTF2XX_CHRONO_DURATION_TYPE OTF2XX_WITH_MPI OTF2_CONFIG OTF2_PRINT)
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RABBITXX_CXX_FLAGS}")
@@ -61,10 +58,22 @@ set(RABBITXX_SOURCES
 )
 
 #TODO: build individual static libraries
-add_library(rabbitxx_core ${RABBITXX_SOURCES})
-set(RABBITXX_LIBRARIES rabbitxx_core)
-#set(RABBITXX_LIBRARIES rabbitxx_core otf2xx::Reader)
-#set(RABBITXX_LIBRARIES rabbitxx_core otf2xx-core otf2xx-reader)
+add_library(rabbitxx-core ${RABBITXX_SOURCES})
+target_include_directories(rabbitxx-core
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(rabbitxx-core
+    PUBLIC
+        Nitro::nitro-log
+        otf2xx::Reader
+        Boost::system
+        Boost::graph
+        Boost::filesystem
+)
+set(RABBITXX_LIBRARIES rabbitxx-core)
 
 if (BUILD_MODULES)
     add_subdirectory(modules)
