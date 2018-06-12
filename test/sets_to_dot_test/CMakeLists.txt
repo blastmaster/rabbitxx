@@ -5,8 +5,6 @@ set(SOURCE
 add_executable(sets_to_dot_test ${SOURCE})
 target_link_libraries(sets_to_dot_test
     ${RABBITXX_LIBRARIES}
-    ${OTF2_LIBRARIES}
     ${Boost_LIBRARIES}
     ${MPI_CXX_LIBRARIES}
-    otf2xx
 )
