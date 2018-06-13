@@ -72,6 +72,8 @@ target_link_libraries(rabbitxx-core
         Boost::system
         Boost::graph
         Boost::filesystem
+        Boost::mpi
+        MPI::MPI_CXX
 )
 set(RABBITXX_LIBRARIES rabbitxx-core)
 
