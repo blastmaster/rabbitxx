@@ -75,7 +75,8 @@ target_link_libraries(rabbitxx-core
         Boost::mpi
         MPI::MPI_CXX
 )
-set(RABBITXX_LIBRARIES rabbitxx-core)
+
+add_library(rabbitxx::core ALIAS rabbitxx-core)
 
 if (BUILD_MODULES)
     add_subdirectory(modules)
