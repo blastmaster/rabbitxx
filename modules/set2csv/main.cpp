@@ -1,5 +1,9 @@
 #include <rabbitxx/experiment.hpp>
 
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/ostreamwrapper.h>
+
 #include <boost/program_options.hpp>
 
 /**
@@ -167,6 +171,92 @@ void summary_2_csv(const Experiment_Stats& stats, const fs::path& base_path)
     experiment_stats_2_csv(stats, out_file);
 }
 
+template<typename JsonWriter>
+void graph_stats_to_json(const Graph_Stats& stats, JsonWriter& writer)
+{
+    writer.StartObject();
+    writer.Key("Number of Vertices");
+    writer.Uint64(stats.number_of_vertices());
+    writer.Key("Number of Edges");
+    writer.Uint64(stats.number_of_edges());
+    writer.Key("Build time");
+    writer.Uint64(
+            otf2::chrono::duration_cast<otf2::chrono::microseconds>(
+                stats.build_time())
+            .count());
+    writer.Key("Ticks per Seconds");
+    writer.Uint64(stats.ticks_per_second().count());
+    writer.Key("Start Time");
+    writer.Uint64(stats.start_time().count());
+    writer.Key("Length");
+    writer.Uint64(stats.length().count());
+    writer.EndObject();
+}
+
+template<typename JsonWriter>
+void cio_stats_to_json(const CIO_Stats& stats, JsonWriter& writer)
+{
+    writer.StartObject();
+    writer.Key("Number of CIO-Sets");
+    writer.Uint64(stats.number_of_cio_sets());
+    writer.Key("Build time");
+    writer.Uint64(
+            otf2::chrono::duration_cast<otf2::chrono::microseconds>(
+                stats.build_time())
+            .count());
+    writer.Key("Set durations");
+    writer.StartArray();
+    const auto set_durations = stats.get_set_durations();
+    for (const auto& set_duration : set_durations)
+    {
+        writer.Uint64(
+                otf2::chrono::duration_cast<otf2::chrono::microseconds>(set_duration)
+                .count());
+    }
+    writer.EndArray();
+    writer.EndObject();
+}
+
+template<typename JsonWriter>
+void pio_stats_to_json(const PIO_Stats& stats, JsonWriter& writer)
+{
+    writer.StartObject();
+    writer.Key("Number of PIO-Sets");
+    writer.Uint64(stats.number_of_pio_sets());
+    writer.Key("Build time");
+    writer.Uint64(
+            otf2::chrono::duration_cast<otf2::chrono::microseconds>(
+                stats.build_time())
+            .count());
+    writer.EndObject();
+}
+
+void experiment_stats_to_json(const Experiment_Stats& stats, std::ostream& out)
+{
+    rapidjson::OStreamWrapper osw(out);
+    rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
+
+    writer.StartObject();
+    writer.Key("Tracefile");
+    writer.String(stats.trace_file().string().c_str());
+    writer.Key("Experiment_Duration");
+    writer.Uint64(stats.experiment_duration().count());
+
+    writer.Key("Graph Stats");
+    graph_stats_to_json(stats.graph_stats(), writer);
+    writer.Key("CIO Stats");
+    cio_stats_to_json(stats.cio_stats(), writer);
+    writer.Key("PIO Stats");
+    pio_stats_to_json(stats.pio_stats(), writer);
+    writer.EndObject();
+}
+
+void summary_to_json(const Experiment_Stats& stats, const fs::path& base_path)
+{
+    std::ofstream out_file((base_path / "summary.json").string());
+    experiment_stats_to_json(stats, out_file);
+}
+
 void csv_output(const Experiment::experiment_results& res,
         const Experiment_Stats& stats,
         const experiment_config& config,
@@ -183,6 +273,7 @@ void csv_output(const Experiment::experiment_results& res,
     if (config.with_summary)
     {
         summary_2_csv(stats, base_path);
+        summary_to_json(stats, base_path);
     }
 }
 

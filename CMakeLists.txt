@@ -7,8 +7,6 @@ project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
 include(CTest)
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake;${CMAKE_MODULE_PATH}")
-
 option(BUILD_TESTS "build tests" ON)
 option(BUILD_MODULES "build modules" ON)
 option(BUILD_DEBUG "enable debug mode" ON)
@@ -20,10 +18,12 @@ if(${BUILD_DEBUG})
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 
 find_package(Boost 1.62 REQUIRED COMPONENTS program_options system filesystem mpi graph)
 find_package(MPI REQUIRED)
+find_package(RapidJSON 1.0 REQUIRED MODULE)
+
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
 file(GLOB SUBMODULE_FILES "external/nitro/*")
@@ -40,8 +40,6 @@ endif()
 add_subdirectory(external/nitro)
 add_subdirectory(external/otf2xx)
 mark_as_advanced(OTF2XX_CHRONO_DURATION_TYPE OTF2XX_WITH_MPI OTF2_CONFIG OTF2_PRINT)
-
-include_directories("${CMAKE_SOURCE_DIR}/include")
 
 set(RABBITXX_SOURCES
     ${CMAKE_SOURCE_DIR}/src/cio_set.cpp

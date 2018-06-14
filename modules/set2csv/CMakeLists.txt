@@ -7,4 +7,5 @@ target_link_libraries(set2csv
     PRIVATE
     rabbitxx::core
     Boost::program_options
+    RapidJSON::RapidJSON
 )
