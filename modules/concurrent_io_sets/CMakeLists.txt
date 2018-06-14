@@ -4,5 +4,6 @@ set(SOURCES
 
 add_executable(concurrent-io-sets ${SOURCES})
 target_link_libraries(concurrent-io-sets
-    ${RABBITXX_LIBRARIES}
+    PRIVATE
+    rabbitxx::core
 )

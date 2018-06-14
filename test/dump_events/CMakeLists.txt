@@ -4,5 +4,6 @@ set(SOURCE
 
 add_executable(dump_events ${SOURCE})
 target_link_libraries(dump_events
-    ${RABBITXX_LIBRARIES}
+    PRIVATE
+    rabbitxx::core
 )

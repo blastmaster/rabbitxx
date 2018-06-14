@@ -4,5 +4,6 @@ set(SOURCE
 
 add_executable(dot_output_test ${SOURCE})
 target_link_libraries(dot_output_test
-    ${RABBITXX_LIBRARIES}
+    PRIVATE
+    rabbitxx::core
 )

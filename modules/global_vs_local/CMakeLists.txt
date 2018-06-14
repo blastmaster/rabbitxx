@@ -4,5 +4,6 @@ set(SOURCES
 
 add_executable(global_vs_local ${SOURCES})
 target_link_libraries(global_vs_local
-    ${RABBITXX_LIBRARIES}
+    PRIVATE
+    rabbitxx::core
 )

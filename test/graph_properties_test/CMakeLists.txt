@@ -4,5 +4,6 @@ set(SOURCE
 
 add_executable(graph_properties_test ${SOURCE})
 target_link_libraries(graph_properties_test
-    ${RABBITXX_LIBRARIES}
+    PRIVATE
+    rabbitxx::core
 )

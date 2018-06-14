@@ -4,6 +4,7 @@ set(SOURCES
 
 add_executable(set2csv ${SOURCES})
 target_link_libraries(set2csv
-    ${RABBITXX_LIBRARIES}
+    PRIVATE
+    rabbitxx::core
     Boost::program_options
 )
