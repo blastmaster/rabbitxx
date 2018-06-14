@@ -13,20 +13,16 @@ option(BUILD_TESTS "build tests" ON)
 option(BUILD_MODULES "build modules" ON)
 option(BUILD_DEBUG "enable debug mode" ON)
 
-set(RABBITXX_CXX_FLAGS "-Wall -pedantic -Wextra -std=c++14")
 add_compile_options(-Wall -pedantic -Wextra -std=c++14)
-set(RABBITXX_C_FLAGS "-Wall -pedantic -Wextra")
 
 if(${BUILD_DEBUG})
-    set(RABBITXX_CXX_FLAGS "${RABBITXX_CXX_FLAGS} -pg -ggdb -O0")
+    add_compile_options(-pg -ggdb -O0)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-    set(RABBITXX_C_FLAGS "${RABBITXX_C_FLAGS} -pg -ggdb -O0")
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 find_package(Boost 1.62 REQUIRED COMPONENTS program_options system filesystem mpi graph)
-
 find_package(MPI REQUIRED)
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
@@ -42,12 +38,10 @@ if(${COUNT_NITRO} EQUAL 0 OR ${COUNT_OTF2XX} EQUAL 0 OR ${COUNT_CATCH} EQUAL 0)
 endif()
 
 add_subdirectory(external/nitro)
-
 add_subdirectory(external/otf2xx)
 mark_as_advanced(OTF2XX_CHRONO_DURATION_TYPE OTF2XX_WITH_MPI OTF2_CONFIG OTF2_PRINT)
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RABBITXX_CXX_FLAGS}")
 
 set(RABBITXX_SOURCES
     ${CMAKE_SOURCE_DIR}/src/cio_set.cpp
@@ -57,7 +51,6 @@ set(RABBITXX_SOURCES
     ${CMAKE_SOURCE_DIR}/src/experiment.cpp
 )
 
-#TODO: build individual static libraries
 add_library(rabbitxx-core ${RABBITXX_SOURCES})
 target_include_directories(rabbitxx-core
     PUBLIC
