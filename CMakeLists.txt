@@ -5,6 +5,10 @@ set(PROJECT_VERSION "0.0.1")
 
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
+#Initialize git submodules if not done already
+include(cmake/GitSubmoduleUpdate.cmake)
+git_submodule_update()
+
 include(CTest)
 
 option(BUILD_TESTS "build tests" ON)
@@ -25,17 +29,6 @@ find_package(MPI REQUIRED)
 find_package(RapidJSON 1.0 REQUIRED MODULE)
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-
-file(GLOB SUBMODULE_FILES "external/nitro/*")
-list(LENGTH SUBMODULE_FILES COUNT_NITRO)
-file(GLOB SUBMODULE_FILES "external/otf2xx/*")
-list(LENGTH SUBMODULE_FILES COUNT_OTF2XX)
-file(GLOB SUBMODULE_FILES "external/catch/*")
-list(LENGTH SUBMODULE_FILES COUNT_CATCH)
-if(${COUNT_NITRO} EQUAL 0 OR ${COUNT_OTF2XX} EQUAL 0 OR ${COUNT_CATCH} EQUAL 0)
-    message(STATUS "Initializing submodules")
-    execute_process(COMMAND "git submodule update --init --recursive" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-endif()
 
 add_subdirectory(external/nitro)
 add_subdirectory(external/otf2xx)
