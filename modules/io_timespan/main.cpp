@@ -13,14 +13,14 @@ using namespace rabbitxx;
  *
  */
 
-template<typename DurationT=otf2::chrono::nanoseconds>
+template<typename DurationT=otf2::chrono::microseconds>
 void print_total_duration(const app_info& info)
 {
 
     std::cout << "start time "
-        << otf2::chrono::duration_cast<DurationT>(info.first_event_time.time_since_epoch()) << "\n";
+        << std::chrono::duration_cast<DurationT>(info.first_event_time.time_since_epoch()) << "\n";
     std::cout << "end time "
-        << otf2::chrono::duration_cast<DurationT>(info.last_event_time.time_since_epoch()) << "\n";
+        << std::chrono::duration_cast<DurationT>(info.last_event_time.time_since_epoch()) << "\n";
 }
 
 //TODO: dump as csv!
@@ -35,8 +35,8 @@ void dump_table(const otf2_trace_event& evt)
         }
         auto kind = boost::get<rabbitxx::io_event_property>(evt.property).kind; 
         std::cout << evt.id() << " " 
-            << duration_to_string<otf2::chrono::nanoseconds>(evt.duration.enter.time_since_epoch()) << " "
-            << duration_to_string<otf2::chrono::nanoseconds>(evt.duration.leave.time_since_epoch()) << " "
+            << duration_to_string<otf2::chrono::microseconds>(evt.duration.enter.time_since_epoch()) << " "
+            << duration_to_string<otf2::chrono::microseconds>(evt.duration.leave.time_since_epoch()) << " "
             << evt.name() << " " << kind << "\n";
     }
 }

@@ -37,7 +37,7 @@ get_set_duration(const IoGraph& graph, const set_t<VertexDescriptor>& cio_set)
     }
     assert(ts_end > ts_start);
     auto dur_diff = ts_end - ts_start;
-    return otf2::chrono::duration_cast<otf2::chrono::microseconds>(dur_diff);
+    return std::chrono::duration_cast<otf2::chrono::microseconds>(dur_diff);
 }
 
 } //namespace rabbitxx

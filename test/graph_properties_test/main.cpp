@@ -4,18 +4,18 @@
 using rabbitxx::logging;
 
 
-template<typename DurationT=otf2::chrono::nanoseconds>
+template<typename DurationT=otf2::chrono::microseconds>
 void print_info_as(const rabbitxx::app_info& info)
 {
-    std::cout << "total time: " << otf2::chrono::duration_cast<DurationT>(info.total_time) << "\n";
-    std::cout << "total file io time: " << otf2::chrono::duration_cast<DurationT>(info.io_time) << "\n";
-    std::cout << "total file io metadata time: " << otf2::chrono::duration_cast<DurationT>(info.io_metadata_time) << "\n";
+    std::cout << "total time: " << std::chrono::duration_cast<DurationT>(info.total_time) << "\n";
+    std::cout << "total file io time: " << std::chrono::duration_cast<DurationT>(info.io_time) << "\n";
+    std::cout << "total file io metadata time: " << std::chrono::duration_cast<DurationT>(info.io_metadata_time) << "\n";
     std::cout << "first event time: " << info.first_event_time << "\n";
     std::cout << "last event time: " << info.last_event_time << "\n";
 
     std::cout << "first event time duration: " 
-        << otf2::chrono::duration_cast<DurationT>(info.first_event_time.time_since_epoch()) << "\n";
-    std::cout << "last event time duration: " << otf2::chrono::duration_cast<DurationT>(info.last_event_time.time_since_epoch()) << "\n";
+        << std::chrono::duration_cast<DurationT>(info.first_event_time.time_since_epoch()) << "\n";
+    std::cout << "last event time duration: " << std::chrono::duration_cast<DurationT>(info.last_event_time.time_since_epoch()) << "\n";
 
     std::cout << "Clock properties:\n"
         << "ticks per second: " << info.clock_props.ticks_per_second().count() << "\n"
