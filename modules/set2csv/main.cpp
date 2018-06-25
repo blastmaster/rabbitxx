@@ -283,6 +283,7 @@ int main(int argc, char** argv)
     std::string experiment_name;
     bool with_summary;
     bool cio_set_out, pio_set_out;
+    bool debug;
 
     po::options_description description("set2csv - Output CIO-Sets as csv");
 
@@ -307,7 +308,10 @@ int main(int argc, char** argv)
             "Output PIO-Sets, local sets per-process")
         ("trace-file",
             po::value<fs::path>(&trc_file),
-            "Input trace file *.otf2");
+            "Input trace file *.otf2")
+        ("debug,d",
+         po::bool_switch(&debug)->default_value(false),
+         "Enable debug logs");
     // clang-formant on
 
     po::positional_options_description pd;
@@ -322,6 +326,17 @@ int main(int argc, char** argv)
     {
         std::cerr << description;
         return EXIT_SUCCESS;
+    }
+
+    if (debug)
+    {
+        log::set_min_severity_level(
+                nitro::log::severity_level::debug);
+    }
+    else
+    {
+        log::set_min_severity_level(
+                nitro::log::severity_level::error);
     }
 
     if (with_summary)
