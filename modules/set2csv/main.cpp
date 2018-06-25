@@ -12,27 +12,27 @@
  *
  * TODO
  * * options have different length and are therefore omitted at the moment 
- * * header() does not work, one comma to much at the end.
  */
 
 using namespace rabbitxx;
 namespace po = boost::program_options;
 
-//TODO unused, one comma to much.
+
 void header(std::ostream& os=std::cout)
 {
     std::array<const char*, 10> columns {
-        "pid",
-        "filename",
-        "region_name",
-        "paradigm",
-        "request_size",
-        "response_size",
-        "offset",
+        "pid,",
+        "filename,",
+        "region_name,",
+        "paradigm,",
+        "request_size,",
+        "response_size,",
+        "offset,",
         //"option",
-        "kind",
+        "kind,",
+        "duration,",
         "timestamp"};
-    std::copy(columns.begin(), columns.end(), std::ostream_iterator<const char*>(os, ", "));
+    std::copy(columns.begin(), columns.end(), std::ostream_iterator<const char*>(os, ""));
     os << "\n";
 }
 
@@ -87,12 +87,12 @@ std::ostream& io_event_2_csv_stream(const IoGraph& graph, const VertexDescriptor
 
 void set2csv(const IoGraph& graph, const set_t<VertexDescriptor>& set, std::ostream& out=std::cout)
 {
+    header(out);
     for (auto evt : set)
     {
         io_event_2_csv_stream(graph, evt, out);
         out << "\n";
     }
-
 }
 
 static std::string create_cio_set_stats_filename(std::uint64_t sidx)
@@ -106,7 +106,6 @@ static std::string create_cio_set_stats_filename(std::uint64_t sidx)
 void sets_2_csv(const IoGraph& graph, const set_container_t<VertexDescriptor>& cio_sets,
          const fs::path& base_path)
 {
-    //header();
     std::uint64_t idx = 1;
     for (const auto& set : cio_sets)
     {

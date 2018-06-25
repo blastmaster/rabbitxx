@@ -103,7 +103,7 @@ void experiment_output(const Experiment::experiment_results& res,
     }
     if (config.with_summary)
     {
-        std::cout << "Stats:\n";
+        std::cout << "Summary:\n";
         std::cout << stats;
     }
 }
