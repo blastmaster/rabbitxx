@@ -577,6 +577,38 @@ struct app_info
     std::map<std::string, std::string> file_to_fs;
 };
 
+inline std::ostream& operator<<(std::ostream& os, const app_info& info)
+{
+    os << "total time: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.total_time) << "\n";
+    os << "total file io time: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.io_time) << "\n";
+    os << "total file io metadata time: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.io_metadata_time) << "\n";
+
+    os << "first event time: " << info.first_event_time << "\n";
+    os << "last event time: " << info.last_event_time << "\n";
+    os << "first event time duration: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.first_event_time.time_since_epoch()) << "\n";
+    os << "last event time duration: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.last_event_time.time_since_epoch()) << "\n";
+
+    os << "ticks per second: "
+        << info.clock_props.ticks_per_second().count() << "\n";
+    os << "start time: "
+        << info.clock_props.start_time().count() << "\n";
+    os << "length: "
+        << info.clock_props.length().count() << "\n";
+
+    os << "File 2 Fs mapping\n";
+    for (const auto& kvp : info.file_to_fs)
+    {
+        os << kvp.first << " -> " << kvp.second << "\n";
+    }
+
+    return os;
+}
+
 template<typename G>
 class otf2_trace_event_writer
 {
