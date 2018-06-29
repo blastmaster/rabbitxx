@@ -171,7 +171,7 @@ class Graph_Stats
 public:
     explicit Graph_Stats(const IoGraph& graph, const otf2::chrono::duration& build_tm) : 
         num_vertices_(graph.num_vertices()), num_edges_(graph.num_edges()),
-        clock_properties_(graph.graph_properties().clock_props), build_time_(build_tm)
+        build_time_(build_tm)
     {
     }
 
@@ -190,25 +190,9 @@ public:
         return build_time_;
     }
 
-    otf2::chrono::ticks ticks_per_second() const
-    {
-        return clock_properties_.ticks_per_second();
-    }
-
-    otf2::chrono::ticks start_time() const
-    {
-        return clock_properties_.start_time();
-    }
-
-    otf2::chrono::ticks length() const
-    {
-        return clock_properties_.length();
-    }
-
 private:
     std::uint64_t num_vertices_;
     std::uint64_t num_edges_;
-    otf2::definition::clock_properties clock_properties_;
     otf2::chrono::duration build_time_;
 };
 
@@ -217,21 +201,27 @@ inline std::ostream& operator<<(std::ostream& os, const Graph_Stats& stats)
     os << "========== Graph Stats ==========\n"
         << "Number of Vertices: " << stats.number_of_vertices() << "\n"
         << "Number of Edges: " << stats.number_of_edges() << "\n"
-        << "Graph Build time: " << std::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n"
-        << "Ticks per Second: " << stats.ticks_per_second().count() << "\n"
-        << "Start Time: " << stats.start_time().count() << "\n"
-        << "length: " << stats.length().count() << "\n";
+        << "Graph Build time: " << std::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n";
 
     return os;
 }
 
 class Experiment_Stats
 {
+    using fs_map_t = std::map<std::string, std::string>;
 public:
-    Experiment_Stats(const fs::path& input_trace, const Graph_Stats& graph_stats,
-            const CIO_Stats& cio_stats, const PIO_Stats& pio_stats)
-        : trace_file_(input_trace), graph_stats_(graph_stats),
-        cio_stats_(cio_stats), pio_stats_(pio_stats)
+    Experiment_Stats(const fs::path& input_trace,
+                    const Graph_Stats& graph_stats,
+                    const CIO_Stats& cio_stats,
+                    const PIO_Stats& pio_stats,
+                    const fs_map_t& file_map,
+                    const otf2::definition::clock_properties& clock_properties)
+        : trace_file_(input_trace),
+        graph_stats_(graph_stats),
+        cio_stats_(cio_stats),
+        pio_stats_(pio_stats),
+        file_map_(file_map),
+        clock_props_(clock_properties)
     {
     }
 
@@ -255,6 +245,16 @@ public:
         return pio_stats_;
     }
 
+    fs_map_t file_system_map() const
+    {
+        return file_map_;
+    }
+
+    otf2::definition::clock_properties clock_properties() const
+    {
+        return clock_props_;
+    }
+
     otf2::chrono::duration experiment_duration() const
     {
         return experiment_duration_;
@@ -270,6 +270,8 @@ private:
     Graph_Stats graph_stats_;
     CIO_Stats cio_stats_;
     PIO_Stats pio_stats_;
+    fs_map_t file_map_;
+    otf2::definition::clock_properties clock_props_;
     otf2::chrono::duration experiment_duration_ = otf2::chrono::duration(0);
 };
 
@@ -279,6 +281,7 @@ inline std::ostream& operator<<(std::ostream& os, const Experiment_Stats& stats)
         << "Input trace file: " << stats.trace_file() << "\n"
         << "Experiment Duration: " << stats.experiment_duration() << "\n"
         << stats.graph_stats() << stats.pio_stats() <<  stats.cio_stats();
+    //TODO: print clock properties and file system map
     return os;
 }
 

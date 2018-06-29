@@ -57,6 +57,7 @@ Experiment_Stats Experiment::run_experiment(experiment_results& results)
     const auto end_graph_construction = std::chrono::system_clock::now();
     const auto graph_duration = end_graph_construction - start_graph_construction;
     auto graph_stats = Graph_Stats(graph, graph_duration);
+    auto info = graph.graph_properties();
 
     if (config_.pio_sets || config_.cio_sets)
     {
@@ -76,7 +77,7 @@ Experiment_Stats Experiment::run_experiment(experiment_results& results)
         results.graph = std::move(graph);
         results.cio_sets = std::move(cio_sets);
         results.pio_sets = std::move(sets_pp);
-        return Experiment_Stats(trace_file_, graph_stats, cio_stats, pio_stats);
+        return Experiment_Stats(trace_file_, graph_stats, cio_stats, pio_stats, info.file_to_fs, info.clock_props);
     }
 
 }

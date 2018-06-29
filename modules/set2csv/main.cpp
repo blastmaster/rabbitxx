@@ -149,10 +149,7 @@ void graph_stats_2_csv(const Graph_Stats& stats, std::ostream& out)
 {
     out << "Number of Vertices," << stats.number_of_vertices() << "\n"
         << "Number of Edges," << stats.number_of_edges() << "\n"
-        << "Graph Build Time," << std::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n"
-        << "Ticks per Second," << stats.ticks_per_second().count() << "\n"
-        << "Start Time," << stats.start_time().count() << "\n"
-        << "Length," << stats.length().count() << "\n";
+        << "Graph Build Time," << std::chrono::duration_cast<otf2::chrono::microseconds>(stats.build_time()) << "\n";
 }
 
 void experiment_stats_2_csv(const Experiment_Stats& stats, std::ostream& out)
@@ -162,6 +159,7 @@ void experiment_stats_2_csv(const Experiment_Stats& stats, std::ostream& out)
     graph_stats_2_csv(stats.graph_stats(), out);
     cio_stats_2_csv(stats.cio_stats(), out);
     pio_stats_2_csv(stats.pio_stats(), out);
+    //TODO missing clock props and file system map
 }
 
 void summary_2_csv(const Experiment_Stats& stats, const fs::path& base_path)
@@ -183,12 +181,6 @@ void graph_stats_to_json(const Graph_Stats& stats, JsonWriter& writer)
             std::chrono::duration_cast<otf2::chrono::microseconds>(
                 stats.build_time())
             .count());
-    writer.Key("Ticks per Seconds");
-    writer.Uint64(stats.ticks_per_second().count());
-    writer.Key("Start Time");
-    writer.Uint64(stats.start_time().count());
-    writer.Key("Length");
-    writer.Uint64(stats.length().count());
     writer.EndObject();
 }
 
@@ -230,6 +222,31 @@ void pio_stats_to_json(const PIO_Stats& stats, JsonWriter& writer)
     writer.EndObject();
 }
 
+template<typename JsonWriter>
+void file_system_map_to_json(const std::map<std::string, std::string>& fsmap, JsonWriter& writer)
+{
+    writer.StartObject();
+    for (const auto& kvp : fsmap)
+    {
+        writer.String(kvp.first.c_str());
+        writer.String(kvp.second.c_str());
+    }
+    writer.EndObject();
+}
+
+template<typename JsonWriter>
+void clock_properties_to_json(const otf2::definition::clock_properties& clock_props, JsonWriter& writer)
+{
+    writer.StartObject();
+    writer.Key("Ticks per Seconds");
+    writer.Uint64(clock_props.ticks_per_second().count());
+    writer.Key("Start Time");
+    writer.Uint64(clock_props.start_time().count());
+    writer.Key("Length");
+    writer.Uint64(clock_props.length().count());
+    writer.EndObject();
+}
+
 void experiment_stats_to_json(const Experiment_Stats& stats, std::ostream& out)
 {
     rapidjson::OStreamWrapper osw(out);
@@ -247,6 +264,10 @@ void experiment_stats_to_json(const Experiment_Stats& stats, std::ostream& out)
     cio_stats_to_json(stats.cio_stats(), writer);
     writer.Key("PIO Stats");
     pio_stats_to_json(stats.pio_stats(), writer);
+    writer.Key("File Map");
+    file_system_map_to_json(stats.file_system_map(), writer);
+    writer.Key("Clock Properties");
+    clock_properties_to_json(stats.clock_properties(), writer);
     writer.EndObject();
 }
 
