@@ -46,7 +46,8 @@ void io_graph_builder::create_synthetic_end()
     const auto& vt = synthetic_event_property("End", otf2::chrono::time_point::max());
     const auto end_descriptor = graph_.add_vertex(otf2_trace_event(vt));
     //get last event from each location
-    for (const auto& loc : locations_) {
+    for (const auto& loc : locations_)
+    {
         const auto last_proc_event = edge_points_.front(loc);
         graph_.add_edge(last_proc_event, end_descriptor);
     }
@@ -218,15 +219,18 @@ void io_graph_builder::event(const otf2::definition::location& location,
     }
 
     //FIXME: which timestamp should we use? start? or end?
-    const auto vt = io_event_property(location.ref(), name, region_name,
-                                            evt.handle().paradigm().name().str(),
-                                            begin_evt.bytes_request(),
-                                            evt.bytes_request(), 0,
-                                            io_operation_option_container(
-                                                begin_evt.operation_mode(),
-                                                begin_evt.operation_flag()),
-                                            kind,
-                                            evt.timestamp());
+    const auto vt = io_event_property(location.ref(),
+                                    name,
+                                    region_name,
+                                    evt.handle().paradigm().name().str(),
+                                    begin_evt.bytes_request(),
+                                    evt.bytes_request(),
+                                    0, /* offset */
+                                    io_operation_option_container(
+                                        begin_evt.operation_mode(),
+                                        begin_evt.operation_flag()),
+                                    kind,
+                                    evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
     //events_.enqueue(location, descriptor);
@@ -271,9 +275,13 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     const auto name = get_handle_name(evt.handle());
     const auto region_name = region_name_queue_.top(location);
-    const auto vt = io_event_property(location.ref(), name, region_name,
+    const auto vt = io_event_property(location.ref(),
+                                    name,
+                                    region_name,
                                     evt.handle().paradigm().name().str(),
-                                    0, 0, 0,
+                                    0, /* request size */
+                                    0, /* response size */
+                                    0, /* offset */
                                     rabbitxx::io_creation_option_container(
                                         evt.status_flags(),
                                         evt.creation_flags(),
@@ -305,9 +313,14 @@ void io_graph_builder::event(const otf2::definition::location& location,
     }
 
     const auto region_name = region_name_queue_.top(location);
-    const auto vt = io_event_property(location.ref(), name, region_name,
+    const auto vt = io_event_property(location.ref(),
+                                    name,
+                                    region_name,
                                     evt.paradigm().name().str(),
-                                    0, 0, 0, io_operation_option_container(),
+                                    0, /* request size */
+                                    0, /* repsonse size */
+                                    0, /* offset */
+                                    io_operation_option_container(),
                                     io_event_kind::delete_or_close,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
@@ -335,10 +348,13 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     const auto name = get_handle_name(evt.handle());
     const auto region_name = region_name_queue_.top(location);
-    const auto vt = io_event_property(location.ref(), name,
+    const auto vt = io_event_property(location.ref(),
+                                    name,
                                     region_name,
                                     evt.handle().paradigm().name().str(),
-                                    0, 0, 0,
+                                    0, /* request size */
+                                    0, /* response size */
+                                    0, /* offset */
                                     io_operation_option_container(),
                                     io_event_kind::delete_or_close,
                                     evt.timestamp());
@@ -358,10 +374,13 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     const auto name = get_handle_name(evt.new_handle());
     const auto region_name = region_name_queue_.top(location);
-    const auto vt = io_event_property(location.ref(), name,
+    const auto vt = io_event_property(location.ref(),
+                                    name,
                                     region_name,
-				    evt.new_handle().paradigm().name().str(),
-				    0, 0, 0,
+                                    evt.new_handle().paradigm().name().str(),
+                                    0, /* request size */
+                                    0, /* response size */
+                                    0, /* offset */
                                     io_creation_option_container(evt.status_flags()),
                                     io_event_kind::dup,
                                     evt.timestamp());

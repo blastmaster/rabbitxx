@@ -222,12 +222,17 @@ struct io_event_property
 
     io_event_property() = default;
 
-    explicit io_event_property(std::uint64_t process_id, const std::string& fname,
-                        const std::string& reg_name, const std::string& paradigm, std::uint64_t req_size,
-                        std::uint64_t resp_size,
-                        std::uint64_t off, option_type mode,
-                        io_event_kind event_kind,
-                        const otf2::chrono::time_point ts) noexcept
+    explicit io_event_property(
+                        std::uint64_t process_id,           /* pid */
+                        const std::string& fname,           /* filename */
+                        const std::string& reg_name,        /* region_name */
+                        const std::string& paradigm,        /* paradigm */
+                        std::uint64_t req_size,             /* request_size */
+                        std::uint64_t resp_size,            /* response_size */
+                        std::uint64_t off,                  /* offset */
+                        option_type mode,                   /* operation mode */
+                        io_event_kind event_kind,           /* operation kind */
+                        const otf2::chrono::time_point ts) /* timestamp */ noexcept
     : proc_id(process_id), filename(fname), region_name(reg_name), paradigm(paradigm), request_size(req_size),
         response_size(resp_size), offset(off), option(mode), kind(event_kind), timestamp(ts)
     {
