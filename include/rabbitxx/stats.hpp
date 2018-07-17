@@ -84,7 +84,7 @@ public:
 
     CIO_Stats(const IoGraph& graph, const set_container_t<VertexDescriptor>& cio_sets,
             const otf2::chrono::duration& build_tm) :
-        num_cio_sets_(cio_sets.size()), set_durations_(cio_sets.size()), build_time_(build_tm)
+        num_cio_sets_(cio_sets.size()), build_time_(build_tm)
     {
         std::transform(cio_sets.begin(), cio_sets.end(), std::back_inserter(set_durations_),
                 [&graph](const auto& set) { return get_set_duration(graph, set); });
@@ -112,8 +112,8 @@ public:
 
 private:
     std::uint64_t num_cio_sets_;
-    std::vector<otf2::chrono::duration> set_durations_;
     otf2::chrono::duration build_time_;
+    std::vector<otf2::chrono::duration> set_durations_;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const CIO_Stats& stats)
