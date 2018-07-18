@@ -64,18 +64,6 @@ def plot_access_range(y, row, **kwargs) -> None:
     start_of, end_of = calculate_access_range(row)
     timelines(y, start_of, end_of, **kwargs)
 
-# def do_offset_tracking(exp, prefix):
-
-    # fl = []
-    # filtered_files = prefix_file_filter(exp.experiment_stats.file_map, prefix)
-    # for f in filtered_files.keys():
-        # f = ' {}'.format(f) # tweak whitespaces!
-        # #FIXME
-        # f_group = s.groupby('filename').get_group(f)
-        # f_group['offset'] = f_group.apply(track_file_offsets, axis=1, tracker=OffsetTracker())
-        # fl.append(f_group) 
-
-    # return fl
 
 class NonExistentFileError(Exception):
     pass
@@ -102,3 +90,132 @@ def recalculate_offset_of_set(setdf, filename: str, pids=None):
         file_group['offset'] = file_group.apply(track_file_offsets, axis=1, tracker=OffsetTracker())
         yield file_group
 
+
+# TODO do it with `pid` as y-axis
+def plot_rws_range(group) -> None:
+
+    #FIXME to decide which kind should be printed pass this list of tuples as argument
+    # for op_kind, color in [(' read', 'b'), (' write', 'r'), (' seek', 'y')]:
+    for op_kind, color in [(' read', 'b'), (' write', 'r')]:
+        krows = group[group['kind'] == op_kind]
+        if krows.empty:
+            print('DEBUG {} kind is empty'.format(op_kind))
+            continue
+        print('DEBUG processing kind {}'.format(op_kind))
+        for _, row in krows.iterrows():
+            plot_access_range(row['pid'], row, color=color)
+
+
+#FIXME
+def plot_response_size_range(group) -> None:
+
+    for op_kind, color in [(' read', 'b'), (' write', 'r'), (' seek', 'y')]:
+        krows = group[group['kind'] == op_kind]
+        if krows.empty:
+            print('DEBUG {} kind is empty'.format(op_kind))
+            continue
+        print('DEBUG processing kind {}'.format(op_kind))
+        for _, row in krows.iterrows():
+            plot_access_range(row['response_size'], row, color=color)
+
+
+def plot_cio_set_access_pattern(cio_set, set_label: str, file_name: str) -> None:
+    ''' Plot access pattern for a given file.
+        X-Axis: The accessed range in the file.
+        Y-Axis: The process accessing the file.
+        The different operation kinds are color-coded.
+
+    '''
+    try:
+        print('DEBUG processing: {}'.format(set_label))
+        # print('DBEUG set: {}'.format(cio_set))
+        fig, ax = plt.subplots()
+        # TODO pass filename as argument
+        for group in recalculate_offset_of_set(cio_set, file_name):
+            plot_rws_range(group)
+
+        min_response_size = group['response_size'].min()
+        max_response_size = group['response_size'].max()
+        mean_response_size = group['response_size'].mean()
+        print('DEBUG mean_response_size {}'.format(int(mean_response_size)))
+        print('DEBUG min_response_size {}'.format(int(min_response_size)))
+        print('DEBUG max_response_size {}'.format(int(max_response_size)))
+
+        min_offset = group['offset'].min()
+        max_offset = group['offset'].max()
+
+        print('DEBUG max_offset {}'.format(max_offset))
+
+        xmin = min_offset - mean_response_size if (min_offset - mean_response_size) > 0 else 0
+        xmax = max_offset + mean_response_size
+
+        # TODO set useful xticks
+        print('DEBUG xmin: {} xmax: {}'.format(xmin, xmax))
+        plt.xlim(xmin, xmax)
+        print('DEBUG ytick pids: {}'.format(get_pids(cio_set)))
+        plt.yticks(get_pids(cio_set))
+
+        fig.canvas.draw()
+
+        # convert xticklabel text to kilobyte
+        xlabels = [byte_to_kilobyte_label(item.get_text()) for item in ax.get_xticklabels()]
+        ax.set_xticklabels(xlabels)
+        for tick in ax.get_xticklabels():
+            tick.set_rotation(45)
+
+        plt.ylabel('Process')
+        plt.xlabel('File range')
+        plt.savefig('./{}-access_pattern.png'.format(set_label))
+    except NonExistentFileError as e:
+        print('INFO: file {} could not be found in {} ... going to next set'
+                .format(file_name, set_label))
+        return
+
+
+def plot_cio_set_response_size_pattern(cio_set, set_label: str, file_name :str) -> None:
+
+    fig, ax = plt.subplots()
+
+    for group in recalculate_offset_of_set(cio_set, file_name):
+        #TODO do plotting!
+        plot_response_size_range(group)
+        # kgroup = group.pipe(Filter.read_kinds)
+
+        min_response_size = group['response_size'].min()
+        max_response_size = group['response_size'].max()
+        mean_response_size = group['response_size'].mean()
+        print('DEBUG mean_response_size {}'.format(int(mean_response_size)))
+        print('DEBUG min_response_size {}'.format(int(min_response_size)))
+        print('DEBUG max_response_size {}'.format(int(max_response_size)))
+
+        min_offset = group['offset'].min()
+        max_offset = group['offset'].max()
+
+        plt.ylabel('Response size')
+        plt.xlabel('File range')
+
+        # xlim
+        xmin = min_offset - mean_response_size if (min_offset - mean_response_size) > 0 else 0
+        xmax = max_offset + mean_response_size
+        plt.xlim(xmin, xmax)
+        print('xmin: {} xmax: {}'.format(xmin, xmax))
+        # ylim
+        ymin = min_response_size - mean_response_size if (min_response_size - mean_response_size) > 0 else 0
+        ymax = max_response_size + mean_response_size
+
+        plt.ylim(ymin, ymax)
+        print('ymin: {} ymax: {}'.format(ymin, ymax))
+
+        fig.canvas.draw()
+
+        # convert xticklabel text to kilobyte
+        # xlabels = [byte_to_kilobyte_label(item.get_text()) for item in ax.get_xticklabels()]
+        # ax.set_xticklabels(xlabels)
+        for tick in ax.get_xticklabels():
+            tick.set_rotation(45)
+
+        # convert ytickslabel text to kilobyte
+        # ylabels = [byte_to_kilobyte_label(item.get_text()) for item in ax.get_yticklabels()]
+        # ax.set_yticklabels(ylabels)
+
+        plt.savefig('./{}-response_size_access_pattern.png'.format(set_label))
