@@ -7,17 +7,21 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .utils import gen_set_labels
+from .utils import gen_set_labels, gen_set_labels_from_idx
 
 ''' DOMINANT OPERATION KIND '''
 
-def plot_dominant_kinds(cio_sets, out_name: str) -> None:
+def plot_dominant_kinds(cio_sets, out_name: str, set_indices=[]) -> None:
     ''' Generate a bar plot for the most dominant operation kind of the CIO-Sets. '''
 
     N = len(cio_sets)
     ind = np.arange(N)
     width = 0.15
-    labels = gen_set_labels(cio_sets)
+    labels = []
+    if len(set_indices) != 0 and set_indices is not None:
+        labels = gen_set_labels_from_idx(set_indices)
+    else:
+        labels = gen_set_labels(cio_sets)
     filename = '{}-dominant-kind.png'.format(out_name)
     fig, ax = plt.subplots()
 
@@ -62,14 +66,21 @@ def plot_dominant_kinds(cio_sets, out_name: str) -> None:
 ''' SET DURATION '''
 
 # TODO need table output
-def plot_set_durations(cio_sets, set_durations, out_name: str) -> None:
+def plot_set_durations(cio_sets, set_durations, out_name: str, set_indices=[]) -> None:
     ''' Generate a bar plot comparing the duration of the given sets. '''
 
-    labels = gen_set_labels(cio_sets)
+
+    labels = []
+    if len(set_indices) != 0 and set_indices is not None:
+        labels = gen_set_labels_from_idx(set_indices)
+    else:
+        labels = gen_set_labels(cio_sets)
+    print('DEBUG labels {}'.format(labels))
     tf = pd.DataFrame({'duration': set_durations})
     tf.set_index([labels])
     fig, ax = plt.subplots()
     ind = np.arange(len(set_durations))
+    print('DEBUG len set durations {}'.format(len(set_durations)))
     filename = '{}-set-duration.png'.format(out_name)
 
     def autolabel(rects) -> None:
@@ -96,11 +107,17 @@ def plot_set_durations(cio_sets, set_durations, out_name: str) -> None:
 ''' NUMBER OF I/O EVENTS '''
 
 # TODO need table output
-def plot_num_io_events(cio_sets, out_name: str) -> None:
+def plot_num_io_events(cio_sets, out_name: str, set_indices=[]) -> None:
     ''' Generate a bar plot comparing the number of I/O event in the given sets. '''
 
+    labels = []
+    if len(set_indices) != 0 and set_indices is not None:
+        labels = gen_set_labels_from_idx(set_indices)
+    else:
+        labels = gen_set_labels(cio_sets)
+    print('DEBUG labels {}'.format(labels))
     number_of_events = [len(cio_set) for cio_set in cio_sets]
-    labels = gen_set_labels(cio_sets)
+    print('DEBUG number of events {}'.format(number_of_events))
     filename = '{}-number-of-io-events.png'.format(out_name)
     ind = np.arange(len(number_of_events))
     fig, ax = plt.subplots()
