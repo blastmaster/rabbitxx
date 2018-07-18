@@ -41,7 +41,7 @@ class Experiment:
 
     def experiment_length(self) -> float:
         ''' Return the length of the application run in seconds. '''
-        return self.experiment_stats.clock_properties['Ticks per Seconds'] / self.experiment_stats.clock_properties['Length']
+        return self.experiment_stats.clock_properties['Length'] / self.experiment_stats.clock_properties['Ticks per Seconds']
 
 
 def find_experiment_files(base_path):
