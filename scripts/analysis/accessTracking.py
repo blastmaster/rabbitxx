@@ -90,13 +90,14 @@ def recalculate_offset_of_set(setdf, filename: str, pids=None):
         file_group['offset'] = file_group.apply(track_file_offsets, axis=1, tracker=OffsetTracker())
         yield file_group
 
+''' ==================== Plotting ==================== '''
 
 # TODO do it with `pid` as y-axis
 def plot_rws_range(group) -> None:
 
     #FIXME to decide which kind should be printed pass this list of tuples as argument
     # for op_kind, color in [(' read', 'b'), (' write', 'r'), (' seek', 'y')]:
-    for op_kind, color in [(' read', 'b'), (' write', 'r')]:
+    for op_kind, color in [(' read', 'b'), (' write', 'r'), (' seek', 'k')]:
         krows = group[group['kind'] == op_kind]
         if krows.empty:
             print('DEBUG {} kind is empty'.format(op_kind))

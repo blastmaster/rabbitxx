@@ -1,12 +1,14 @@
 import matplotlib.pyplot as plt
 
+''' ====================General Helpers ==================== '''
+
 ''' Data '''
 
 def calculate_bandwidth(row):
 
     raise NotImplementedError
 
-''' Plotting '''
+''' ==================== Plotting Helpers ==================== '''
 
 def timelines(y, xstart, xstop, color='b') -> None:
     ''' Plot a horizontal line from xstart to xstop at yaxis postion y. '''

@@ -74,9 +74,11 @@ def read_summary(filename):
         summary = json.load(f)
         return summary
 
+
 def read_set_csv(cio_set_files):
     ''' Read list of set files, return list of pandas.DataFrame. '''
     return [pd.read_csv(file) for file in cio_set_files]
+
 
 def read_pio_set_csv(pio_set_files):
 

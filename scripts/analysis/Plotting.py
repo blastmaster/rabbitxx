@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from .utils import gen_set_labels, gen_set_labels_from_idx
 
-''' DOMINANT OPERATION KIND '''
+''' ==================== DOMINANT OPERATION KIND ==================== '''
 
 def plot_dominant_kinds(cio_sets, out_name: str, set_indices=[]) -> None:
     ''' Generate a bar plot for the most dominant operation kind of the CIO-Sets. '''
@@ -63,7 +63,7 @@ def plot_dominant_kinds(cio_sets, out_name: str, set_indices=[]) -> None:
     plt.savefig(filename, dpi=300, format='png', bbox_inches='tight')
 
 
-''' SET DURATION '''
+''' ==================== SET DURATION ==================== '''
 
 # TODO need table output
 def plot_set_durations(cio_sets, set_durations, out_name: str, set_indices=[]) -> None:
@@ -104,7 +104,7 @@ def plot_set_durations(cio_sets, set_durations, out_name: str, set_indices=[]) -
     plt.savefig(filename, dpi=300, format='png', bbox_inches='tight')
 
 
-''' NUMBER OF I/O EVENTS '''
+''' ==================== NUMBER OF I/O EVENTS ==================== '''
 
 # TODO need table output
 def plot_num_io_events(cio_sets, out_name: str, set_indices=[]) -> None:
@@ -144,7 +144,7 @@ def plot_num_io_events(cio_sets, out_name: str, set_indices=[]) -> None:
 
 
 
-''' REQUEST SIZES '''
+''' ==================== REQUEST SIZES ==================== '''
 
 def plot_read_request_sizes() -> None:
 
@@ -156,7 +156,7 @@ def plot_write_request_sizes() -> None:
     raise NotImplementedError
 
 
-''' POSIX '''
+''' ==================== POSIX ==================== '''
 
 def plot_io_paradigm(cio_sets, out_name: str) -> None:
     ''' Generate a bar plot for the number of operation per I/O - Paradgim of each set. '''
@@ -189,7 +189,7 @@ def plot_io_paradigm(cio_sets, out_name: str) -> None:
     plt.savefig(filename, dpi=300, format='png', bbox_inches='tight')
 
 
-''' FILE ACCESSES '''
+''' ==================== FILE ACCESSES ==================== '''
 
 def plot_accessed_files(cio_sets, out_name: str) -> None:
     ''' Generate a bar plot for each file ?!? '''
