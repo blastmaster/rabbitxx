@@ -66,6 +66,9 @@ struct option_csv_printer : boost::static_visitor<std::string>
     }
 };
 
+// get microseconds as floating point values
+using FpMicroseconds = std::chrono::duration<double, std::micro>;
+
 std::ostream& io_event_2_csv_stream(const IoGraph& graph, const VertexDescriptor& evt, std::ostream& out)
 {
     const auto& io_evt = get_io_property(graph, evt);
@@ -78,8 +81,7 @@ std::ostream& io_event_2_csv_stream(const IoGraph& graph, const VertexDescriptor
         << io_evt.offset << ", "
         //<< boost::apply_visitor(option_csv_printer(), evt.option) << ", "
         << io_evt.kind << ", "
-        //<< graph[evt].duration.duration << ", "
-        << std::chrono::duration_cast<otf2::chrono::microseconds>(graph[evt].duration.duration).count() << ", "
+        << std::chrono::duration_cast<FpMicroseconds>(graph[evt].duration.duration).count() << ", "
         << io_evt.timestamp;
 
     return out;
