@@ -26,9 +26,32 @@ list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 
 find_package(Boost 1.62 REQUIRED COMPONENTS program_options system filesystem mpi graph)
 find_package(MPI REQUIRED)
-find_package(RapidJSON 1.0 REQUIRED MODULE)
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
+
+include(ExternalProject)
+ExternalProject_Add(rapidjson-project
+    PREFIX "${PROJECT_SOURCE_DIR}/external/rapidjson-test"
+    GIT_REPOSITORY "https://github.com/Tencent/rapidjson.git"
+    GIT_PROGRESS 1
+    GIT_TAG f54b0e47a08782a6131cc3d60f94d038fa6e0a51
+    CMAKE_ARGS
+        -DRAPIDJSON_BUILD_EXAMPLES=OFF
+        -DRAPIDJSON_BUILD_TESTS=OFF
+        -DRAPIDJSON_BUILD_DOC=OFF
+    INSTALL_COMMAND ""
+)
+
+set(RapidJSON_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/external/rapidjson-test/src/rapidjson-project/include/ CACHE PATH "rapidjson include dir" FORCE)
+message("check for rapidjson target")
+if(NOT TARGET RapidJSON::RapidJSON)
+    message("rapidjson target not found")
+    add_library(RapidJSON::RapidJSON INTERFACE IMPORTED)
+    set_target_properties(RapidJSON::RapidJSON PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${RapidJSON_INCLUDE_DIR}"
+    )
+    message("RapidJSON_INCLUDE_DIR: ${RapidJSON_INCLUDE_DIR}")
+endif()
 
 add_subdirectory(external/nitro)
 add_subdirectory(external/otf2xx)
