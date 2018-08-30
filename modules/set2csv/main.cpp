@@ -20,7 +20,7 @@ namespace po = boost::program_options;
 
 void header(std::ostream& os=std::cout)
 {
-    std::array<const char*, 10> columns {
+    std::array<const char*, 11> columns {
         "pid,",
         "filename,",
         "region_name,",
@@ -28,7 +28,7 @@ void header(std::ostream& os=std::cout)
         "request_size,",
         "response_size,",
         "offset,",
-        //"option",
+        "option,",
         "kind,",
         "duration,",
         "timestamp"};
@@ -66,6 +66,19 @@ struct option_csv_printer : boost::static_visitor<std::string>
     }
 };
 
+// TODO do that also for other options
+std::string get_option(const io_event_property& io_evt)
+{
+    switch (io_evt.kind)
+    {
+        case io_event_kind::seek:
+            return to_string(
+                    boost::get<otf2::common::io_seek_option_type>(io_evt.option));
+        default:
+            return "None";
+    }
+}
+
 // get microseconds as floating point values
 using FpMicroseconds = std::chrono::duration<double, std::micro>;
 
@@ -80,6 +93,7 @@ std::ostream& io_event_2_csv_stream(const IoGraph& graph, const VertexDescriptor
         << io_evt.response_size << ", "
         << io_evt.offset << ", "
         //<< boost::apply_visitor(option_csv_printer(), evt.option) << ", "
+        << get_option(io_evt) << ", "
         << io_evt.kind << ", "
         << std::chrono::duration_cast<FpMicroseconds>(graph[evt].duration.duration).count() << ", "
         << io_evt.timestamp;
