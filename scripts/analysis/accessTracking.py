@@ -32,7 +32,16 @@ def track_file_offsets(row, **kwds):
     elif row['kind'] == ' seek':
         # print('seek')
         # TODO consider seek options {seek_set, seek_cur, seek_end}
-        tracker.offset += row['response_size']
+        if row['option'] == ' start': # seek_set
+            tracker.offset = row['response_size']
+        if row['option'] == 'current': # seek_cur
+            tracker.offset += row['response_size']
+        if row['option'] == 'end': # seek_end
+            raise Exception("Unhandled seek option {} cannot track offset!".format(row['option']))
+        if row['option'] == 'data': # seek_data
+            raise Exception("Unhandled seek option {} cannot track offset!".format(row['option']))
+        if row['option'] == 'hole': # seek_hole
+            raise Exception("Unhandled seek option {} cannot track offset!".format(row['option']))
 
     elif row['kind'] == ' write' or row['kind'] == ' read':
         # print('read/write')
