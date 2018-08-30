@@ -2,10 +2,30 @@
     Filter functions can be chained together via `pipe`.
 '''
 
+# a pre-defined filter ready to use
+def apply_file_filter(exp):
+    ''' Apply a set of filter methods on the sets and override the experiment results by that.
+        Returns a generator which produces a tuple of (set_idx, cio_set).
+    '''
+    #FIXME might be better if we can pass a list of filters to a function and this function applies them all.
+    exp.cio_sets = [
+        cio_set.pipe(virtual_fs_filter)
+            .pipe(cgroup_fs_filter)
+            .pipe(sw_filter)
+            .pipe(stdout_filter)
+            .pipe(dev_fs_filter)
+            .pipe(etc_filter)
+            .pipe(filename_filter, fname=' /') for cio_set in exp.cio_sets]
+    for idx, cio_set in enumerate(exp.cio_sets):
+        if cio_set.empty:
+            print("Filter empty set nr: {}".format(idx + 1))
+        else:
+            yield idx, cio_set
+
+
 ''' PREFIX FILTERS
     Prefix filters checks if a path/filename starts with a known substring.
 '''
-
 
 def stdout_filter(df):
     ''' Filter access to stdout '''
@@ -41,3 +61,21 @@ def filename_filter(df, fname=''):
         raise ValueError('No file name given to filter for!')
     return df[~(df['filename'] == fname)]
 
+
+''' KIND FILTERS '''
+
+def read_kinds(df):
+    ''' Filter any kinds of operation except `read` operations. '''
+    return df[(df['kind'] == ' read')]
+
+def write_kinds(df):
+    ''' Filter any kinds of operation except `write` operations. '''
+    return df[(df['kind'] == ' write')]
+
+def seek_kinds(df):
+    ''' Filter any kinds of operation except `seek` operations. '''
+    return df[(df['kind'] == ' seek')]
+
+def flush_kinds(df):
+    ''' Filter any kinds of operation except `flush` operations. '''
+    return df[(df['kind'] == ' flush')]
