@@ -43,6 +43,10 @@ class Experiment:
         ''' Return the length of the application run in seconds. '''
         return self.experiment_stats.clock_properties['Length'] / self.experiment_stats.clock_properties['Ticks per Seconds']
 
+    def ticks_per_seconds(self):
+        ''' Return the ticks per second fo the clock properties. '''
+        return self.experiment_stats.clock_properties['Ticks per Seconds']
+
 
 def find_experiment_files(base_path):
 
@@ -81,7 +85,7 @@ def read_set_csv(cio_set_files):
 
 
 def read_pio_set_csv(pio_set_files):
-
+    ''' Read list of set files for each process. '''
     return {k: read_set_csv(v) for k, v in pio_set_files.items()}
 
 

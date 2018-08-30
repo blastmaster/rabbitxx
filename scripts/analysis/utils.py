@@ -2,11 +2,15 @@ import matplotlib.pyplot as plt
 
 ''' ====================General Helpers ==================== '''
 
+def microseconds_to_seconds(microseconds) -> float:
+    ''' Helper converting a microsecond timestamp into seconds. '''
+    return microseconds / 1000000.
+
 ''' Data '''
 
 def calculate_bandwidth(row):
-
-    raise NotImplementedError
+    ''' Return the calculated bandwidth of the given row in bytes/microseconds. '''
+    return row['response_size'] / row['duration']
 
 ''' ==================== Plotting Helpers ==================== '''
 

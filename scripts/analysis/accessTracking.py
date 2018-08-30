@@ -31,6 +31,7 @@ def track_file_offsets(row, **kwds):
 
     elif row['kind'] == ' seek':
         # print('seek')
+        # TODO consider seek options {seek_set, seek_cur, seek_end}
         tracker.offset += row['response_size']
 
     elif row['kind'] == ' write' or row['kind'] == ' read':
@@ -75,7 +76,9 @@ def get_pids(setdf):
 
 
 def recalculate_offset_of_set(setdf, filename: str, pids=None):
-    ''' Calculate the offsets for all pids in set of given filename. '''
+    ''' Calculate the offsets for all pids in set of given filename.
+        Returns an generator over all processes
+    '''
 
     pids = get_pids(setdf) if pids is None else pids
     print('DEBUG pids: {}'.format(pids))
@@ -89,6 +92,7 @@ def recalculate_offset_of_set(setdf, filename: str, pids=None):
         file_group = setdf.groupby(['pid', 'filename']).get_group((pid, filename))
         file_group['offset'] = file_group.apply(track_file_offsets, axis=1, tracker=OffsetTracker())
         yield file_group
+
 
 ''' ==================== Plotting ==================== '''
 
@@ -120,7 +124,7 @@ def plot_response_size_range(group) -> None:
             plot_access_range(row['response_size'], row, color=color)
 
 
-def plot_cio_set_access_pattern(cio_set, set_label: str, file_name: str) -> None:
+def plot_cio_set_access_pattern(cio_set, set_label: str, file_name: str, processes=None) -> None:
     ''' Plot access pattern for a given file.
         X-Axis: The accessed range in the file.
         Y-Axis: The process accessing the file.
@@ -132,7 +136,7 @@ def plot_cio_set_access_pattern(cio_set, set_label: str, file_name: str) -> None
         # print('DBEUG set: {}'.format(cio_set))
         fig, ax = plt.subplots()
         # TODO pass filename as argument
-        for group in recalculate_offset_of_set(cio_set, file_name):
+        for group in recalculate_offset_of_set(cio_set, file_name, processes):
             plot_rws_range(group)
 
         min_response_size = group['response_size'].min()
@@ -173,11 +177,11 @@ def plot_cio_set_access_pattern(cio_set, set_label: str, file_name: str) -> None
         return
 
 
-def plot_cio_set_response_size_pattern(cio_set, set_label: str, file_name :str) -> None:
+def plot_cio_set_response_size_pattern(cio_set, set_label: str, file_name :str, pids=None) -> None:
 
     fig, ax = plt.subplots()
 
-    for group in recalculate_offset_of_set(cio_set, file_name):
+    for group in recalculate_offset_of_set(cio_set, file_name, pids):
         #TODO do plotting!
         plot_response_size_range(group)
         # kgroup = group.pipe(Filter.read_kinds)
