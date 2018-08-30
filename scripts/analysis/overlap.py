@@ -68,6 +68,10 @@ class ProcFileAccess:
         self.read_intervals = read_ivtree if read_ivtree else None
         self.write_intervals = write_ivtree if write_ivtree else None
 
+    def __str__(self) -> str:
+        return "set idx: {} filename {} pid {} read_intervals {} write_intervals {}".format(
+                self.set_idx, self.filename, self.process, self.read_intervals, self.write_intervals)
+
     def has_reads(self) -> bool:
         return self.read_intervals is not None
 
@@ -91,7 +95,7 @@ class ProcFileAccess:
                 print("Found overlapping write {} : {}".format(oiv, wiv))
 
 
-def get_access_mappings(exp) -> Dict[int, List[ProcFileAccess]]:
+def get_access_mappings(exp) -> Dict[int, Dict[str, List[ProcFileAccess]]]:
 
     set_files = dict()
     for idx, file_list in set_accesses(exp).items():
