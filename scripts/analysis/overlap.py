@@ -43,7 +43,7 @@ def make_intervaltree(df: pd.DataFrame) -> IntervalTree:
     for idx, entry in df.iterrows():
         #if entry.response_size == entry.offset: # first operation
         start = entry['offset'] - entry['response_size'] # TODO
-        intervals.append(Interval(start, entry['offset'], entry['kind']))
+        intervals.append(Interval(start, entry['offset'], (entry['kind'], idx)))
     return IntervalTree(intervals)
 
 
@@ -54,6 +54,7 @@ def make_write_intervaltree(df: pd.DataFrame) -> IntervalTree:
     return make_intervaltree(df[df['kind'] == ' write'])
 
 class ProcFileAccess:
+    ''' Class to represent the file accesses of a process to a file in a CIO-Set. '''
     set_idx: int
     filename: str
     process: int
