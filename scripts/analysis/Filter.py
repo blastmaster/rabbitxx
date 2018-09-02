@@ -1,3 +1,5 @@
+import pandas as pd
+
 '''
     Filter functions can be chained together via `pipe`.
 '''
@@ -21,6 +23,11 @@ def apply_file_filter(exp):
             print("Filter empty set nr: {}".format(idx + 1))
         else:
             yield idx, cio_set
+
+
+def file_filter(cio_set: pd.DataFrame) -> pd.DataFrame:
+    # TODO formatting
+    return cio_set.pipe(virtual_fs_filter).pipe(cgroup_fs_filter).pipe(sw_filter).pipe(stdout_filter).pipe(dev_fs_filter).pipe(etc_filter).pipe(filename_filter, fname=' /')
 
 
 ''' PREFIX FILTERS
