@@ -2,6 +2,8 @@ import os
 import json
 import pandas as pd
 
+from typing import List, Dict
+
 class ExperimentStats:
     def __init__(self, graph_stats, cio_stats, pio_stats, **kw):
         self.duration = kw['Experiment_Duration']
@@ -46,6 +48,24 @@ class Experiment:
     def ticks_per_seconds(self):
         ''' Return the ticks per second fo the clock properties. '''
         return self.experiment_stats.clock_properties['Ticks per Seconds']
+
+    def files(self) -> Dict[int, List[str]]:
+        ''' Return the list of files accessed in any CIO-Sets. '''
+        files = dict()
+        for idx, cs in enumerate(self.cio_sets):
+            uf = cs['filename'].unique().flatten().tolist()
+            files.update({idx: uf})
+        return files
+
+    def files_of_set(self, setidx: int) -> List[str]:
+        ''' Return the list of files accessed by CIO-Set given by index. '''
+        return self.cio_sets[setidx]['filename'].unique().flatten().tolist()
+
+    def filter(self, filter_func) -> None:
+        ''' Apply `filter_func` to all CIO-Sets.
+            Note, this may change the content of CIO-Sets.
+        '''
+        self.cio_sets = [filter_func(cs) for cs in self.cio_sets]
 
 
 def find_experiment_files(base_path):
