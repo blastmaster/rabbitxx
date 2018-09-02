@@ -1,4 +1,14 @@
+import pandas as pd
 import matplotlib.pyplot as plt
+
+from typing import List, Dict
+
+''' CIO-Set Helpers '''
+
+def get_files_in_set(cio_set: pd.DataFrame) -> List[str]:
+    ''' Return unique filenames accessed in `cio_set`. '''
+    return cio_set['filename'].unique().flatten().tolist()
+
 
 ''' ====================General Helpers ==================== '''
 
