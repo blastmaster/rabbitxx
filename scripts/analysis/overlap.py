@@ -5,13 +5,14 @@ from intervaltree import Interval, IntervalTree
 
 from analysis import Filter
 from analysis.accessTracking import recalculate_offset_of_set
+from analysis import utils
 
 from typing import List, Dict, Tuple, Iterable
 
 
 def get_files_per_set(exp):
-    ''' Get an Experiment and filter files. Returns a dict matching a set index
-        to a list of accessed file names within this set.
+    ''' Get an Experiment and filter files.
+        Returns a dict mapping a set index to a list of accessed file names.
     '''
     files_per_set = dict()
     for idx, cs in Filter.apply_file_filter(exp): #TODO need user provided filter list
@@ -23,7 +24,7 @@ def get_files_per_set(exp):
 def set_accesses(exp) -> Dict[int, List[Tuple[str, Iterable]]]:
 
     d = dict()
-    files_per_set = get_files_per_set(exp)
+    files_per_set = get_files_per_set(exp) # FIXME
     for idx, files in files_per_set.items():
         cur_set = exp.cio_sets[idx]
         # for the current set calculate offset of every touched file
@@ -42,7 +43,7 @@ def make_intervaltree(df: pd.DataFrame) -> IntervalTree:
         raise Exception("Error! Try to make intervaltree from empty dataframe.")
     for idx, entry in df.iterrows():
         #if entry.response_size == entry.offset: # first operation
-        start = entry['offset'] - entry['response_size'] # TODO
+        start = entry['offset'] - entry['response_size']
         intervals.append(Interval(start, entry['offset'], (entry['kind'], idx)))
     return IntervalTree(intervals)
 
@@ -96,17 +97,40 @@ class ProcFileAccess:
                 print("Found overlapping write {} : {}".format(oiv, wiv))
 
 
+class SetAccessMap:
+    ''' Access map of a set. Provides a mapping from a filename to a list of
+        ProcFileAccess objects representing the Access of each Process. '''
+    setidx: int
+    file_accesses: Dict[str, List[ProcFileAccess]]
+
+    def __init__(self, setidx: int, f_acc: Dict[str, List[ProcFileAccess]]) -> None:
+        self.setidx = setidx
+        self.file_accesses = f_acc
+
+    def __getitem__(self, key: str) -> List[ProcFileAccess]:
+        if key not in self.file_accesses.keys():
+            raise KeyError("{} filename not found!".format(key))
+        return self.file_accesses[key]
+
+    def __str__(self) -> str:
+        return "setidx {} file_accesses {}".format(self.setidx, self.file_accesses)
+
+    @property
+    def set_index(self) -> int:
+        return self.setidx
+
+
 def get_access_mappings(exp) -> Dict[int, Dict[str, List[ProcFileAccess]]]:
 
-    set_files = dict()
+    set_files = dict() # mapping setidx -> file_access dict
     for idx, file_list in set_accesses(exp).items():
         # for each set!
-        file_accesses = dict()
+        file_accesses = dict() # mapping filename -> List[ProcFileAccess]
         print("processing set {}".format(idx))
         for file, file_gen in file_list: # file_list yields (filename, generator)
             # for each file!
             acc_list = []
-            for i, acc in enumerate(file_gen):
+            for acc in file_gen:
                 # for each process!
                 assert len(acc['filename'].unique()) == 1
                 assert len(acc['pid'].unique()) == 1
@@ -128,6 +152,33 @@ def get_access_mappings(exp) -> Dict[int, Dict[str, List[ProcFileAccess]]]:
         set_files.update({idx: file_accesses})
 
     return set_files
+
+
+# same as above but for a given set instead of the whole experiment
+# note that the set should be filtered already.
+def get_set_access_mapping(cio_set: pd.DataFrame, setidx: int) -> SetAccessMap:
+
+    file_accesses = dict()
+    for file in utils.get_files_in_set(cio_set):
+        acc_list = []
+        for acc in recalculate_offset_of_set(cio_set, file):
+            assert len(acc['filename'].unique()) == 1
+            assert len(acc['pid'].unique()) == 1
+            filename = acc['filename'].unique()[0]
+            assert file == filename
+
+            pid = acc['pid'].unique()[0]
+            kinds = acc['kind'].unique()
+            w_it, r_it = None, None
+            if ' write' in kinds:
+                w_it = make_write_intervaltree(acc)
+            if ' read' in kinds:
+                r_it = make_read_intervaltree(acc)
+            f_acc = ProcFileAccess(setidx, file, pid, r_it, w_it)
+            acc_list.append(f_acc)
+        file_accesses.update({file: acc_list})
+
+    return SetAccessMap(setidx, file_accesses)
 
 
 class AccInterval:
