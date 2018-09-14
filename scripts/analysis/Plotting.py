@@ -11,6 +11,57 @@ from .utils import gen_set_labels, gen_set_labels_from_idx
 
 ''' ==================== DOMINANT OPERATION KIND ==================== '''
 
+def plot_dominant_kind_counts(cio_sets, out_name: str, set_indices=[]) -> None:
+    ''' Generate a bar plot for the most dominant operation kind of the CIO-Sets. '''
+
+    N = len(cio_sets)
+    ind = np.arange(N)
+    width = 0.15
+    labels = []
+    if len(set_indices) != 0 and set_indices is not None:
+        labels = gen_set_labels_from_idx(set_indices)
+    else:
+        labels = gen_set_labels(cio_sets)
+    filename = '{}-dominant-kind.png'.format(out_name)
+    fig, ax = plt.subplots()
+
+    kind_dict = {
+            'Metadata': [],
+            'Read': [],
+            'Write': [],
+            'Flush': [],
+            'Seek': []
+    }
+
+    for sdf in cio_sets:
+        meta_df = sdf[(sdf['kind'] == ' create') | (sdf['kind'] == ' close_or_delete')]
+        kind_dict['Metadata'].append(meta_df.shape[0])
+        read_df = sdf[sdf['kind'] == ' read']
+        kind_dict['Read'].append(read_df.shape[0])
+        write_df = sdf[sdf['kind'] == ' write']
+        kind_dict['Write'].append(write_df.shape[0])
+        flush_df = sdf[sdf['kind'] == ' flush']
+        kind_dict['Flush'].append(flush_df.shape[0])
+        seek_df = sdf[sdf['kind'] == ' seek']
+        kind_dict['Seek'].append(seek_df.shape[0])
+
+    m_rects = ax.bar(ind, kind_dict['Metadata'], width)
+    r_rects = ax.bar(ind+width, kind_dict['Read'], width)
+    w_rects = ax.bar(ind+(width*2), kind_dict['Write'], width)
+    f_rects = ax.bar(ind+(width*3), kind_dict['Flush'], width)
+    s_rects = ax.bar(ind+(width*4), kind_dict['Seek'], width)
+    ax.legend(
+            (m_rects[0], r_rects[0], w_rects[0], f_rects[0], s_rects[0]),
+            ('Metadata', 'Read', 'Write', 'Flush', 'Seek'),
+            loc='upper center', bbox_to_anchor=(1.1, 1))
+
+    ax.set_yscale('log')
+    ax.set_xticklabels(labels)
+    ax.set_xticks(ind + (width*4) / 2)
+    plt.xlabel('CIO-Sets')
+    plt.ylabel(r'Number of events per kind')
+    plt.savefig(filename, dpi=300, format='png', bbox_inches='tight')
+
 def plot_dominant_kinds(cio_sets, out_name: str, set_indices=[]) -> None:
     ''' Generate a bar plot for the most dominant operation kind of the CIO-Sets. '''
 
