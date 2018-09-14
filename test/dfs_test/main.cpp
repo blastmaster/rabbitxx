@@ -106,9 +106,9 @@ int main(int argc, char** argv)
     auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1], world);
     //dfs_print_visitor vis;
     dfs_test_visitor vis;
-    std::vector<boost::default_color_type> color_map(g->num_vertices());
-    boost::depth_first_visit(*g->get(), vertex(0, *g->get()), vis, 
-            make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *g->get())));
+    std::vector<boost::default_color_type> color_map(g.num_vertices());
+    boost::depth_first_visit(*g.get(), vertex(0, *g.get()), vis, 
+            make_iterator_property_map(color_map.begin(), get(boost::vertex_index, *g.get())));
 
     return 0;
 }

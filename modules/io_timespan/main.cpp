@@ -1,8 +1,7 @@
 #include <rabbitxx/graph.hpp>
 #include <rabbitxx/utils.hpp>
-#include <rabbitxx/log.hpp>
 
-using rabbitxx::logging;
+using namespace rabbitxx;
 
 /**
  * TODO:
@@ -14,19 +13,20 @@ using rabbitxx::logging;
  *
  */
 
-template<typename DurationT=otf2::chrono::nanoseconds>
-void print_total_duration(const rabbitxx::app_info& info)
+template<typename DurationT=otf2::chrono::microseconds>
+void print_total_duration(const app_info& info)
 {
 
     std::cout << "start time "
-        << otf2::chrono::duration_cast<DurationT>(info.first_event_time.time_since_epoch()) << "\n";
+        << std::chrono::duration_cast<DurationT>(info.first_event_time.time_since_epoch()) << "\n";
     std::cout << "end time "
-        << otf2::chrono::duration_cast<DurationT>(info.last_event_time.time_since_epoch()) << "\n";
+        << std::chrono::duration_cast<DurationT>(info.last_event_time.time_since_epoch()) << "\n";
 }
 
-void dump_table(const rabbitxx::otf2_trace_event& evt)
+//TODO: dump as csv!
+void dump_table(const otf2_trace_event& evt)
 {
-    if (evt.type == rabbitxx::vertex_kind::io_event)
+    if (evt.type == vertex_kind::io_event)
     {
         //std::cout << evt.id() << ", " << evt.duration.enter.time_since_epoch().count() << ", " << evt.duration.leave.time_since_epoch().count() << "\n";
         //std::cout << evt.id() << " " << evt.duration.enter << " " << evt.duration.leave << "\n";
@@ -35,8 +35,8 @@ void dump_table(const rabbitxx::otf2_trace_event& evt)
         }
         auto kind = boost::get<rabbitxx::io_event_property>(evt.property).kind; 
         std::cout << evt.id() << " " 
-            << rabbitxx::duration_to_string<otf2::chrono::nanoseconds>(evt.duration.enter.time_since_epoch()) << " "
-            << rabbitxx::duration_to_string<otf2::chrono::nanoseconds>(evt.duration.leave.time_since_epoch()) << " "
+            << duration_to_string<otf2::chrono::microseconds>(evt.duration.enter.time_since_epoch()) << " "
+            << duration_to_string<otf2::chrono::microseconds>(evt.duration.leave.time_since_epoch()) << " "
             << evt.name() << " " << kind << "\n";
     }
 }
@@ -44,16 +44,16 @@ void dump_table(const rabbitxx::otf2_trace_event& evt)
 int main(int argc, char** argv)
 {
     if (argc < 2) {
-        logging::fatal() << "usage: ./" << argv[0] << " <input-trace>";
+        std::cerr << "usage: ./" << argv[0] << " <input-trace>";
         return 1;
     }
 
-    auto g = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(argv[1]);
-    auto vip = g->vertices();
-    print_total_duration(g->graph_properties());
+    auto g = make_graph<graph::OTF2_Io_Graph_Builder>(argv[1]);
+    auto vip = g.vertices();
+    print_total_duration(g.graph_properties());
     for (auto it = vip.first; it != vip.second; ++it)
     {
-        auto trc_evt = g->operator[](*it);
+        auto trc_evt = g[*it];
         dump_table(trc_evt);
     }
 

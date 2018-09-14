@@ -41,7 +41,7 @@ namespace rabbitxx
                     {
                         std::stringstream msg;
 
-                        msg << "[" << r.severity() << "]: " << r.message();
+                        msg << "[" << r.severity() << "]: " << r.message() << "\n";
 
                         //msg << "[" << r.timestamp().count() << "][Rank: " << r.mpi_rank()
                             //<< "][" << r.severity() << "]: " << r.message();

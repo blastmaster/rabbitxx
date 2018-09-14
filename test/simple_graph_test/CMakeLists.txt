@@ -4,10 +4,7 @@ set(SOURCE
 
 add_executable(simple_graph_test ${SOURCE})
 target_link_libraries(simple_graph_test
-    ${RABBITXX_LIBRARIES}
-    ${OTF2_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${MPI_CXX_LIBRARIES}
-    otf2xx
+    PRIVATE
+    rabbitxx::core
 )
 add_test(NAME simple_graph_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/simple_graph_test)

@@ -9,7 +9,7 @@
 #include <otf2xx/otf2.hpp>
 
 #include <rabbitxx/log.hpp>
-#include <rabbitxx/utils/enum_to_string.hpp>
+#include <rabbitxx/utils.hpp>
 
 #include <limits>
 
@@ -212,6 +212,7 @@ struct io_event_property
     std::uint64_t proc_id = std::numeric_limits<std::uint64_t>::max();
     std::string filename;
     std::string region_name;
+    std::string paradigm;
     std::uint64_t request_size {0}; // bytes requested by an I/O operation
     std::uint64_t response_size {0}; // bytes actually touched by this I/O operation
     std::uint64_t offset {0};
@@ -221,13 +222,18 @@ struct io_event_property
 
     io_event_property() = default;
 
-    explicit io_event_property(std::uint64_t process_id, const std::string& fname,
-                        const std::string& reg_name, std::uint64_t req_size,
-                        std::uint64_t resp_size,
-                        std::uint64_t off, option_type mode,
-                        io_event_kind event_kind,
-                        const otf2::chrono::time_point ts) noexcept
-    : proc_id(process_id), filename(fname), region_name(reg_name), request_size(req_size),
+    explicit io_event_property(
+                        std::uint64_t process_id,           /* pid */
+                        const std::string& fname,           /* filename */
+                        const std::string& reg_name,        /* region_name */
+                        const std::string& paradigm,        /* paradigm */
+                        std::uint64_t req_size,             /* request_size */
+                        std::uint64_t resp_size,            /* response_size */
+                        std::uint64_t off,                  /* offset */
+                        option_type mode,                   /* operation mode */
+                        io_event_kind event_kind,           /* operation kind */
+                        const otf2::chrono::time_point ts) /* timestamp */ noexcept
+    : proc_id(process_id), filename(fname), region_name(reg_name), paradigm(paradigm), request_size(req_size),
         response_size(resp_size), offset(off), option(mode), kind(event_kind), timestamp(ts)
     {
     }
@@ -238,6 +244,7 @@ inline std::ostream& operator<<(std::ostream& os, const io_event_property& verte
     return os << "process id: " << vertex.proc_id << "\n"
                 << "filename: " << vertex.filename << "\n"
                 << "region: " << vertex.region_name << "\n"
+                << "paradigm: " << vertex.paradigm << "\n"
                 << "request_size:  " << vertex.request_size << "\n"
                 << "response size: " << vertex.response_size << "\n"
                 << "offset: " << vertex.offset << "\n"
@@ -313,7 +320,6 @@ public:
     {
     }
 
-    //since not every collective operation does have an `root`
     explicit collective(std::vector<std::uint64_t> members) noexcept
     : members_(std::move(members))
     {
@@ -348,6 +354,7 @@ struct sync_event_property
     sync_event_kind comm_kind = sync_event_kind::none;
     comm_type op_data;
     otf2::chrono::time_point timestamp;
+    size_t root_event = std::numeric_limits<size_t>::max();
 
     explicit sync_event_property(std::uint64_t process_id, const std::string& rname, const peer2peer& op_dat, const otf2::chrono::time_point ts) noexcept
     : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::p2p), op_data(op_dat), timestamp(ts)
@@ -358,7 +365,6 @@ struct sync_event_property
     : proc_id(process_id), region_name(rname), comm_kind(sync_event_kind::collective), op_data(op_dat), timestamp(ts)
     {
     }
-
 };
 
 struct comm_type_printer : boost::static_visitor<std::string>
@@ -568,7 +574,40 @@ struct app_info
     otf2::chrono::time_point first_event_time = otf2::chrono::genesis();
     otf2::chrono::time_point last_event_time = otf2::chrono::armageddon();
     otf2::definition::clock_properties clock_props;
+    std::map<std::string, std::string> file_to_fs;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const app_info& info)
+{
+    os << "total time: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.total_time) << "\n";
+    os << "total file io time: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.io_time) << "\n";
+    os << "total file io metadata time: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.io_metadata_time) << "\n";
+
+    os << "first event time: " << info.first_event_time << "\n";
+    os << "last event time: " << info.last_event_time << "\n";
+    os << "first event time duration: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.first_event_time.time_since_epoch()) << "\n";
+    os << "last event time duration: "
+        << std::chrono::duration_cast<otf2::chrono::microseconds>(info.last_event_time.time_since_epoch()) << "\n";
+
+    os << "ticks per second: "
+        << info.clock_props.ticks_per_second().count() << "\n";
+    os << "start time: "
+        << info.clock_props.start_time().count() << "\n";
+    os << "length: "
+        << info.clock_props.length().count() << "\n";
+
+    os << "File 2 Fs mapping\n";
+    for (const auto& kvp : info.file_to_fs)
+    {
+        os << kvp.first << " -> " << kvp.second << "\n";
+    }
+
+    return os;
+}
 
 template<typename G>
 class otf2_trace_event_writer

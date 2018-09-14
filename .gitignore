@@ -6,6 +6,9 @@ share/
 # Build dir
 build/
 
+# Python cache
+__pycache__/
+
 # Prerequisites
 *.d
 

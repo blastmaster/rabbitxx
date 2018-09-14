@@ -4,9 +4,6 @@ set(SOURCE
 
 add_executable(mapping_test ${SOURCE})
 target_link_libraries(mapping_test
-    ${RABBITXX_LIBRARIES}
-    ${OTF2_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${MPI_CXX_LIBRARIES}
-    otf2xx
+    PRIVATE
+    rabbitxx::core
 )

@@ -5,63 +5,85 @@ set(PROJECT_VERSION "0.0.1")
 
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
-include(CTest)
+#Initialize git submodules if not done already
+include(cmake/GitSubmoduleUpdate.cmake)
+git_submodule_update()
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake;${CMAKE_MODULE_PATH}")
+include(CTest)
 
 option(BUILD_TESTS "build tests" ON)
 option(BUILD_MODULES "build modules" ON)
 option(BUILD_DEBUG "enable debug mode" ON)
 
-set(RABBITXX_CXX_FLAGS "-Wall -pedantic -Wextra -std=c++14")
-set(RABBITXX_C_FLAGS "-Wall -pedantic -Wextra")
+add_compile_options(-Wall -pedantic -Wextra -std=c++14)
 
 if(${BUILD_DEBUG})
-    set(RABBITXX_CXX_FLAGS "${RABBITXX_CXX_FLAGS} -pg -ggdb -O0")
+    add_compile_options(-pg -ggdb -O0)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-    set(RABBITXX_C_FLAGS "${RABBITXX_C_FLAGS} -pg -ggdb -O0")
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 
 find_package(Boost 1.62 REQUIRED COMPONENTS program_options system filesystem mpi graph)
-
 find_package(MPI REQUIRED)
+
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
-file(GLOB SUBMODULE_FILES "external/nitro/*")
-list(LENGTH SUBMODULE_FILES COUNT_NITRO)
-file(GLOB SUBMODULE_FILES "external/otf2xx/*")
-list(LENGTH SUBMODULE_FILES COUNT_OTF2XX)
-file(GLOB SUBMODULE_FILES "external/catch/*")
-list(LENGTH SUBMODULE_FILES COUNT_CATCH)
-if(${COUNT_NITRO} EQUAL 0 OR ${COUNT_OTF2XX} EQUAL 0 OR ${COUNT_CATCH} EQUAL 0)
-    #TODO: using wrong branch of otf2xx
-    message(STATUS "Initializing submodules")
-    execute_process(COMMAND "git submodule update --init --recursive" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+include(ExternalProject)
+ExternalProject_Add(rapidjson-project
+    PREFIX "${PROJECT_SOURCE_DIR}/external/rapidjson-test"
+    GIT_REPOSITORY "https://github.com/Tencent/rapidjson.git"
+    GIT_PROGRESS 1
+    GIT_TAG f54b0e47a08782a6131cc3d60f94d038fa6e0a51
+    CMAKE_ARGS
+        -DRAPIDJSON_BUILD_EXAMPLES=OFF
+        -DRAPIDJSON_BUILD_TESTS=OFF
+        -DRAPIDJSON_BUILD_DOC=OFF
+    INSTALL_COMMAND ""
+)
+
+set(RapidJSON_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/external/rapidjson-test/src/rapidjson-project/include/ CACHE PATH "rapidjson include dir" FORCE)
+message("check for rapidjson target")
+if(NOT TARGET RapidJSON::RapidJSON)
+    message("rapidjson target not found")
+    add_library(RapidJSON::RapidJSON INTERFACE IMPORTED)
+    set_target_properties(RapidJSON::RapidJSON PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${RapidJSON_INCLUDE_DIR}"
+    )
+    message("RapidJSON_INCLUDE_DIR: ${RapidJSON_INCLUDE_DIR}")
 endif()
 
-include(external/nitro/Nitro.cmake)
-
-set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI support or not (Requires Boost.MPI)" FORCE)
-include(external/otf2xx/OTF2XX.cmake)
-set(OTF2XX_CHRONO_DURATION_TYPE nanoseconds)
-#add_subdirectory(external/otf2xx)
-set(OTF2XX_WITH_MPI ON CACHE BOOL "Whether OTF2xx should be build with MPI support or not (Requires Boost.MPI)" FORCE)
-
-include_directories("${CMAKE_SOURCE_DIR}/include")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RABBITXX_CXX_FLAGS}")
+add_subdirectory(external/nitro)
+add_subdirectory(external/otf2xx)
+mark_as_advanced(OTF2XX_CHRONO_DURATION_TYPE OTF2XX_WITH_MPI OTF2_CONFIG OTF2_PRINT)
 
 set(RABBITXX_SOURCES
     ${CMAKE_SOURCE_DIR}/src/cio_set.cpp
     ${CMAKE_SOURCE_DIR}/src/io_graph.cpp
+    ${CMAKE_SOURCE_DIR}/src/otf2_io_graph_builder.cpp
+    ${CMAKE_SOURCE_DIR}/src/stats.cpp
+    ${CMAKE_SOURCE_DIR}/src/experiment.cpp
 )
 
-#TODO: build individual static libraries
-add_library(rabbitxx_core ${RABBITXX_SOURCES})
-set(RABBITXX_LIBRARIES rabbitxx_core)
-#set(RABBITXX_LIBRARIES rabbitxx_core otf2xx::Reader)
-#set(RABBITXX_LIBRARIES rabbitxx_core otf2xx-core otf2xx-reader)
+add_library(rabbitxx-core ${RABBITXX_SOURCES})
+target_include_directories(rabbitxx-core
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(rabbitxx-core
+    PUBLIC
+        Nitro::nitro-log
+        otf2xx::Reader
+        Boost::system
+        Boost::graph
+        Boost::filesystem
+        Boost::mpi
+        MPI::MPI_CXX
+)
+
+add_library(rabbitxx::core ALIAS rabbitxx-core)
 
 if (BUILD_MODULES)
     add_subdirectory(modules)

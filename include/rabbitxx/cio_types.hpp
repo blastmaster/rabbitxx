@@ -218,8 +218,8 @@ public:
             if (vertex_kind::sync_event == g[v].type)
             {
                 // we are on a sync event and have no open set
-                //logging::debug() << "Sync Event " << v << " ... create a new set";
-                const auto sync_root = root_of_sync(v, g);
+                const auto sync_root = boost::get<sync_event_property>(g[v].property).root_event;
+                assert(sync_root != std::numeric_limits<size_t>::max());
                 create_new_set(cur_pid, sync_root);
             }
             if (vertex_kind::io_event == g[v].type) // just to check my assumptions
@@ -250,7 +250,8 @@ public:
                 //logging::debug() << "Sync Event " << g[v].name() << " ... close current set @"
                                  //<< g[v].id();
                 set_ptr->close();
-                const auto sync_root = root_of_sync(v, g);
+                const auto sync_root = boost::get<sync_event_property>(g[v].property).root_event;
+                assert(sync_root != std::numeric_limits<size_t>::max());
                 set_ptr->set_end_event(sync_root, v);
                 const auto out_dgr = boost::out_degree(v, g);
                 // FIXME: this should be the case every time, since we have an synthetic end-event.
@@ -309,7 +310,8 @@ public:
             if (g[trg_vd].type == vertex_kind::sync_event)
             {
                 set_ptr->close();
-                const auto sync_root = root_of_sync(trg_vd, g);
+                const auto sync_root = boost::get<sync_event_property>(g[trg_vd].property).root_event;
+                assert(sync_root != std::numeric_limits<size_t>::max());
                 set_ptr->set_end_event(sync_root, trg_vd);
             }
         }
@@ -335,7 +337,8 @@ public:
                     return;
                 }
                 set_ptr->close();
-                const auto sync_root = root_of_sync(trg_vd, g);
+                const auto sync_root = boost::get<sync_event_property>(g[trg_vd].property).root_event;
+                assert(sync_root != std::numeric_limits<size_t>::max());
                 set_ptr->set_end_event(sync_root, trg_vd);
             }
         }
@@ -355,14 +358,6 @@ private:
         {
             return nullptr;
         }
-        //auto it = std::find_if(set_cnt_ptr_->operator[](proc_id).begin(),
-            //set_cnt_ptr_->operator[](proc_id).end(),
-            //[](typename Cont::mapped_type::value_type& set) { return State::Open == set.state(); });
-        //if (it == set_cnt_ptr_->operator[](proc_id).end())
-        //{
-            //return nullptr;
-        //}
-        //assert(!set_cnt_ptr_->operator[](proc_id).empty());
         if (set_cnt_ptr_->operator[](proc_id).empty())
         {
             return nullptr;
@@ -372,9 +367,6 @@ private:
         {
             return nullptr;
         }
-        //assert(it2->state() == State::Open);
-        //assert(*it2 == *it);
-        //return &(*it);
         return &(*it2);
     }
 
