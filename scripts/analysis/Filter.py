@@ -27,7 +27,7 @@ def apply_file_filter(exp):
 
 def file_filter(cio_set: pd.DataFrame) -> pd.DataFrame:
     # TODO formatting
-    return cio_set.pipe(virtual_fs_filter).pipe(cgroup_fs_filter).pipe(sw_filter).pipe(stdout_filter).pipe(dev_fs_filter).pipe(etc_filter).pipe(filename_filter, fname=' /')
+    return cio_set.pipe(virtual_fs_filter).pipe(cgroup_fs_filter).pipe(sw_filter).pipe(stdout_filter).pipe(dev_fs_filter).pipe(etc_filter).pipe(run_filter).pipe(filename_filter, fname=' /')
 
 
 ''' PREFIX FILTERS
@@ -53,9 +53,13 @@ def etc_filter(df):
     ''' Filter access to `/etc` '''
     return df[~(df['filename'].str.startswith(' /etc'))]
 
+def run_filter(df):
+    ''' Filter access to `/run` '''
+    return df[~(df['filename'].str.startswith(' /run'))]
+
 def sw_filter(df):
     ''' Filter access to `/sw`. NOTE This is Taurus specific. '''
-    return df[~(df['filename'].str.startswith(' /sw'))]
+    return df[~(df['filename'].str.startswith(' /sw') | df['filename'].str.startswith(' /software'))]
 
 
 ''' EXACT FILTER
