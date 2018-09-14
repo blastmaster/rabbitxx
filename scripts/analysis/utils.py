@@ -42,11 +42,11 @@ def timelines(y, xstart, xstop, color='b') -> None:
 
 def gen_set_labels(set_list):
     ''' Generate the labels for diagrams ['Set 1' 'Set 2' ...] '''
-    return ["Set {}".format(str(i+1)) for i, _ in enumerate(set_list)]
+    return ["Set {}".format(str(i)) for i, _ in enumerate(set_list)]
 
 def gen_set_labels_from_idx(idx_list):
     ''' Generate the labels for diagrams ['Set 3' 'Set 4' ...] from a given list of indices. '''
-    return ['Set {}'.format(i+1) for i in idx_list]
+    return ['Set {}'.format(i) for i in idx_list]
 
 
 def byte_to_kilobyte_label(byte_label: str) -> str:
