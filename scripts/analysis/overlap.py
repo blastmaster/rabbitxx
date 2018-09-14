@@ -10,33 +10,6 @@ from analysis import utils
 from typing import List, Dict, Tuple, Iterable
 
 
-def get_files_per_set(exp):
-    ''' Get an Experiment and filter files.
-        Returns a dict mapping a set index to a list of accessed file names.
-    '''
-    files_per_set = dict()
-    for idx, cs in Filter.apply_file_filter(exp): #TODO need user provided filter list
-        files_per_set.update({idx: np.unique(cs['filename'].values)})
-    return files_per_set
-
-
-
-def set_accesses(exp) -> Dict[int, List[Tuple[str, Iterable]]]:
-
-    d = dict()
-    files_per_set = get_files_per_set(exp) # FIXME
-    for idx, files in files_per_set.items():
-        cur_set = exp.cio_sets[idx]
-        # for the current set calculate offset of every touched file
-        dfl = []
-        for file in files:
-            group = recalculate_offset_of_set(cur_set, file)
-            #off_df = pd.concat(group) # merge the different processes into a single dataframe, maybe set index to timestamp for ordering?
-            dfl.append((file, group))
-        d.update({idx: dfl})
-    return d
-
-
 def make_intervaltree(df: pd.DataFrame) -> IntervalTree:
     intervals = []
     if df.empty:
@@ -44,14 +17,19 @@ def make_intervaltree(df: pd.DataFrame) -> IntervalTree:
     for idx, entry in df.iterrows():
         #if entry.response_size == entry.offset: # first operation
         start = entry['offset'] - entry['response_size']
+        if start == entry['offset']:
+            print("Emtpy interval! .. skip!")
+            continue
         intervals.append(Interval(start, entry['offset'], (entry['kind'], idx)))
     return IntervalTree(intervals)
 
 
 def make_read_intervaltree(df: pd.DataFrame) -> IntervalTree:
+    ''' Create an IntervalTree of the write operations in the given CIO-Set. '''
     return make_intervaltree(df[df['kind'] == ' read'])
 
 def make_write_intervaltree(df: pd.DataFrame) -> IntervalTree:
+    ''' Create an IntervalTree of the read operations in the given CIO-Set. '''
     return make_intervaltree(df[df['kind'] == ' write'])
 
 class ProcFileAccess:
@@ -65,7 +43,7 @@ class ProcFileAccess:
 
     def __init__(self, idx: int, fname: str, pid: int, read_ivtree: IntervalTree, write_ivtree: IntervalTree) -> None:
         self.set_idx = idx
-        self.filename = fname
+        self.file_name = fname
         self.process = pid
         self.read_intervals = read_ivtree if read_ivtree else None
         self.write_intervals = write_ivtree if write_ivtree else None
@@ -79,6 +57,18 @@ class ProcFileAccess:
 
     def has_writes(self) -> bool:
         return self.write_intervals is not None
+
+    @property
+    def set_index(self) -> int:
+        return self.set_idx
+
+    @property
+    def filename(self) -> str:
+        return self.file_name
+
+    @property
+    def pid(self) -> int:
+        return self.process
 
     # def overlapping_reads(self, other: ProcFileAccess):
     def overlapping_reads(self, other):
@@ -119,18 +109,32 @@ class SetAccessMap:
     def set_index(self) -> int:
         return self.setidx
 
+    def files(self) -> List[str]:
+        return list(self.file_accesses.keys())
 
-def get_access_mappings(exp) -> Dict[int, Dict[str, List[ProcFileAccess]]]:
+    def processes(self, filename: str) -> List[int]:
+        ''' Return a list of pids which accessing the given file. '''
+        return [pfa.pid for pfa in self.file_accesses[filename]]
 
-    set_files = dict() # mapping setidx -> file_access dict
-    for idx, file_list in set_accesses(exp).items():
+    def num_processes(self, filename: str) -> int:
+        ''' Return the number of processes which accessing the given file. '''
+        return len([pfa.pid for pfa in self.file_accesses[filename]])
+
+
+
+
+# NOTE that the sets in experiment should be filtered already.
+def get_access_mappings(exp) -> List[SetAccessMap]:
+
+    set_files = [] # mapping setidx -> file_access dict
+    for idx, file_list in exp.files().items():
         # for each set!
         file_accesses = dict() # mapping filename -> List[ProcFileAccess]
         print("processing set {}".format(idx))
-        for file, file_gen in file_list: # file_list yields (filename, generator)
+        for file in file_list:
             # for each file!
             acc_list = []
-            for acc in file_gen:
+            for acc in recalculate_offset_of_set(exp.cio_sets[idx], file):
                 # for each process!
                 assert len(acc['filename'].unique()) == 1
                 assert len(acc['pid'].unique()) == 1
@@ -149,13 +153,14 @@ def get_access_mappings(exp) -> Dict[int, Dict[str, List[ProcFileAccess]]]:
                 f_acc = ProcFileAccess(idx, filename, pid, r_it, w_it)
                 acc_list.append(f_acc) # list of accesses for a file of each process
             file_accesses.update({file: acc_list})
-        set_files.update({idx: file_accesses})
+        acc_m = SetAccessMap(idx, file_accesses)
+        set_files.append(acc_m)
 
     return set_files
 
 
 # same as above but for a given set instead of the whole experiment
-# note that the set should be filtered already.
+# NOTE that the set should be filtered already.
 def get_set_access_mapping(cio_set: pd.DataFrame, setidx: int) -> SetAccessMap:
 
     file_accesses = dict()
@@ -192,6 +197,7 @@ class AccInterval:
         self.process = pid
         self.filename = fn
         self.setidx = idx
+        #TODO row index
 
     def __str__(self) -> str:
         return "AccInterval {} pid {} file {} set {}".format(self.iv, self.process, self.filename, self.setidx)
@@ -226,11 +232,11 @@ class Overlap:
 def is_overlapping(head: ProcFileAccess, tail: List[ProcFileAccess]) -> Iterable:
     ''' TODO at the moment looks only for writes! '''
 
-    print('tail len: {}'.format(len(tail)))
+    #print('tail len: {}'.format(len(tail)))
     for cmp_acc in tail:
-        print('compare access of process {} with accesses of process {}'.format(head.process, cmp_acc.process))
+        #print('compare access of process {} with accesses of process {}'.format(head.process, cmp_acc.process))
         assert cmp_acc != head # do not compare with yourself!
-        if cmp_acc.has_writes():
+        if cmp_acc.has_writes() and head.has_writes():
             for wiv in cmp_acc.write_intervals:
                 oiv = head.write_intervals[wiv.begin:wiv.end]
                 if oiv:
@@ -239,12 +245,39 @@ def is_overlapping(head: ProcFileAccess, tail: List[ProcFileAccess]) -> Iterable
                     second = AccInterval(wiv, cmp_acc.process, cmp_acc.filename, cmp_acc.set_idx)
                     ov = Overlap(first, second)
                     yield ov
+        if cmp_acc.has_reads() and head.has_reads():
+            for riv in cmp_acc.read_intervals:
+                oiv = head.read_intervals[riv.begin:riv.end]
+                if oiv:
+                    first = AccInterval(oiv, head.process, head.filename, head.set_idx)
+                    second = AccInterval(riv, cmp_acc.process, cmp_acc.filename, cmp_acc.set_idx)
+                    ov = Overlap(first, second)
+                    yield ov
 
 
 def overlaps(filename: str, acc_l: List[ProcFileAccess]) -> Iterable:
 
-    print('looking for overlaps in {}'.format(filename))
+    #print('looking for overlaps in {}'.format(filename))
     for i, head in enumerate(acc_l):
         yield from is_overlapping(head, acc_l[i+1:])
+
+def read_modify_write(acc_l: List[ProcFileAccess]) -> Iterable:
+
+    for i, head in enumerate(acc_l):
+        tail = acc_l.copy()
+        tail.pop(i)
+        yield from rmw(head, tail)
+
+def rmw(acc: ProcFileAccess, tail: List[ProcFileAccess]):
+    ''' check if any read interval of acc is written in any write interval in tail. '''
+    if acc.has_reads():
+        for riv in acc.read_intervals:
+            for other in tail:
+                if other.has_writes():
+                    oiv = other.write_intervals[riv.begin:riv.end]
+                    if oiv:
+                        first = AccInterval(riv, acc.process, acc.filename, acc.set_idx)
+                        second = AccInterval(oiv, other.process, other.filename, other.set_idx)
+                        yield Overlap(first, second)
 
 
