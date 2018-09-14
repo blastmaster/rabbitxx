@@ -79,17 +79,11 @@ class NonExistentFileError(Exception):
     pass
 
 
-def get_pids(setdf):
-    ''' Return sorted array containing all pids involved in the set '''
-    return np.array(sorted(setdf['pid'].unique()))
-
-
 def recalculate_offset_of_set(setdf, filename: str, pids=None):
     ''' Calculate the offsets for all pids in set of given filename.
         Returns an generator over all processes
     '''
-
-    pids = get_pids(setdf) if pids is None else pids
+    pids = get_processes(setdf, filename) if pids is None else pids
     print('DEBUG pids: {}'.format(pids))
     for pid in pids:
         print('DEBUG pid {} filename {}'.format(pid, filename))
@@ -166,8 +160,8 @@ def plot_cio_set_access_pattern(cio_set, set_label: str, file_name: str, process
         # TODO set useful xticks
         print('DEBUG xmin: {} xmax: {}'.format(xmin, xmax))
         plt.xlim(xmin, xmax)
-        print('DEBUG ytick pids: {}'.format(get_pids(cio_set)))
-        plt.yticks(get_pids(cio_set))
+        print('DEBUG ytick pids: {}'.format(get_processes(cio_set, file_name)))
+        plt.yticks(get_processes(cio_set, file_name))
 
         fig.canvas.draw()
 

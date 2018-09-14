@@ -4,6 +4,16 @@ import matplotlib.pyplot as plt
 from typing import List, Dict
 
 ''' CIO-Set Helpers '''
+def get_processes(cio_set: pd.DataFrame, filename: str) -> List[int]:
+    ''' Return a list of pids accessing the file given by filename. '''
+    try:
+        grouped = cio_set.groupby('filename')
+        res = grouped.get_group(filename)['pid'].unique()
+        res.sort()
+        return res.tolist()
+    except KeyError:    # if a set is given which does not touch the file.
+        return []
+
 
 def get_files_in_set(cio_set: pd.DataFrame) -> List[str]:
     ''' Return unique filenames accessed in `cio_set`. '''
