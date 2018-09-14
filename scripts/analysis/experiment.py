@@ -50,7 +50,7 @@ class Experiment:
         return self.experiment_stats.clock_properties['Ticks per Seconds']
 
     def files(self) -> Dict[int, List[str]]:
-        ''' Return the list of files accessed in any CIO-Sets. '''
+        ''' Return a Dict mapping the set index to the list of unique filenames accessed in that CIO-Set. '''
         files = dict()
         for idx, cs in enumerate(self.cio_sets):
             uf = cs['filename'].unique().flatten().tolist()
@@ -66,6 +66,10 @@ class Experiment:
             Note, this may change the content of CIO-Sets.
         '''
         self.cio_sets = [filter_func(cs) for cs in self.cio_sets]
+
+    def num_cio_sets(self) -> int:
+        ''' Return the number of CIO-Set in the experiment. '''
+        return self.experiment_stats.cio_stats.number_of_sets
 
 
 def find_experiment_files(base_path):
