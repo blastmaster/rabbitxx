@@ -92,9 +92,12 @@ def recalculate_offset_of_set(setdf, filename: str, pids=None):
             # TODO fix exeception text, in what set?!?
             raise NonExistentFileError('{} does not exists in set'.format(filename))
 
-        file_group = setdf.groupby(['pid', 'filename']).get_group((pid, filename))
-        file_group['offset'] = file_group.apply(track_file_offsets, axis=1, tracker=OffsetTracker())
-        yield file_group
+        try:
+            file_group = setdf.groupby(['pid', 'filename']).get_group((pid, filename))
+            file_group['offset'] = file_group.apply(track_file_offsets, axis=1, tracker=OffsetTracker())
+            yield file_group
+        except KeyError:
+            continue   # or  yield [] ?
 
 
 ''' ==================== Plotting ==================== '''
