@@ -5,7 +5,6 @@ List of currently available analysis modules. Most of them follow the syntax.
 
 | Module | Description |
 | ------ | ----------- |
-| concurrent_io_sets | just build cio sets |
 | creates_in_dir | gather concurrent creates within the same directory per cio set |
 | global_vs_local | files accessed on local vs file accessed on global parallel file system per cio set |
 | io_per_process | counts the number of I/O events per cio set |
