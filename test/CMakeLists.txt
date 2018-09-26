@@ -1,7 +1,6 @@
 add_subdirectory(dfs_test)
 add_subdirectory(bfs_test)
 add_subdirectory(mapping_test)
-add_subdirectory(dot_output_test)
 add_subdirectory(dump_events)
 add_subdirectory(out_degree_test)
 add_subdirectory(simple_graph_test)
