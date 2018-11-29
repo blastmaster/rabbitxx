@@ -77,7 +77,7 @@ Experiment_Stats Experiment::run_experiment(experiment_results& results)
         results.graph = std::move(graph);
         results.cio_sets = std::move(cio_sets);
         results.pio_sets = std::move(sets_pp);
-        return Experiment_Stats(trace_file_, graph_stats, cio_stats, pio_stats, info.file_to_fs, info.clock_props);
+        return Experiment_Stats(trace_file_, graph_stats, cio_stats, pio_stats, info.file_to_fs, info.clock_props, info.num_locations);
     }
 
 }

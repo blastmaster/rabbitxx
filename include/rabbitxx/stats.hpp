@@ -215,13 +215,15 @@ public:
                     const CIO_Stats& cio_stats,
                     const PIO_Stats& pio_stats,
                     const fs_map_t& file_map,
-                    const otf2::definition::clock_properties& clock_properties)
+                    const otf2::definition::clock_properties& clock_properties,
+                    std::uint64_t num_locations)
         : trace_file_(input_trace),
         graph_stats_(graph_stats),
         cio_stats_(cio_stats),
         pio_stats_(pio_stats),
         file_map_(file_map),
-        clock_props_(clock_properties)
+        clock_props_(clock_properties),
+        num_locations_(num_locations)
     {
     }
 
@@ -250,6 +252,11 @@ public:
         return file_map_;
     }
 
+    std::uint64_t num_locations() const
+    {
+        return num_locations_;
+    }
+
     otf2::definition::clock_properties clock_properties() const
     {
         return clock_props_;
@@ -273,6 +280,7 @@ private:
     fs_map_t file_map_;
     otf2::definition::clock_properties clock_props_;
     otf2::chrono::duration experiment_duration_ = otf2::chrono::duration(0);
+    std::uint64_t num_locations_ = 0;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Experiment_Stats& stats)
@@ -280,6 +288,7 @@ inline std::ostream& operator<<(std::ostream& os, const Experiment_Stats& stats)
     os << "========== Experiment Stats ==========\n"
         << "Input trace file: " << stats.trace_file() << "\n"
         << "Experiment Duration: " << stats.experiment_duration() << "\n"
+        << "Number of locations: " << stats.num_locations() << "\n"
         << stats.graph_stats() << stats.pio_stats() <<  stats.cio_stats();
     //TODO: print clock properties and file system map
     return os;

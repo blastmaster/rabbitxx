@@ -10,6 +10,7 @@ class ExperimentStats:
         self.tracefile = kw['Tracefile']
         self.clock_properties = kw['Clock Properties']
         self.file_map = kw['File Map']
+        self.num_locations = kw['Number of Locations']
         self.graph_stats = graph_stats
         self.cio_stats = cio_stats
         self.pio_stats = pio_stats

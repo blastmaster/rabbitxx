@@ -102,6 +102,7 @@ void io_graph_builder::set_graph_properties()
     // set clock properties
     graph_.get()->operator[](boost::graph_bundle).clock_props = clock_props_;
     graph_.get()->operator[](boost::graph_bundle).file_to_fs = file_to_fs_map_;
+    graph_.get()->operator[](boost::graph_bundle).num_locations = locations_.size();
 }
 
 void io_graph_builder::check_time(otf2::chrono::time_point tp)
