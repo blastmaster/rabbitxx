@@ -15,7 +15,8 @@ option(BUILD_TESTS "build tests" ON)
 option(BUILD_MODULES "build modules" ON)
 option(BUILD_DEBUG "enable debug mode" ON)
 
-add_compile_options(-Wall -pedantic -Wextra -std=c++14)
+add_compile_options(-Wall -pedantic -Wextra -pg -O0)
+set(CMAKE_CXX_STANDARD 14)
 
 if(${BUILD_DEBUG})
     add_compile_options(-pg -ggdb -O0)
