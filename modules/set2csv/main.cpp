@@ -17,10 +17,33 @@
 using namespace rabbitxx;
 namespace po = boost::program_options;
 
+// get microseconds as floating point values
+using FpMicroseconds = std::chrono::duration<double, std::micro>;
+// get milliseconds as floating point values
+using FpMilliseconds = std::chrono::duration<double, std::milli>;
+// get seconds as floating point values
+//using FpSeconds = std::chrono::duration<double, std::ratio<1, 1000000000000>>;
+using FpSeconds = std::chrono::duration<double>;
+
+static double calculate_bandwidth(const io_event_property& io_evt)
+{
+    if (std::numeric_limits<std::uint64_t>::max() == io_evt.response_size) {
+        logging::debug() << "Warn, response size is int MAX return 0.0";
+        return {0.0};
+    }
+
+    // throw an exception if my duration is less than zero
+    auto dur_in_sec = std::chrono::duration_cast<FpSeconds>(*io_evt.iop_duration);
+    // can we convert the unit in a type-safe manner?
+    auto mb_rs = (io_evt.response_size / 1024.) / 1024.;
+    double bw = mb_rs / dur_in_sec.count();
+
+    return bw;
+}
 
 void header(std::ostream& os=std::cout)
 {
-    std::array<const char*, 11> columns {
+    std::array<const char*, 12> columns {
         "pid,",
         "filename,",
         "region_name,",
@@ -31,6 +54,7 @@ void header(std::ostream& os=std::cout)
         "option,",
         "kind,",
         "duration,",
+        "bandwidth(MB/s),",
         "timestamp"};
     std::copy(columns.begin(), columns.end(), std::ostream_iterator<const char*>(os, ""));
     os << "\n";
@@ -79,9 +103,6 @@ std::string get_option(const io_event_property& io_evt)
     }
 }
 
-// get microseconds as floating point values
-using FpMicroseconds = std::chrono::duration<double, std::micro>;
-
 std::ostream& io_event_2_csv_stream(const IoGraph& graph, const VertexDescriptor& evt, std::ostream& out)
 {
     const auto& io_evt = get_io_property(graph, evt);
@@ -95,8 +116,16 @@ std::ostream& io_event_2_csv_stream(const IoGraph& graph, const VertexDescriptor
         //<< boost::apply_visitor(option_csv_printer(), evt.option) << ", "
         << get_option(io_evt) << ", "
         << io_evt.kind << ", "
-        << std::chrono::duration_cast<FpMicroseconds>(graph[evt].duration.duration).count() << ", "
-        << io_evt.timestamp;
+        << std::chrono::duration_cast<FpMicroseconds>(graph[evt].duration.duration).count() << ", ";
+
+    if (io_evt.iop_duration) {
+        auto bw_mbs = calculate_bandwidth(io_evt);
+        out << bw_mbs << ", ";
+    }
+    else {
+        out << "None, ";
+    }
+    out << io_evt.timestamp;
 
     return out;
 }

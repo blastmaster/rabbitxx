@@ -19,6 +19,7 @@ add_compile_options(-Wall -pedantic -Wextra -pg -O0)
 set(CMAKE_CXX_STANDARD 14)
 
 if(${BUILD_DEBUG})
+    message("Enable DEBUG build")
     add_compile_options(-pg -ggdb -O0)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
