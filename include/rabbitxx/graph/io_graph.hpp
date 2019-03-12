@@ -13,8 +13,7 @@ namespace graph { namespace detail {
     using io_graph_impl = boost::adjacency_list<
                                                     boost::vecS, // store out-edges of vertex in std::vector
                                                     boost::vecS, // store vertices in a std::vector
-                                                    //boost::directedS, // the graph is directed
-                                                    boost::bidirectionalS, // the graph is directed
+                                                    boost::directedS, // the graph is directed
                                                     otf2_trace_event, // use otf2_trace_event as vertex property
                                                     boost::no_property, // no edge property
                                                     app_info>; // use app_info as graph property
