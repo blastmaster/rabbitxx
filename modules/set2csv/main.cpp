@@ -11,7 +11,7 @@
  * This module prints all io events within a set into csv.
  *
  * TODO
- * * options have different length and are therefore omitted at the moment 
+ * * options have different length and are therefore omitted at the moment
  */
 
 using namespace rabbitxx;

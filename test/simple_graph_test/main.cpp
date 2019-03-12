@@ -36,7 +36,7 @@ TEST_CASE("empty graph has empty list of vertex descriptors", "[SimpleGraph]")
     REQUIRE(vec_vd.empty());
 }
 
-TEST_CASE("empyt graph has empty list of edge descriptors", "[SimpleGraph]")
+TEST_CASE("empty graph has empty list of edge descriptors", "[SimpleGraph]")
 {
     using rabbitxx::IoGraph;
     IoGraph g;

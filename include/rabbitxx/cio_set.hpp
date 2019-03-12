@@ -25,7 +25,6 @@ map_view_t<VertexDescriptor> update_view(const process_group_t& pg, map_view_t<V
 // set-api
 process_group_t pg_group(const IoGraph& graph, const VertexDescriptor& vd);
 
-
 /**
  * TODO: Here, we do two things, we merge the current view of the per process
  * set_map into a new set. Afterwards we need to close the new set and setting a

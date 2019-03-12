@@ -54,7 +54,6 @@ def main(path: str) -> None:
         for file, acc_l in acc_m.file_accesses.items():
             for ovlp in overlaps(file, acc_l):
                 report_overlap(ovlp)
-            # print(list(overlaps(file, acc_l)))
 
 if __name__ == "__main__":
     import sys

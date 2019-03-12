@@ -124,7 +124,7 @@ std::string io_graph_builder::get_handle_name(const otf2::definition::io_handle&
     return handle.name().str();
 }
 
-// Event callbacks
+// ==================== Event callbacks ====================
 
 void io_graph_builder::event(const otf2::definition::location& location,
                     const otf2::event::enter& evt) 
@@ -188,7 +188,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     // here we just save the event for later.
     // An I/O operation will be merged into one single vertex if the
-    // corresponding end occurs.
+    // corresponding complete event occurs.
     io_ops_started_.enqueue(location, evt);
 }
 

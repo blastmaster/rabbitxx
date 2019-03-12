@@ -55,7 +55,6 @@ namespace rabbitxx { namespace graph {
                 return boost::add_edge(vd_from, vd_to, *graph_);
             }
 
-            //TODO need const version
             vertex_range vertices()
             {
                 return boost::vertices(*graph_);

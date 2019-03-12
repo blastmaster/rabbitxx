@@ -21,7 +21,6 @@ if len(sys.argv) < 2:
     sys.exit(1)
 
 filename = sys.argv[1]
-# filename = "/home/soeste/code/rabbitxx/modules/request_sizes/filtered_madbench2-20170613_1523_40520294257341.txt"
 data = read_file(filename)
 request_size = data['reqsz']
 reqsz, unique_req_sz_idx, reqsz_inv, reqsz_count = np.unique(request_size, True, True, True)

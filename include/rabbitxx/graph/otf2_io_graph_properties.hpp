@@ -257,7 +257,7 @@ enum class sync_event_kind
 {
     collective,
     p2p,
-    async,
+    async,      //FIXME: does not exist!
     none,
 };
 
