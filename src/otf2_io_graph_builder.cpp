@@ -127,7 +127,7 @@ std::string io_graph_builder::get_handle_name(const otf2::definition::io_handle&
 // ==================== Event callbacks ====================
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::enter& evt) 
+                    const otf2::event::enter& evt)
 {
     logging::trace() << "Found enter event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -141,7 +141,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::leave& evt) 
+                    const otf2::event::leave& evt)
 {
     logging::trace() << "Found leave event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -179,7 +179,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_operation_begin& evt) 
+                    const otf2::event::io_operation_begin& evt)
 {
     logging::trace() << "Found io_operation_begin event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -193,7 +193,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_operation_complete& evt) 
+                    const otf2::event::io_operation_complete& evt)
 {
     logging::trace() << "Found io_operation_complete event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -240,7 +240,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_acquire_lock& evt) 
+                    const otf2::event::io_acquire_lock& evt)
 {
     logging::trace() << "Found io_acquire_lock event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -249,7 +249,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_change_status_flag& evt) 
+                    const otf2::event::io_change_status_flag& evt)
 {
     logging::trace() << "Found io_change_status_flag event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -258,7 +258,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_create_handle& evt) 
+                    const otf2::event::io_create_handle& evt)
 {
     logging::trace() << "Found io_create_handle event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -296,7 +296,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_delete_file& evt) 
+                    const otf2::event::io_delete_file& evt)
 {
     logging::trace() << "Found io_delete_file event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -331,7 +331,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_destroy_handle& evt) 
+                    const otf2::event::io_destroy_handle& evt)
 {
     logging::trace() << "Found io_destroy_handle event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -366,7 +366,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_duplicate_handle& evt) 
+                    const otf2::event::io_duplicate_handle& evt)
 {
     logging::trace() << "Found io_duplicate_handle event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -392,7 +392,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_operation_cancelled& evt) 
+                    const otf2::event::io_operation_cancelled& evt)
 {
     logging::trace() << "Found io_operation_cancelled event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -401,7 +401,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_operation_issued& evt) 
+                    const otf2::event::io_operation_issued& evt)
 {
     logging::trace() << "Found io_operation_issued event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -410,7 +410,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_operation_test& evt) 
+                    const otf2::event::io_operation_test& evt)
 {
     logging::trace() << "Found io_operation_test event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -419,7 +419,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_release_lock& evt) 
+                    const otf2::event::io_release_lock& evt)
 {
     logging::trace() << "Found io_release_lock event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -428,7 +428,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_seek& evt) 
+                    const otf2::event::io_seek& evt)
 {
     logging::trace() << "Found io_seek event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -455,7 +455,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::io_try_lock& evt) 
+                    const otf2::event::io_try_lock& evt)
 {
     logging::trace() << "Found io_try_lock event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -464,7 +464,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_collective_begin& evt) 
+                    const otf2::event::mpi_collective_begin& evt)
 {
     logging::trace() << "Found mpi_collective_begin event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -475,7 +475,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_collective_end& evt) 
+                    const otf2::event::mpi_collective_end& evt)
 {
     logging::trace() << "Found mpi_collective_end event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -523,7 +523,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_ireceive& evt) 
+                    const otf2::event::mpi_ireceive& evt)
 {
     logging::trace() << "Found mpi_ireceive event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -544,7 +544,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_ireceive_request& evt) 
+                    const otf2::event::mpi_ireceive_request& evt)
 {
     logging::trace() << "Found mpi_ireceive_request event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -554,7 +554,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_isend& evt) 
+                    const otf2::event::mpi_isend& evt)
 {
     logging::trace() << "Found mpi_isend event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -575,7 +575,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_isend_complete& evt) 
+                    const otf2::event::mpi_isend_complete& evt)
 {
     logging::trace() << "Found mpi_isend_complete event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -585,7 +585,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_receive& evt) 
+                    const otf2::event::mpi_receive& evt)
 {
     logging::trace() << "Found mpi_receive event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -605,7 +605,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_request_cancelled& evt) 
+                    const otf2::event::mpi_request_cancelled& evt)
 {
     logging::trace() << "Found mpi_request_cancelled event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -614,7 +614,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_request_test& evt) 
+                    const otf2::event::mpi_request_test& evt)
 {
     logging::trace() << "Found mpi_request_test event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -623,7 +623,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::mpi_send& evt) 
+                    const otf2::event::mpi_send& evt)
 {
     logging::trace() << "Found mpi_send event to location #" << location.ref() << " @"
                         << evt.timestamp();
@@ -643,7 +643,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
-                    const otf2::event::unknown& evt) 
+                    const otf2::event::unknown& evt)
 {
     logging::warn() << "Found unknown event with timestamp " << evt.timestamp()
                     << " at " << location;
@@ -654,7 +654,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
 //TODO: merge sync events together but conserve the data from all
 //synchronization events.
-void io_graph_builder::events_done(const otf2::reader::reader& rdr) 
+void io_graph_builder::events_done(const otf2::reader::reader& rdr)
 {
     //auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds {SYNC,IO, SYNTHETIC}
     if (is_master())
@@ -766,49 +766,49 @@ void io_graph_builder::events_done(const otf2::reader::reader& rdr)
 
 // Definitions
 
-void io_graph_builder::definition(const otf2::definition::location& definition) 
+void io_graph_builder::definition(const otf2::definition::location& definition)
 {
     logging::trace() << "Found location defintion";
     locations_.push_back(definition);
 }
 
-void io_graph_builder::definition(const otf2::definition::region& definition) 
+void io_graph_builder::definition(const otf2::definition::region& definition)
 {
     logging::trace() << "Found region defintion";
 }
 
-void io_graph_builder::definition(const otf2::definition::comm& definition) 
+void io_graph_builder::definition(const otf2::definition::comm& definition)
 {
     logging::trace() << "Found comm defintion";
 }
 
-void io_graph_builder::definition(const otf2::definition::io_paradigm& definition) 
+void io_graph_builder::definition(const otf2::definition::io_paradigm& definition)
 {
     logging::trace() << "Found io_paradigm defintion";
 }
 
-void io_graph_builder::definition(const otf2::definition::io_handle& definition) 
+void io_graph_builder::definition(const otf2::definition::io_handle& definition)
 {
     logging::trace() << "Found io_handle defintion";
 }
 
-void io_graph_builder::definition(const otf2::definition::io_file_property& definition) 
+void io_graph_builder::definition(const otf2::definition::io_file_property& definition)
 {
     logging::trace() << "Found io_file_property defintion";
 }
 
-void io_graph_builder::definition(const otf2::definition::clock_properties& definition) 
+void io_graph_builder::definition(const otf2::definition::clock_properties& definition)
 {
     logging::trace() << "Found clock_properties definition";
     clock_props_ = definition;
 }
 
-void io_graph_builder::definition(const otf2::definition::unknown& definition) 
+void io_graph_builder::definition(const otf2::definition::unknown& definition)
 {
     logging::warn() << "Found unknown defintion";
 }
 
-void io_graph_builder::definitions_done(const otf2::reader::reader& rdr) 
+void io_graph_builder::definitions_done(const otf2::reader::reader& rdr)
 {
     for(const auto& location : rdr.locations()) {
         //do rank mapping!
