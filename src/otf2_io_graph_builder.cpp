@@ -219,7 +219,8 @@ void io_graph_builder::event(const otf2::definition::location& location,
             break;
     }
 
-    //FIXME: which timestamp should we use? start? or end?
+    auto duration = evt.timestamp() - begin_evt.timestamp();
+    //use end timestamp so that, end_t - duration.count() == start
     const auto vt = io_event_property(location.ref(),
                                     name,
                                     region_name,
@@ -231,6 +232,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                         begin_evt.operation_mode(),
                                         begin_evt.operation_flag()),
                                     kind,
+                                    duration,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
@@ -288,6 +290,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                         evt.creation_flags(),
                                         evt.access_mode()),
                                     io_event_kind::create,
+                                    boost::none,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
@@ -323,6 +326,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     0, /* offset */
                                     io_operation_option_container(),
                                     io_event_kind::delete_or_close,
+                                    boost::none,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
@@ -358,6 +362,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     0, /* offset */
                                     io_operation_option_container(),
                                     io_event_kind::delete_or_close,
+                                    boost::none,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
@@ -384,6 +389,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     0, /* offset */
                                     io_creation_option_container(evt.status_flags()),
                                     io_event_kind::dup,
+                                    boost::none,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
@@ -447,6 +453,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     evt.offset_result(), evt.offset_result(),
                                     evt.seek_option(),
                                     io_event_kind::seek,
+                                    boost::none,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);

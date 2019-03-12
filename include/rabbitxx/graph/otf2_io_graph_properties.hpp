@@ -218,6 +218,7 @@ struct io_event_property
     std::uint64_t offset {0};
     option_type option;
     io_event_kind kind;
+    boost::optional<otf2::chrono::duration> iop_duration;
     otf2::chrono::time_point timestamp;
 
     io_event_property() = default;
@@ -232,9 +233,10 @@ struct io_event_property
                         std::uint64_t off,                  /* offset */
                         option_type mode,                   /* operation mode */
                         io_event_kind event_kind,           /* operation kind */
+                        boost::optional<otf2::chrono::duration> duration, /* iop duration */
                         const otf2::chrono::time_point ts) /* timestamp */ noexcept
     : proc_id(process_id), filename(fname), region_name(reg_name), paradigm(paradigm), request_size(req_size),
-        response_size(resp_size), offset(off), option(mode), kind(event_kind), timestamp(ts)
+        response_size(resp_size), offset(off), option(mode), kind(event_kind), iop_duration(duration), timestamp(ts)
     {
     }
 };
