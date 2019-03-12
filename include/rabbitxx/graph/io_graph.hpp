@@ -62,45 +62,10 @@ std::uint64_t num_procs(const IoGraph& graph) noexcept;
  */
 std::vector<std::uint64_t> procs_in_sync_involved(const sync_event_property& sevt);
 
-// template<typename Graph, typename VertexDescriptor>
-// std::vector<std::uint64_t>
-// procs_in_sync_involved(Graph& graph, const VertexDescriptor& vd)
-//{
-// const auto type = graph[vd].type;
-// switch (type)
-//{
-// case vertex_kind::sync_event:
-// const auto s_evt = boost::get<sync_event_property>(graph[vd].property);
-// return procs_in_sync_involved(s_evt);
-// case vertex_kind::synthetic:
-// const auto np = num_procs(graph);
-// std::vector<std::uint64_t> all_procs(np);
-// std::iota(all_procs.begin(), all_procs.end(), 0);
-// return all_procs;
-// default:
-// logging::fatal() << "ERROR in procs_in_sync_involved, invalid synhronization
-// event!";
-//}
-//}
-
 /**
  * @return The number of processes involved in a given synchronization routine.
  */
 std::uint64_t num_procs_in_sync_involved(const sync_event_property& sevt);
-
-// TODO: unused!
-template <typename Graph, typename Vertex, typename Visitor>
-void
-traverse_adjacent_vertices(Graph& graph, Vertex v, Visitor& vis)
-{
-    typename Graph::adjacency_iterator adj_begin, adj_end;
-    for (std::tie(adj_begin, adj_end) = boost::adjacent_vertices(v, *graph.get());
-         adj_begin != adj_end; ++adj_begin)
-    {
-        vis(graph, *adj_begin);
-        traverse_adjacent_vertices(graph, *adj_begin, vis);
-    }
-}
 
 /**
 * Checks if the start event of a set `of_v` is an adjacent vertex of the current
