@@ -26,7 +26,6 @@ VertexDescriptor
 io_graph_builder::create_synthetic_root()
 {
     assert(graph_.num_vertices() == 0);
-    //const auto& vt = synthetic_event_property("Root", otf2::chrono::time_point::min());
     /**
         * FIXME:
         * The timestamp argument is rather a hack to avoid having larger timestamps for the
@@ -92,8 +91,6 @@ void io_graph_builder::set_graph_properties()
     assert(total_time_ > total_file_io_time_);
     assert(total_time_ > total_file_io_metadata_time_);
     assert(max_tp_ > min_tp_);
-    // TODO this may look nicer if we get rid of the unique_ptr
-    // graph here for this class holding the graph by value would be fine.
     graph_.get()->operator[](boost::graph_bundle).total_time = total_time_;
     graph_.get()->operator[](boost::graph_bundle).io_time = total_file_io_time_;
     graph_.get()->operator[](boost::graph_bundle).io_metadata_time = total_file_io_metadata_time_;
@@ -153,7 +150,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
     auto duration = evt.timestamp() - cur_frame.enter;
     if (cur_frame.vertex != IoGraph::null_vertex())
     {
-        //logging::debug() << "cur_frame vertex: " << cur_frame.vertex;
         auto& cur_vertex = graph_[cur_frame.vertex];
         //cur_vertex.duration = duration;
         cur_vertex.duration = {duration, cur_frame.enter, evt.timestamp()};
@@ -236,7 +232,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
     io_ops_started_.dequeue(location);
 }
@@ -294,7 +289,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
 
@@ -330,7 +324,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
 
@@ -366,7 +359,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
 
@@ -393,7 +385,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
 
@@ -457,7 +448,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
 
@@ -499,19 +489,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
         }
 
         members = evt.comm().self_group().members();
-        //logging::debug() << "[" << region_name << "] choose evt.comm().self_group().members(): "
-            //<< "size: " << members.size() << " [comm name:] " << evt.comm().name()
-            //<< " [group name:] " << evt.comm().self_group().name()
-            //<< " [group type:] " << to_string(evt.comm().self_group().type())
-            //<< " [group size:] " << evt.comm().self_group().size();
     }
     else {
         members = evt.comm().group().members();
-        //logging::debug() << "[" << region_name <<"] choose evt.comm().group().members(): "
-            //<< "size: " << members.size() << " [comm name:] " << evt.comm().name()
-            //<< " [group name:] " << evt.comm().group().name()
-            //<< " [group type:] " << to_string(evt.comm().group().type())
-            //<< " [group size:] " << evt.comm().group().size();
     }
 
     assert(members.size() != 0); // getting sure!
@@ -521,7 +501,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                         evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     synchronizations_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
@@ -542,7 +521,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                         evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     synchronizations_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
@@ -557,6 +535,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
     //graph_.add_vertex();
 }
 
+//TODO
 void io_graph_builder::event(const otf2::definition::location& location,
                     const otf2::event::mpi_isend& evt)
 {
@@ -573,7 +552,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                         evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     synchronizations_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
@@ -603,7 +581,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                         evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     synchronizations_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
@@ -641,7 +618,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                         evt.timestamp());
     const auto& descriptor = graph_.add_vertex(otf2_trace_event(vt));
     build_edge(descriptor, location);
-    //events_.enqueue(location, descriptor);
     synchronizations_.enqueue(location, descriptor);
     call_stack_.front(location).vertex = descriptor;
 }
@@ -660,23 +636,11 @@ void io_graph_builder::event(const otf2::definition::location& location,
 //synchronization events.
 void io_graph_builder::events_done(const otf2::reader::reader& rdr)
 {
-    //auto k_map = get(&otf2_trace_event::type, *(graph_->get())); //get property map of vertex kinds {SYNC,IO, SYNTHETIC}
     if (is_master())
     {
         create_synthetic_end();
-        //for (const auto& loc_events : events_)
         for (const auto& loc_events : synchronizations_)
         {
-            //logging::debug() << "processing location: " << loc_events.first;
-            //std::deque<typename Graph::vertex_descriptor> sync_events;
-            //Copy all synchronization events for current location in separate vector.
-            //std::copy_if(loc_events.second.begin(), loc_events.second.end(),
-                    //std::back_inserter(sync_events),
-                    //[&k_map](const typename Graph::vertex_descriptor& vd) // copy all sync events
-                    //{
-                        //const auto kind = get(k_map, vd);
-                        //return kind == vertex_kind::sync_event;
-                    //});
             // get property map of all properties
             auto p_map = get(&otf2_trace_event::property, *graph_.get());
             // iterate through all vertex desciptors of sync_events occuring on this location
@@ -701,12 +665,8 @@ void io_graph_builder::events_done(const otf2::reader::reader& rdr)
                         }
                         //find corresponding collective for every participating location.
                         auto it = std::find_if(synchronizations_[m].begin(), synchronizations_[m].end(),
-                                                [/*&k_map,*/ &p_map](const VertexDescriptor& vd)
+                                                [&p_map](const VertexDescriptor& vd)
                                                 {
-                                                    //const auto kind = get(k_map, vd);
-                                                    //if (kind != vertex_kind::sync_event) {
-                                                        //return false;
-                                                    //}
                                                     const auto sync_kind = boost::get<sync_event_property>(get(p_map, vd)).comm_kind;
                                                     return sync_kind == sync_event_kind::collective;
                                                 });
@@ -716,8 +676,8 @@ void io_graph_builder::events_done(const otf2::reader::reader& rdr)
                             return;
                         }
                         //TODO: ist gefundene collective auch member der aktuellen
-                        //TODO: set_root_events
                         auto& trg_vertex = boost::get<sync_event_property>(get(p_map, *it));
+                        // set root event
                         trg_vertex.root_event = v;
                         graph_.add_edge(v, *it);
                         synchronizations_[m].erase(it);
@@ -730,31 +690,26 @@ void io_graph_builder::events_done(const otf2::reader::reader& rdr)
                     auto p2p_op = boost::get<peer2peer>(vertex.op_data);
                     const auto remote = p2p_op.remote_process();
                     auto it = std::find_if(synchronizations_[remote].begin(), synchronizations_[remote].end(),
-                                    [/*&k_map,*/ &p_map, &vertex](const VertexDescriptor& vd)
+                                    [&p_map, &vertex](const VertexDescriptor& vd)
                                     {
-                                    //const auto kind = get(k_map, vd);
-                                    //if (kind != vertex_kind::sync_event) {
-                                        //return false; //discard if not a sync event
-                                    //}
-
-                                    const auto sevt = boost::get<sync_event_property>(get(p_map, vd));
-                                    if (sevt.comm_kind != sync_event_kind::p2p) {
-                                        return false; //discard if not a p2p event
-                                    }
-                                    const auto p2pevt = boost::get<peer2peer>(sevt.op_data);
-                                    if (vertex.proc_id == p2pevt.remote_process()) {
-                                        //logging::debug() << "proc id: " << vertex.proc_id << " remote proc: " << p2pevt.remote_process();
-                                        //logging::debug() << "Selected p2p events: "  << vertex  << " -> "<<  sevt;
-                                        return true;
-                                    }
-                                    return false;
+                                        const auto sevt = boost::get<sync_event_property>(get(p_map, vd));
+                                        if (sevt.comm_kind != sync_event_kind::p2p) {
+                                            return false; //discard if not a p2p event
+                                        }
+                                        const auto p2pevt = boost::get<peer2peer>(sevt.op_data);
+                                        if (vertex.proc_id == p2pevt.remote_process()) {
+                                            //logging::debug() << "proc id: " << vertex.proc_id << " remote proc: " << p2pevt.remote_process();
+                                            //logging::debug() << "Selected p2p events: "  << vertex  << " -> "<<  sevt;
+                                            return true;
+                                        }
+                                        return false;
                                     });
                     if (it == synchronizations_[remote].end()) {
                         logging::fatal() << "cannot find corresponding p2p event";
                         return;
                     }
-                    // TODO: set root event
                     auto& trg_vertex = boost::get<sync_event_property>(get(p_map, *it));
+                    //set root event
                     trg_vertex.root_event = v;
                     graph_.add_edge(v, *it);
                     synchronizations_[remote].erase(it);
