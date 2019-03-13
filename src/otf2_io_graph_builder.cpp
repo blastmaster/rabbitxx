@@ -478,7 +478,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     FILTER_RANK
 
-    mpi_coll_started_.enqueue(location, evt);
+    // nothing todo here!?!
 }
 
 void io_graph_builder::event(const otf2::definition::location& location,
@@ -487,9 +487,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
     logging::trace() << "Found mpi_collective_end event to location #" << location.ref() << " @"
                         << evt.timestamp();
     FILTER_RANK
-
-    //TODO: begin event is unused atm. but we could use the timestamp to claculate time range.
-    //const auto& begin_evt = mpi_coll_started_.front(location);
 
     const auto region_name = region_name_queue_.top(location);
     std::vector<std::uint64_t> members;

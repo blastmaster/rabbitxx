@@ -36,14 +36,14 @@ public:
     using mapping_type = mapping<rabbitxx::detail::round_robin_mapping>;
 
     explicit io_graph_builder(boost::mpi::communicator& comm, int num_locations)
-    : base(comm), io_ops_started_(), mpi_coll_started_(), mapping_(comm.size(), num_locations),
+    : base(comm), io_ops_started_(), mapping_(comm.size(), num_locations),
         edge_points_(), region_name_queue_(), synchronizations_(), graph_(),
         root_(create_synthetic_root())
     {
     }
 
     explicit io_graph_builder(int num_locations)
-    : base(), io_ops_started_(), mpi_coll_started_(), mapping_(num_locations),
+    : base(), io_ops_started_(), mapping_(num_locations),
         edge_points_(), region_name_queue_(), synchronizations_(), graph_(),
         root_(create_synthetic_root())
     {
@@ -192,7 +192,6 @@ public:
 
 private:
     location_queue<otf2::event::io_operation_begin> io_ops_started_;
-    location_queue<otf2::event::mpi_collective_begin> mpi_coll_started_;
     mapping_type mapping_;
     location_queue<VertexDescriptor> edge_points_;
     location_stack<std::string> region_name_queue_;
