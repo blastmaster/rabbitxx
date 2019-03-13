@@ -52,26 +52,16 @@ void io_graph_builder::create_synthetic_end()
     }
 }
 
-//TODO: Do not return an optional type. Since there are no path where
-//we does not have an edge_descriptor to return. This function should
-//return just an edge_descriptor. This is even more reasonable, when
-//mentioning that the edge_add_t type consists of an
-//pair<edge_descriptor, bool> where the bool indicates whether edge
-//adding was successful or not.
-void
+IoGraph::edge_t
 io_graph_builder::build_edge(const VertexDescriptor& descriptor,
             const otf2::definition::location& location)
 {
     if (edge_points_.empty(location)) {
-        //logging::debug() << "No vertex in edge_points_ queue.";
-        // We cannot add an edge if only one vertex are given.
-        // So push vertex into queue and return.
-        edge_points_.enqueue(location, descriptor);
-        // add edge from synthetic root-vertex to the first vertex on
+        // if empty, add edge from synthetic root-vertex to the first vertex on
         // this location.
-        graph_.add_edge(root_, descriptor);
-        //return boost::none;
-        return;
+        edge_points_.enqueue(location, descriptor);
+        auto ed = graph_.add_edge(root_, descriptor);
+        return ed;
     }
     assert(edge_points_.size(location) <= 1);
     const auto& from_vertex = edge_points_.front(location);
@@ -83,7 +73,7 @@ io_graph_builder::build_edge(const VertexDescriptor& descriptor,
     // Store descriptor in queue, for adding edges later.
     edge_points_.enqueue(location, descriptor);
 
-    return;
+    return edge_desc;
 }
 
 void io_graph_builder::set_graph_properties()
