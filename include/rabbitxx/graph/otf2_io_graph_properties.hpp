@@ -694,8 +694,15 @@ class set_graph_writer
         std::vector<std::string> colors_ {"lightblue", "springgreen", "orange", "lightgoldenrod"};
 };
 
-template<typename G>
-void write_graph_to_dot(G& graph, const std::string& filename)
+template<typename Graph>
+void write_graph_to_dot(Graph& graph, std::ostream& out)
+{
+    boost::write_graphviz(out, graph,
+            make_otf2_trace_event_writer(graph));
+}
+
+template<typename Graph>
+void write_graph_to_dot(Graph& graph, const std::string& filename)
 {
     std::ofstream file{filename};
     boost::write_graphviz(file, graph,
