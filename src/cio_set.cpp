@@ -57,21 +57,9 @@ pg_group(const IoGraph& graph, const VertexDescriptor& vd)
 {
     if (graph[vd].type == vertex_kind::sync_event)
     {
-        const auto& evt_property = get_sync_property(graph, vd);
-        const auto& inv_proc_v = procs_in_sync_involved(evt_property);
-        const auto& scope = classify_sync(graph, evt_property);
-        if (scope == sync_scope::Local)
-        {
-            //logging::debug() << "Retrun process_group_t of LOCAL sync-event: " << vd;
-            return process_group_t(inv_proc_v.begin(), inv_proc_v.end());
-        }
-        if (scope == sync_scope::Global)
-        {
-            //logging::debug() << "Retrun process_group_t of GLOBAL sync-event: " << vd;
-            return process_group_t(inv_proc_v.begin(), inv_proc_v.end());
-        }
-        logging::fatal() << "undefined sync_scope not handled! Event: " << vd;
-        throw - 1; // TODO: proper error handling!
+        const auto evt_property = get_sync_property(graph, vd);
+        const auto inv_proc_v = procs_in_sync_involved(evt_property);
+        return process_group_t(inv_proc_v.begin(), inv_proc_v.end());
     }
     if (graph[vd].type == vertex_kind::synthetic)
     {
