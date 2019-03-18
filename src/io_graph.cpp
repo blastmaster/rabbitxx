@@ -14,6 +14,7 @@ sync_event_property
 get_sync_property(const IoGraph& graph, const VertexDescriptor vd)
 {
     //TODO throws if event is a synthetic event
+    assert(vd != IoGraph::null_vertex());
     return boost::get<sync_event_property>(graph[vd].property);
 }
 
@@ -33,9 +34,9 @@ find_root(const IoGraph& graph)
 std::uint64_t
 num_procs(const IoGraph& graph) noexcept
 {
-    const auto root = find_root(graph);
-    return static_cast<std::uint64_t>(graph.out_degree(root));
+    return graph.graph_properties().num_locations;
 }
+
 
 std::vector<std::uint64_t>
 procs_in_sync_involved(const sync_event_property& sevt)
