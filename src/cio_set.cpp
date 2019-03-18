@@ -301,6 +301,7 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
                 return vd;
             }
         }
+        return IoGraph::null_vertex();
     };
 
     auto check_update_func_single = [end_evts](const IoGraph& graph, const VertexDescriptor& vd) {
@@ -380,6 +381,7 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
     {
         //logging::debug() << "choose from dependent syncs";
         update_evt = check_update_func(graph, dependent_syncs);
+        assert(update_evt != IoGraph::null_vertex());
     }
     // otherwise check for independent events
     else if (!independent_syncs.empty())
