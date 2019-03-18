@@ -37,6 +37,10 @@ make_mapview(set_map_t<VertexDescriptor>& smap)
 }
 
 // set-api
+/**
+ * Increase the set iterator for each process included in given process group.
+ * This basically means got one set further.
+ */
 map_view_t<VertexDescriptor>
 update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view)
 {
@@ -52,6 +56,10 @@ update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view)
 }
 
 // set-api
+/**
+ * Return the `process group` of the given synchronization point.
+ * The `process group` is defined as a set of all process IDs (RANKS) participating in this synchroniation point.
+ */
 process_group_t
 pg_group(const IoGraph& graph, const VertexDescriptor& vd)
 {
@@ -63,7 +71,6 @@ pg_group(const IoGraph& graph, const VertexDescriptor& vd)
     }
     if (graph[vd].type == vertex_kind::synthetic)
     {
-        //logging::debug() << "Retrun process_group_t of GLOBAL synthetic-event: " << vd;
         const auto np = num_procs(graph);
         std::vector<std::uint64_t> all_procs(np);
         std::iota(all_procs.begin(), all_procs.end(), 0);
@@ -74,7 +81,6 @@ pg_group(const IoGraph& graph, const VertexDescriptor& vd)
 }
 
 std::vector<VertexDescriptor>
-// IoGraph const?!?
 do_merge(const IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets)
 {
@@ -100,9 +106,9 @@ do_merge(const IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
         throw -1; //TODO
     }
 
-    cur_s.close();
     //TODO: This is a Hack, why use the back?
     cur_s.set_end_event(e_evts.back());
+    cur_s.close();
     merged_sets.push_back(cur_s);
 
     return e_evts;
@@ -124,8 +130,8 @@ process_sets(const IoGraph& graph, map_view_t<VertexDescriptor> map_view,
     for (const auto& end_evt : end_events)
     {
         //logging::debug() << "Choose end-event: " << end_evt << " -> recursive update!";
-        const auto lpg = pg_group(graph, end_evt);
-        process_sets(graph, update_view(lpg, map_view), merged_sets);
+        const auto pg = pg_group(graph, end_evt);
+        process_sets(graph, update_view(pg, map_view), merged_sets);
     }
 }
 
@@ -170,9 +176,7 @@ cio_sets_per_process(IoGraph& graph)
 set_container_t<VertexDescriptor>
 find_cio_sets(IoGraph& graph)
 {
-    using map_t = set_map_t<VertexDescriptor>;
-
-    map_t sets_per_process = cio_sets_per_process(graph);
+    auto sets_per_process = cio_sets_per_process(graph);
     return find_cio_sets(graph, sets_per_process);
 }
 
@@ -332,7 +336,6 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
     if (end_evts.size() == 1)
     {
         assert(sync_scope::Local == classify_sync(graph, end_evts.back()));
-        //logging::debug() << "JUST ONE LOCAL EVENT SO JUST RETURN!";
         // TODO: check if can update
         return end_evts;
     }

@@ -436,18 +436,14 @@ int main(int argc, char** argv)
         logging::debug() << "using outdir: " << base_path.string();
     }
 
+    // tracefile given, otherwise this is an error!
     if (!vm.count("trace-file"))
     {
         logging::error() << "need trace file!";
         return EXIT_FAILURE;
     }
 
-    if (vm.count("trace-file"))
-    {
-        // tracefile given, otherwise this is an error!
-        logging::debug() << "using tracefile: " << trc_file.string();
-    }
-
+    logging::debug() << "using tracefile: " << trc_file.string();
     //Experiment exp(trc_file); // just trace file use default config
     Experiment exp(trc_file, base_path, experiment_name, e_conf);
     auto stats = exp.run(csv_output);

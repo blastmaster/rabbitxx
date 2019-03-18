@@ -419,7 +419,7 @@ struct synthetic_event_property
     {
     }
 
-    explicit synthetic_event_property(const std::string& evt_name, const otf2::chrono::time_point& ts) noexcept 
+    explicit synthetic_event_property(const std::string& evt_name, const otf2::chrono::time_point& ts) noexcept
         : name(evt_name), timestamp(ts)
     {
     }

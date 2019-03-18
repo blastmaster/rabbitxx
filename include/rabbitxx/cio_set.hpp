@@ -5,9 +5,6 @@
 #include <rabbitxx/graph.hpp>
 #include <rabbitxx/cio_types.hpp>
 
-#include <algorithm>
-#include <numeric>
-
 namespace rabbitxx
 {
 
@@ -28,8 +25,7 @@ process_group_t pg_group(const IoGraph& graph, const VertexDescriptor& vd);
 /**
  * TODO: Here, we do two things, we merge the current view of the per process
  * set_map into a new set. Afterwards we need to close the new set and setting a
- * new `end_evt` before. Therefore we also need to find the new `end_event` to
- * set.
+ * new `end_evt` before. Therefore we also need to find the new `end_event`.
  *
  * The problem is that we need this `end_event` also later, to decide how to
  * update the map. But we also need the end_event vector, we already return.

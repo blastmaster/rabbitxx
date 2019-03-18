@@ -4,7 +4,7 @@
 namespace rabbitxx {
 
 
-io_event_property 
+io_event_property
 get_io_property(const IoGraph& graph, const VertexDescriptor vd)
 {
     return boost::get<io_event_property>(graph[vd].property);
@@ -19,6 +19,8 @@ get_sync_property(const IoGraph& graph, const VertexDescriptor vd)
 }
 
 // member function? of graph
+// TODO this follows the assumption that the first synthetic vertex is the root.
+// Alternatively we can also return `graph.vertices()[0]`, which is much simpler.
 VertexDescriptor
 find_root(const IoGraph& graph)
 {
