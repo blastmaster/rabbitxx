@@ -68,7 +68,7 @@ namespace rabbitxx {
 
             // without an explicit amount of ranks, we propably running
             // single-threaded.
-            mapping(int num_locations) noexcept : mapping(1, num_locations)
+            explicit mapping(int num_locations) noexcept : mapping(1, num_locations)
             {
             }
 

@@ -616,7 +616,7 @@ template<typename G>
 class otf2_trace_event_writer
 {
     public:
-        otf2_trace_event_writer(G* graph_ptr) : g_ptr_(graph_ptr) // pass ptr, because we can copy ptrs
+        explicit otf2_trace_event_writer(G* graph_ptr) : g_ptr_(graph_ptr) // pass ptr, because we can copy ptrs
         {
         }
 

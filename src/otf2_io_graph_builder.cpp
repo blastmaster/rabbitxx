@@ -484,7 +484,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
         members = evt.comm().group().members();
     }
 
-    assert(members.size() != 0); // getting sure!
+    assert(!members.empty()); // getting sure!
 
     const auto vt = sync_event_property(location.ref(), region_name,
                                         collective(evt.root(), members),
@@ -765,7 +765,7 @@ void io_graph_builder::definitions_done(const otf2::reader::reader& rdr)
         rdr.register_location(location);
     }
 
-    const auto str_refs = rdr.strings();
+    const auto& str_refs = rdr.strings();
     for (const auto& fp : rdr.io_file_properties())
     {
         if (fp.name().str() == "File system")
