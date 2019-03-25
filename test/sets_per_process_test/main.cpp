@@ -47,7 +47,7 @@ TEST_CASE("trace-simple", "[create sets per process]")
     // we need an absolute path here
     // otf2xx::reader should (maybe) provide std::filesystem::path overload if this
     // provides shell-expansion.
-    static const std::string trc_file {"/home/soeste/traces/dios/24.10/trace-simple/traces.otf2"};
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-simple/traces.otf2"};
 
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto io_sets_pp = rabbitxx::cio_sets_per_process(graph);
@@ -73,7 +73,7 @@ TEST_CASE("trace-simple", "[create sets per process]")
 
 TEST_CASE("trace-own", "[create sets per process]")
 {
-    static const std::string trc_file {"/home/soeste/traces/trace-own_trace-20171116_1704_50058813361150354/traces.otf2"};
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace-20171116_1704_50058813361150354/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto io_sets_pp = rabbitxx::cio_sets_per_process(graph);
     sets_are_closed(io_sets_pp);
@@ -192,7 +192,7 @@ TEST_CASE("[ec]", "[create sets per process]")
 
 TEST_CASE("[ech]", "[create sets per process]")
 {
-    static const std::string trc_file {"/home/soeste/traces/dios/edge_case_hard/traces.otf2"};
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/edge_case_hard/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto io_sets_pp = rabbitxx::cio_sets_per_process(graph);
     sets_are_closed(io_sets_pp);

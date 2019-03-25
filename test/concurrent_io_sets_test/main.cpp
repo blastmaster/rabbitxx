@@ -11,7 +11,7 @@ using rabbitxx::logging;
 
 TEST_CASE("[trace-simple]", "Find concurrent I/O sets")
 {
-    static const std::string trc_file {"/home/soeste/traces/dios/24.10/trace-simple/traces.otf2"};
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-simple/traces.otf2"};
 
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto cio_sets = rabbitxx::find_cio_sets(graph);
@@ -52,7 +52,7 @@ TEST_CASE("[trace-simple]", "Find concurrent I/O sets")
 
 TEST_CASE("[trace-own]", "Find concurrent I/O sets")
 {
-    static const std::string trc_file {"/home/soeste/traces/trace-own_trace-20171116_1704_50058813361150354/traces.otf2"};
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/trace-own_trace-20171116_1704_50058813361150354/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto cio_sets = rabbitxx::find_cio_sets(graph);
 
@@ -119,7 +119,7 @@ TEST_CASE("[ec]", "Find concurrent I/O sets")
 
 TEST_CASE("[ech]", "Find concurrent I/O sets")
 {
-    static const std::string trc_file {"/home/soeste/traces/dios/edge_case_hard/traces.otf2"};
+    static const std::string trc_file {"/home/soeste/traces/dios/rabbitxx_test/edge_case_hard/traces.otf2"};
     auto graph = rabbitxx::make_graph<rabbitxx::graph::OTF2_Io_Graph_Builder>(trc_file);
     auto cio_sets = rabbitxx::find_cio_sets(graph);
 
