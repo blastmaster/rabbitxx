@@ -64,17 +64,12 @@ def prefix_file_filter(file_map, prefix: str):
 
 def calculate_access_range(row) -> Tuple:
     ''' return a tuple (start_offset, end_offset) of the operation given in row '''
+    if row['offset'] < 0.0:
+        raise ValueError("offset less then zero!")
     start_offset = row['offset'] - row['response_size']
     if start_offset < 0.0:
         return 0.0, row['offset']
     return start_offset, row['offset']
-
-
-def plot_access_range(y, row, **kwargs) -> None:
-    ''' yaxis: response_size
-        xaxis: file range '''
-    start_of, end_of = calculate_access_range(row)
-    timelines(y, start_of, end_of, **kwargs)
 
 
 class NonExistentFileError(Exception):
@@ -104,6 +99,15 @@ def recalculate_offset_of_set(setdf, filename: str, pids=None):
 
 ''' ==================== Plotting ==================== '''
 
+
+def plot_range(y, row, **kwargs) -> None:
+    ''' yaxis: response_size
+        xaxis: file range '''
+    start_of, end_of = calculate_access_range(row)
+    print("DEBUG (start, end) -> ({}, {})".format(start_of, end_of))
+    timelines(y, start_of, end_of, **kwargs)
+
+
 # TODO do it with `pid` as y-axis
 def plot_rws_range(group) -> None:
 
@@ -116,7 +120,24 @@ def plot_rws_range(group) -> None:
             continue
         print('DEBUG processing kind {}'.format(op_kind))
         for _, row in krows.iterrows():
-            plot_access_range(row['pid'], row, color=color)
+            plot_range(row['pid'], row, color=color)
+
+
+''' The `plot_rws_range` function tries to show read, write and seek accesses if they are available.
+    It looks like that the different operations shadow the accesses of other kind of operations.
+    E.g. seek operations may shadow write operations.
+'''
+
+def plot_access(group, kind=' read', color='b') -> None:
+
+    if not kind in group['kind'].values:
+        raise ValueError("ERROR no kind: {} available!".format(kind))
+
+    # filter operations by kind
+    ops = group[group['kind'] == kind]
+    for _, row in ops.iterrows():
+        # plot range for each access
+        plot_range(row['pid'], row, color=color)
 
 
 #FIXME
@@ -129,7 +150,7 @@ def plot_response_size_range(group) -> None:
             continue
         print('DEBUG processing kind {}'.format(op_kind))
         for _, row in krows.iterrows():
-            plot_access_range(row['response_size'], row, color=color)
+            plot_range(row['response_size'], row, color=color)
 
 
 def plot_cio_set_access_pattern(cio_set, set_label: str, file_name: str, processes=None) -> None:
