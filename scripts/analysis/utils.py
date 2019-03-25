@@ -36,8 +36,16 @@ def calculate_bandwidth(row):
 
 def timelines(y, xstart, xstop, color='b') -> None:
     ''' Plot a horizontal line from xstart to xstop at yaxis postion y. '''
-    # print('y: {} xstart: {} xstop: {}'.format(y, xstart, xstop))
-    plt.hlines(y, xstart, xstop, color, lw=12)
+    plt.hlines(y, xstart, xstop, color, lw=2)
+
+
+def range_timelines(y, xstart, xstop, color='b') -> None:
+    ''' Plot a horizontal line from xstart to xstop mark the start and end with
+        a small vertical line.
+    '''
+    plt.hlines(y, xstart, xstop, color, lw=2)
+    plt.vlines(xstart, y+0.03, y-0.03, color, lw=2)
+    plt.vlines(xstop, y+0.03, y-0.03, color, lw=2)
 
 
 def gen_set_labels(set_list):
