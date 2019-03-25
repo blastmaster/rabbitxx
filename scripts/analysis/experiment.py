@@ -50,6 +50,10 @@ class Experiment:
         ''' Return the ticks per second of the clock properties. '''
         return self.experiment_stats.clock_properties['Ticks per Seconds']
 
+    def global_offset(self) -> int:
+        ''' Return the start time offset of the clock properties. '''
+        return self.experiment_stats.clock_properties['Start Time']
+
     def files(self) -> Dict[int, List[str]]:
         ''' Return a Dict mapping the CIO-Set index to the list of unique filenames accessed in that CIO-Set. '''
         files = dict()
