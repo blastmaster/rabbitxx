@@ -22,11 +22,17 @@ def get_files_in_set(cio_set: pd.DataFrame) -> List[str]:
 
 ''' ====================General Helpers ==================== '''
 
+def microseconds_to_milliseconds(microseconds) -> float:
+    ''' Helper converting a microsecond timestamp into milliseconds. '''
+    return microseconds / 1000.
+
 def microseconds_to_seconds(microseconds) -> float:
     ''' Helper converting a microsecond timestamp into seconds. '''
     return microseconds / 1000000.
 
-''' Data '''
+def picoseconds_to_seconds(picosecond) -> float:
+    ''' Helper converting a picosecond timestamp into seconds. '''
+    return picosecond / 1000000000000.
 
 def calculate_bandwidth(row):
     ''' Return the calculated bandwidth of the given row in bytes/microseconds. '''
