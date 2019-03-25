@@ -11,8 +11,8 @@ using rabbitxx::logging;
 namespace rabbitxx
 {
 
-[[deprecated]]
-class File
+
+class [[deprecated]] File
 {
 public:
     File(std::string filename, std::string file_system) : filename_(filename), file_system_(file_system)
@@ -42,8 +42,8 @@ private:
 /**
  * Function object to filter for certain `io_event_kind` types.
  */
-[[deprecated]]
-struct Io_Operation_Filter
+
+struct [[deprecated]] Io_Operation_Filter
 {
     Io_Operation_Filter(const IoGraph& graph, const io_event_kind filter_kind) : kind_(filter_kind), graph_(graph) {}
     bool operator() (const VertexDescriptor& vd) const
