@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from typing import Tuple
+
 from .utils import *
 
 class OffsetTracker:
@@ -60,7 +62,7 @@ def prefix_file_filter(file_map, prefix: str):
     return {file: fs for file, fs in file_map.items() if file.startswith(prefix)}
 
 
-def calculate_access_range(row):
+def calculate_access_range(row) -> Tuple:
     ''' return a tuple (start_offset, end_offset) of the operation given in row '''
     start_offset = row['offset'] - row['response_size']
     if start_offset < 0.0:

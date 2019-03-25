@@ -138,7 +138,8 @@ def plot_set_durations(cio_sets, set_durations, out_name: str, set_indices=[]) -
         for rect in rects:
             height = rect.get_height()
             ax.text(
-                    rect.get_x() + (rect.get_width() / 16.),
+                    # rect.get_x() + (rect.get_width() / 16.),
+                    rect.get_x() + (rect.get_width() / len(cio_sets)),
                     1.1 * height,
                     r'{}$\mu$s'.format(int(height)))
 

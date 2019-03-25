@@ -46,12 +46,12 @@ class Experiment:
         ''' Return the length of the application run in seconds. '''
         return self.experiment_stats.clock_properties['Length'] / self.experiment_stats.clock_properties['Ticks per Seconds']
 
-    def ticks_per_seconds(self):
-        ''' Return the ticks per second fo the clock properties. '''
+    def ticks_per_seconds(self) -> int:
+        ''' Return the ticks per second of the clock properties. '''
         return self.experiment_stats.clock_properties['Ticks per Seconds']
 
     def files(self) -> Dict[int, List[str]]:
-        ''' Return a Dict mapping the set index to the list of unique filenames accessed in that CIO-Set. '''
+        ''' Return a Dict mapping the CIO-Set index to the list of unique filenames accessed in that CIO-Set. '''
         files = dict()
         for idx, cs in enumerate(self.cio_sets):
             uf = cs['filename'].unique().flatten().tolist()
