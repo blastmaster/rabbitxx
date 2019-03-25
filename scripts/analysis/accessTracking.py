@@ -81,9 +81,9 @@ def recalculate_offset_of_set(setdf, filename: str, pids=None):
         Returns an generator over all processes
     '''
     pids = get_processes(setdf, filename) if pids is None else pids
-    print('DEBUG pids: {}'.format(pids))
+    # print('DEBUG pids: {}'.format(pids))
     for pid in pids:
-        print('DEBUG pid {} filename {}'.format(pid, filename))
+        # print('DEBUG pid {} filename {}'.format(pid, filename))
         # Check if the filename we looking for is existent in the given set
         if not filename in setdf['filename'].values:
             # TODO fix exeception text, in what set?!?
@@ -93,7 +93,9 @@ def recalculate_offset_of_set(setdf, filename: str, pids=None):
             file_group = setdf.groupby(['pid', 'filename']).get_group((pid, filename))
             file_group['offset'] = file_group.apply(track_file_offsets, axis=1, tracker=OffsetTracker())
             yield file_group
-        except KeyError:
+        except KeyError as e:
+            print('ERROR KeyError occured in\
+                    recalculate_offset_of_set\n{}'.format(e))
             continue   # or  yield [] ?
 
 
@@ -166,33 +168,34 @@ def plot_cio_set_access_pattern(cio_set, set_label: str, file_name: str, process
         fig, ax = plt.subplots()
         # TODO pass filename as argument
         for group in recalculate_offset_of_set(cio_set, file_name, processes):
-            plot_rws_range(group)
+            plot_rws_range(group) # FIXME plots all accesses
 
-        min_response_size = group['response_size'].min()
-        max_response_size = group['response_size'].max()
-        mean_response_size = group['response_size'].mean()
-        print('DEBUG mean_response_size {}'.format(int(mean_response_size)))
-        print('DEBUG min_response_size {}'.format(int(min_response_size)))
-        print('DEBUG max_response_size {}'.format(int(max_response_size)))
+            min_response_size = group['response_size'].min()
+            max_response_size = group['response_size'].max()
+            mean_response_size = group['response_size'].mean()
+            print('DEBUG mean_response_size {}'.format(int(mean_response_size)))
+            print('DEBUG min_response_size {}'.format(int(min_response_size)))
+            print('DEBUG max_response_size {}'.format(int(max_response_size)))
 
-        min_offset = group['offset'].min()
-        max_offset = group['offset'].max()
+            min_offset = group['offset'].min()
+            max_offset = group['offset'].max()
 
-        print('DEBUG max_offset {}'.format(max_offset))
+            print('DEBUG max_offset {}'.format(max_offset))
 
-        xmin = min_offset - mean_response_size if (min_offset - mean_response_size) > 0 else 0
-        xmax = max_offset + mean_response_size
+            xmin = min_offset - mean_response_size if (min_offset - mean_response_size) > 0 else 0
+            xmax = max_offset + mean_response_size
 
-        # TODO set useful xticks
-        print('DEBUG xmin: {} xmax: {}'.format(xmin, xmax))
-        plt.xlim(xmin, xmax)
-        print('DEBUG ytick pids: {}'.format(get_processes(cio_set, file_name)))
-        plt.yticks(get_processes(cio_set, file_name))
+            # TODO set useful xticks
+            print('DEBUG xmin: {} xmax: {}'.format(xmin, xmax))
+            plt.xlim(xmin, xmax)
+            print('DEBUG ytick pids: {}'.format(get_processes(cio_set, file_name)))
+            plt.yticks(get_processes(cio_set, file_name))
 
-        fig.canvas.draw()
+            fig.canvas.draw()
 
         # convert xticklabel text to kilobyte
-        xlabels = [byte_to_kilobyte_label(item.get_text()) for item in ax.get_xticklabels()]
+        # xlabels = [byte_to_kilobyte_label(item.get_text()) for item in ax.get_xticklabels()]
+        xlabels = [item.get_text() for item in ax.get_xticklabels()]
         ax.set_xticklabels(xlabels)
         for tick in ax.get_xticklabels():
             tick.set_rotation(45)

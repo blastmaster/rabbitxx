@@ -90,7 +90,10 @@ class ProcFileAccess:
 class SetAccessMap:
     ''' Access map of a set. Provides a mapping from a filename to a list of
         ProcFileAccess objects representing the Access of each Process. '''
+
+    # indice of cio-set
     setidx: int
+    # mapping filename -> accesses per process
     file_accesses: Dict[str, List[ProcFileAccess]]
 
     def __init__(self, setidx: int, f_acc: Dict[str, List[ProcFileAccess]]) -> None:
@@ -121,16 +124,14 @@ class SetAccessMap:
         return len([pfa.pid for pfa in self.file_accesses[filename]])
 
 
-
-
 # NOTE that the sets in experiment should be filtered already.
 def get_access_mappings(exp) -> List[SetAccessMap]:
+    ''' Returns an access mapping of each CIO-Set for its file accesses. '''
 
     set_files = [] # mapping setidx -> file_access dict
     for idx, file_list in exp.files().items():
         # for each set!
         file_accesses = dict() # mapping filename -> List[ProcFileAccess]
-        print("processing set {}".format(idx))
         for file in file_list:
             # for each file!
             acc_list = []
@@ -138,17 +139,17 @@ def get_access_mappings(exp) -> List[SetAccessMap]:
                 # for each process!
                 assert len(acc['filename'].unique()) == 1
                 assert len(acc['pid'].unique()) == 1
-                pid = acc['pid'].unique()[0]
                 filename = acc['filename'].unique()[0]
+                pid = acc['pid'].unique()[0]
                 assert file == filename
-                print("processing process {} for file {}".format(pid, filename))
+                # print("processing process {} for file {}".format(pid, filename))
                 kinds = acc['kind'].unique()
                 w_it, r_it = None, None
                 if ' write' in kinds:
-                    print('processing write')
+                    # print('processing write')
                     w_it = make_write_intervaltree(acc)
                 if ' read' in kinds:
-                    print('processing read')
+                    # print('processing read')
                     r_it = make_read_intervaltree(acc)
                 f_acc = ProcFileAccess(idx, filename, pid, r_it, w_it)
                 acc_list.append(f_acc) # list of accesses for a file of each process
@@ -230,7 +231,6 @@ class Overlap:
 
 
 def is_overlapping(head: ProcFileAccess, tail: List[ProcFileAccess]) -> Iterable:
-    ''' TODO at the moment looks only for writes! '''
 
     #print('tail len: {}'.format(len(tail)))
     for cmp_acc in tail:
@@ -257,7 +257,6 @@ def is_overlapping(head: ProcFileAccess, tail: List[ProcFileAccess]) -> Iterable
 
 def overlaps(filename: str, acc_l: List[ProcFileAccess]) -> Iterable:
 
-    #print('looking for overlaps in {}'.format(filename))
     for i, head in enumerate(acc_l):
         yield from is_overlapping(head, acc_l[i+1:])
 
