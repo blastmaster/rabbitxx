@@ -76,6 +76,19 @@ class Experiment:
         ''' Return the number of CIO-Set in the experiment. '''
         return self.experiment_stats.cio_stats.number_of_sets
 
+    def num_locations(self) -> int:
+        ''' Return the number of locations in the experiment. '''
+        return self.experiment_stats.num_locations
+
+    def tracefile(self) -> str:
+        ''' Return the path to the tracefile used in this experiment. '''
+        return self.experiment_stats.tracefile
+
+    def file_map(self) -> Dict[str, str]:
+        ''' Return a Dict contain all files and there corresponding file system
+            accessed in the experiment. '''
+        return self.experiment_stats.file_map
+
 
 def find_experiment_files(base_path):
 
