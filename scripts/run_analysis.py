@@ -4,17 +4,28 @@ import argparse
 
 from analysis import experiment
 from analysis import Filter
-from analysis.metadata import make_creates
-from analysis.overlap import overlaps, get_access_mappings, read_modify_write
+from analysis.metadata import make_creates, Create
+from analysis.overlap import overlaps, get_access_mappings, read_modify_write, SetAccessMap
 
 import numpy as np
 
+from typing import List
 
-def read_accesses(setidx: int, filename: str, acc_map):
+'''
+Overlapping Accesses
+    1. Filter cio sets for useless I/O such as `/proc` or `/sys`
+    2. obtain remaining file names present
+    3. recalculate the offset for every file and process <-
+    4. obtain access ranges - intervall tree? Interval objects [start-offset:end-offset] (kind)
+    5. compare if they overlap
+'''
+
+
+def read_accesses(setidx: int, filename: str, acc_map: List[SetAccessMap]):
     return [pfa.read_intervals for pfa in acc_map[setidx][filename] if pfa.has_reads()]
 
 
-def write_accesses(setidx: int, filename: str, acc_map):
+def write_accesses(setidx: int, filename: str, acc_map: List[SetAccessMap]):
     return [pfa.write_intervals for pfa in acc_map[setidx][filename] if pfa.has_writes()]
 
 
@@ -28,7 +39,7 @@ def report_overlap(ovlp) -> None:
     print("\n")
 
 
-def report_concurrent_creates(create_lst, experiment) -> None:
+def report_concurrent_creates(create_lst: List[Create], experiment) -> None:
     ''' Print a simple report for concurrent creates in the same subdirectory. '''
 
     def get_data(exp, sidx, ridx):
@@ -67,7 +78,7 @@ def report_experiment_info(experiment) -> None:
         print("\t{} : {}".format(file, fs))
 
 
-def dump_set_files(set_files) -> None:
+def dump_set_files(set_files: SetAccessMap) -> None:
     ''' Dump file accessess of every set. '''
 
     for setidx, file_acc in set_files.items():
