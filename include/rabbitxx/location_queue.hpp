@@ -7,6 +7,49 @@
 
 namespace rabbitxx {
 
+    template<typename key_t, typename map_t>
+    class location_map
+    {
+    public:
+        using mapped_type = std::map<key_t, map_t>;
+        using key_type = otf2::reference<otf2::definition::location>::ref_type;
+
+        map_t& get_value(const otf2::definition::location& location, const key_t& outer_key)
+        {
+            return map_[location.ref()][outer_key];
+        }
+
+        const map_t& get_value(const otf2::definition::location& location, const key_t& outer_key) const
+        {
+            return map_[location.ref()][outer_key];
+        }
+
+        // outer map
+        mapped_type& operator[](const key_type& key)
+        {
+            return map_[key];
+        }
+
+        // outer map
+        const mapped_type& operator[](const key_type& key) const
+        {
+            return map_[key];
+        }
+
+        auto begin()
+        {
+            map_.begin();
+        }
+
+        auto end()
+        {
+            map_.end();
+        }
+
+    private:
+        std::map<key_type, mapped_type> map_;
+    };
+
     template<typename QType>
     class location_queue
     {
