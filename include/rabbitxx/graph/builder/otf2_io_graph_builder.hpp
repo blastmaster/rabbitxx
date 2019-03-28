@@ -26,6 +26,35 @@ struct stack_frame
     VertexDescriptor vertex = IoGraph::null_vertex();
 };
 
+
+struct offset_tracker
+{
+    uint64_t get() const
+    {
+        return offset_;
+    }
+
+    void set(uint64_t val)
+    {
+        offset_ = val;
+    }
+
+    uint64_t inc(uint64_t i)
+    {
+        offset_ += i;
+        return offset_;
+    }
+
+    uint64_t operator+=(uint64_t inc)
+    {
+        return this->inc(inc);
+    }
+
+private:
+    uint64_t offset_ = 0;
+};
+
+
 class io_graph_builder : public rabbitxx::trace::base
 {
     typedef rabbitxx::trace::base base;
@@ -201,6 +230,7 @@ private:
     otf2::chrono::time_point max_tp_ = otf2::chrono::armageddon();
     otf2::definition::clock_properties clock_props_;
     std::map<std::string, std::string> file_to_fs_map_ {};
+    location_map<std::string, offset_tracker> offset_map_ {};
 };
 
 struct OTF2_Io_Graph_Builder
