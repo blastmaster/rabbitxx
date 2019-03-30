@@ -69,6 +69,7 @@ def report_experiment_info(experiment) -> None:
 
     print("Experiment:")
     print("Applicaton run duration: {:.2f}s".format(experiment.experiment_length()))
+    print("Experiment duration: {:.2f}s".format(experiment.experiment_stats.duration))
     print("Number of Locations: {}".format(experiment.num_locations()))
     print("Trace file: {}".format(experiment.tracefile()))
     print("CIO-Sets:")

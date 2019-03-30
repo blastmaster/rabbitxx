@@ -262,12 +262,12 @@ public:
         return clock_props_;
     }
 
-    otf2::chrono::duration experiment_duration() const
+    std::chrono::duration<double> experiment_duration() const
     {
         return experiment_duration_;
     }
 
-    void set_experiment_duration(const otf2::chrono::duration& experiment_dur)
+    void set_experiment_duration(const std::chrono::duration<double>& experiment_dur)
     {
         experiment_duration_ = experiment_dur;
     }
@@ -279,7 +279,7 @@ private:
     PIO_Stats pio_stats_;
     fs_map_t file_map_;
     otf2::definition::clock_properties clock_props_;
-    otf2::chrono::duration experiment_duration_ = otf2::chrono::duration(0);
+    std::chrono::duration<double> experiment_duration_ = std::chrono::duration<double>(0.0);
     std::uint64_t num_locations_ = 0;
 };
 
@@ -287,7 +287,7 @@ inline std::ostream& operator<<(std::ostream& os, const Experiment_Stats& stats)
 {
     os << "========== Experiment Stats ==========\n"
         << "Input trace file: " << stats.trace_file() << "\n"
-        << "Experiment Duration: " << stats.experiment_duration() << "\n"
+        << "Experiment Duration: " << stats.experiment_duration().count() << "\n"
         << "Number of locations: " << stats.num_locations() << "\n"
         << stats.graph_stats() << stats.pio_stats() <<  stats.cio_stats();
     //TODO: print clock properties and file system map

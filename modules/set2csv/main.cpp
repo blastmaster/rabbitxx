@@ -200,7 +200,7 @@ void graph_stats_2_csv(const Graph_Stats& stats, std::ostream& out)
 void experiment_stats_2_csv(const Experiment_Stats& stats, std::ostream& out)
 {
     out << "Tracefile," << stats.trace_file() << "\n"
-        << "Experiment Duration," << stats.experiment_duration() << "\n"
+        << "Experiment Duration," << stats.experiment_duration().count() << "\n"
         << "Number of Locations," << stats.num_locations() << "\n";
 
     graph_stats_2_csv(stats.graph_stats(), out);
@@ -303,7 +303,7 @@ void experiment_stats_to_json(const Experiment_Stats& stats, std::ostream& out)
     writer.Key("Tracefile");
     writer.String(stats.trace_file().string().c_str());
     writer.Key("Experiment_Duration");
-    writer.Uint64(stats.experiment_duration().count());
+    writer.Double(stats.experiment_duration().count());
     writer.Key("Number of Locations");
     writer.Uint64(stats.num_locations());
 
