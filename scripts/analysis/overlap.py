@@ -4,7 +4,7 @@ import pandas as pd
 from intervaltree import Interval, IntervalTree
 
 from analysis import Filter
-from analysis.accessTracking import recalculate_offset_of_set
+from analysis.accessTracking import get_file_acccess_per_process
 from analysis import utils
 
 from typing import List, Dict, Tuple, Iterable
@@ -135,7 +135,7 @@ def get_access_mappings(exp) -> List[SetAccessMap]:
         for file in file_list:
             # for each file!
             acc_list = []
-            for acc in recalculate_offset_of_set(exp.cio_sets[idx], file):
+            for acc in get_file_acccess_per_process(exp.cio_sets[idx], file):
                 # for each process!
                 assert len(acc['filename'].unique()) == 1
                 assert len(acc['pid'].unique()) == 1
@@ -167,7 +167,7 @@ def get_set_access_mapping(cio_set: pd.DataFrame, setidx: int) -> SetAccessMap:
     file_accesses = dict()
     for file in utils.get_files_in_set(cio_set):
         acc_list = []
-        for acc in recalculate_offset_of_set(cio_set, file):
+        for acc in get_file_acccess_per_process(cio_set, file):
             assert len(acc['filename'].unique()) == 1
             assert len(acc['pid'].unique()) == 1
             filename = acc['filename'].unique()[0]

@@ -5,58 +5,6 @@ from typing import Tuple
 
 from .utils import *
 
-class OffsetTracker:
-    value: int = 0
-
-    def __init__(self, initial: int=0) -> None:
-        self.value = initial
-
-    def __repr__(self) -> str:
-        return 'OffsetTracker value={}'.format(self.value)
-
-    @property
-    def offset(self) -> int:
-        return self.value
-
-    @offset.setter
-    def offset(self, value: int) -> None:
-        self.value = value
-
-
-def track_file_offsets(row, **kwds):
-
-    tracker = kwds['tracker']
-
-    if row['kind'] == ' create':
-        # print('create')
-        assert tracker.offset == 0, "Initial offset unequal to zero on create operation"
-
-    elif row['kind'] == ' seek':
-        # print('seek')
-        # TODO consider seek options {seek_set, seek_cur, seek_end}
-        if row['option'] == ' start': # seek_set
-            tracker.offset = row['response_size']
-        if row['option'] == 'current': # seek_cur
-            tracker.offset += row['response_size']
-        if row['option'] == 'end': # seek_end
-            raise Exception("Unhandled seek option {} cannot track offset!".format(row['option']))
-        if row['option'] == 'data': # seek_data
-            raise Exception("Unhandled seek option {} cannot track offset!".format(row['option']))
-        if row['option'] == 'hole': # seek_hole
-            raise Exception("Unhandled seek option {} cannot track offset!".format(row['option']))
-
-    elif row['kind'] == ' write' or row['kind'] == ' read':
-        # print('read/write')
-        tracker.offset += row['response_size']
-
-    elif row['kind'] == ' close_or_delete':
-        # return current offset but reset tracker!
-        tmp = tracker.offset
-        tracker.offset = 0
-        return tmp
-
-    return int(tracker.offset)
-
 
 def prefix_file_filter(file_map, prefix: str):
     return {file: fs for file, fs in file_map.items() if file.startswith(prefix)}
@@ -76,27 +24,16 @@ class NonExistentFileError(Exception):
     pass
 
 
-def recalculate_offset_of_set(setdf, filename: str, pids=None):
-    ''' Calculate the offsets for all pids in set of given filename.
-        Returns an generator over all processes
+def get_file_acccess_per_process(setdf, filename: str, pids=None):
     '''
-    pids = get_processes(setdf, filename) if pids is None else pids
-    # print('DEBUG pids: {}'.format(pids))
-    for pid in pids:
-        # print('DEBUG pid {} filename {}'.format(pid, filename))
-        # Check if the filename we looking for is existent in the given set
-        if not filename in setdf['filename'].values:
-            # TODO fix exeception text, in what set?!?
-            raise NonExistentFileError('{} does not exists in set'.format(filename))
+        Returns a generator for all accesses of the given processes for the
+        given file.
+    '''
 
-        try:
-            file_group = setdf.groupby(['pid', 'filename']).get_group((pid, filename))
-            file_group['offset'] = file_group.apply(track_file_offsets, axis=1, tracker=OffsetTracker())
-            yield file_group
-        except KeyError as e:
-            print('ERROR KeyError occured in\
-                    recalculate_offset_of_set\n{}'.format(e))
-            continue   # or  yield [] ?
+    pids = get_processes(setdf, filename) if pids is None else pids
+    for pid in pids:
+        group = setdf.groupby(['pid', 'filename']).get_group((pid, filename))
+        yield group
 
 
 ''' ==================== Plotting ==================== '''
@@ -167,7 +104,7 @@ def plot_cio_set_access_pattern(cio_set, set_label: str, file_name: str, process
         # print('DBEUG set: {}'.format(cio_set))
         fig, ax = plt.subplots()
         # TODO pass filename as argument
-        for group in recalculate_offset_of_set(cio_set, file_name, processes):
+        for group in get_file_acccess_per_process(cio_set, file_name, processes):
             plot_rws_range(group) # FIXME plots all accesses
 
             min_response_size = group['response_size'].min()
@@ -213,7 +150,7 @@ def plot_cio_set_response_size_pattern(cio_set, set_label: str, file_name :str, 
 
     fig, ax = plt.subplots()
 
-    for group in recalculate_offset_of_set(cio_set, file_name, pids):
+    for group in get_file_acccess_per_process(cio_set, file_name, pids):
         #TODO do plotting!
         plot_response_size_range(group)
         # kgroup = group.pipe(Filter.read_kinds)
