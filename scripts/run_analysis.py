@@ -87,21 +87,9 @@ def report_experiment_info(experiment) -> None:
         print("\t{} : {}".format(file, fs))
 
 
-def dump_set_files(set_files: SetAccessMap) -> None:
-    ''' Dump file accessess of every set. '''
-
-    for setidx, file_acc in set_files.items():
-        print("Accessess in set {}".format(setidx))
-        for filename, acc_list in file_acc.items():
-            print("Accesses to {}".format(filename))
-            for acc in acc_list:
-                print(acc)
-
-
 def main(args) -> None:
     exp = experiment.read_experiment(args.experiment_dir)
     exp.filter(Filter.file_filter)
-    # dump_set_files(set_files)
 
     if args.info:
         report_experiment_info(exp)
