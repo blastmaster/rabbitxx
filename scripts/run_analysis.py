@@ -5,7 +5,7 @@ import argparse
 from analysis import experiment
 from analysis import Filter
 from analysis.metadata import make_creates, Create
-from analysis.overlap import overlaps, get_access_mappings, read_modify_write, SetAccessMap
+from analysis.overlap import overlaps, get_access_mappings, read_modify_write, read_after_write, SetAccessMap
 
 import numpy as np
 
@@ -64,6 +64,14 @@ def report_distributed_read_modify_write(rmw) -> None:
         rmw.second.process, rmw.second.filename, rmw.second.iv))
 
 
+def report_distributed_read_after_write(raw) -> None:
+    ''' Print a simple report for distributed read-after-write access on the same region of a file. '''
+
+    print("Write from process {} on file {} @ {} -> read from process {} on file {} @ {}".format(
+        raw.first.process, raw.first.filename, raw.first.iv,
+        raw.second.process, raw.second.filename, raw.second.iv))
+
+
 def report_experiment_info(experiment) -> None:
     ''' Print an overview report for the rabbitxx-experiment. '''
 
@@ -102,7 +110,7 @@ def main(args) -> None:
         creates = [ make_creates(sidx, cio_set) for sidx, cio_set in enumerate(exp.cio_sets) ]
         report_concurrent_creates(creates, exp)
 
-    if args.overlap or args.read_modify_write:
+    if args.overlap or args.read_modify_write or args.read_after_write:
         set_files = get_access_mappings(exp)
 
         if args.overlap:
@@ -126,6 +134,20 @@ def main(args) -> None:
                         report_distributed_read_modify_write(rmw)
                     else:
                         print("No distributed read-modify-write found.")
+
+        if args.read_after_write:
+            print("Analyze distributed read-after-write ...")
+            for acc_m in set_files:
+                print("checking set idx: {}".format(acc_m.set_index))
+                for file, acc_l in acc_m.file_accesses.items():
+                    if acc_m.num_processes(file) < 2:
+                        continue
+                    for raw in read_after_write(acc_l):
+                        report_distributed_read_after_write(raw)
+                    else:
+                        print("No distributed read-after-write found.")
+
+        print("Done")
 
 
 if __name__ == "__main__":
@@ -158,6 +180,12 @@ if __name__ == "__main__":
             action='store_true',
             default=False,
             help='Report distributed read-modify-write access to the same region of a file.',
+    )
+    parser.add_argument(
+            '-raw', '--read-after-write',
+            action='store_true',
+            default=False,
+            help='Report distributed read-after-write access to the same region of a file.',
     )
 
     args = parser.parse_args()
