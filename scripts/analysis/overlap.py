@@ -260,12 +260,14 @@ def overlaps(filename: str, acc_l: List[ProcFileAccess]) -> Iterable:
     for i, head in enumerate(acc_l):
         yield from is_overlapping(head, acc_l[i+1:])
 
-def read_modify_write(acc_l: List[ProcFileAccess]) -> Iterable:
 
     for i, head in enumerate(acc_l):
-        tail = acc_l.copy()
-        tail.pop(i)
+def read_modify_write(acc_l: List[ProcFileAccess]) -> Iterable:
+
+    for idx, head in enumerate(acc_l):
+        tail = acc_l[:idx] + acc_l[(idx + 1):]
         yield from rmw(head, tail)
+
 
 def rmw(acc: ProcFileAccess, tail: List[ProcFileAccess]):
     ''' check if any read interval of acc is written in any write interval in tail. '''
@@ -279,12 +281,13 @@ def rmw(acc: ProcFileAccess, tail: List[ProcFileAccess]):
                         second = AccInterval(oiv, other.process, other.filename, other.set_idx)
                         yield Overlap(first, second)
 
+
 def read_after_write(acc_l: List[ProcFileAccess]) -> Iterable:
 
     for idx, head in enumerate(acc_l):
-        tail = acc_l.copy()
-        tail.pop(idx)
+        tail = acc_l[:idx] + acc_l[(idx + 1):]
         yield from raw(head, tail)
+
 
 def raw(acc: ProcFileAccess, tail: List[ProcFileAccess]):
     ''' distributed read-after-write '''
