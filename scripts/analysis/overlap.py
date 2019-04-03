@@ -255,13 +255,32 @@ def is_overlapping(head: ProcFileAccess, tail: List[ProcFileAccess]) -> Iterable
                     yield ov
 
 
+def has_overlapping_write(head: ProcFileAccess, tail: List[ProcFileAccess]) -> Iterable:
+
+    for cmp_acc in tail:
+        assert cmp_acc != head # do not compare with yourself!
+        if cmp_acc.has_writes() and head.has_writes():
+            for wiv in cmp_acc.write_intervals:
+                oiv = head.write_intervals[wiv.begin:wiv.end]
+                if oiv:
+                    #print('found overlapping write: {} -> with {}'.format(oiv, wiv))
+                    first = AccInterval(oiv, head.process, head.filename, head.set_idx)
+                    second = AccInterval(wiv, cmp_acc.process, cmp_acc.filename, cmp_acc.set_idx)
+                    yield Overlap(first, second)
+
+
 def overlaps(filename: str, acc_l: List[ProcFileAccess]) -> Iterable:
 
     for i, head in enumerate(acc_l):
         yield from is_overlapping(head, acc_l[i+1:])
 
 
+def overlapping_writes(filename: str, acc_l: List[ProcFileAccess]) -> Iterable:
+
     for i, head in enumerate(acc_l):
+        yield from has_overlapping_write(head, acc_l[i+1:])
+
+
 def read_modify_write(acc_l: List[ProcFileAccess]) -> Iterable:
 
     for idx, head in enumerate(acc_l):

@@ -5,7 +5,7 @@ import argparse
 from analysis import experiment
 from analysis import Filter
 from analysis.metadata import make_creates, Create
-from analysis.overlap import overlaps, get_access_mappings, read_modify_write, read_after_write, SetAccessMap
+from analysis.overlap import overlapping_writes, get_access_mappings, read_modify_write, read_after_write, SetAccessMap
 
 import numpy as np
 
@@ -106,7 +106,7 @@ def main(args) -> None:
             for acc_m in set_files:
                 print("checking set idx: {}".format(acc_m.set_index))
                 for file, acc_l in acc_m.file_accesses.items():
-                    for ovlp in overlaps(file, acc_l):
+                    for ovlp in overlapping_writes(file, acc_l):
                         report_overlap(ovlp)
                     else:
                         print("No overlapping access!")
