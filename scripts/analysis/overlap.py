@@ -7,7 +7,7 @@ from analysis import Filter
 from analysis.accessTracking import get_file_acccess_per_process
 from analysis import utils
 
-from typing import List, Dict, Tuple, Iterable
+from typing import List, Dict, Tuple, Iterable, Generator
 
 
 def make_intervaltree(df: pd.DataFrame) -> IntervalTree:
@@ -125,15 +125,17 @@ class SetAccessMap:
 
 
 # NOTE that the sets in experiment should be filtered already.
-def get_access_mappings(exp) -> List[SetAccessMap]:
+# def get_access_mappings(exp) -> List[SetAccessMap]:
+def get_access_mappings(exp) -> Generator:
     ''' Returns an access mapping of each CIO-Set for its file accesses. '''
 
-    set_files = [] # mapping setidx -> file_access dict
-    for idx, file_list in exp.files().items():
+    # set_files = [] # mapping setidx -> file_access dict
+    for idx, file_list in exp.iter_files():
         # for each set!
         file_accesses = dict() # mapping filename -> List[ProcFileAccess]
-        for file in file_list:
+        for file in file_list: # for each file in the cio-set
             # for each file!
+            print("Processing file {} for CIO-Set {}".format(file, idx))
             acc_list = []
             for acc in get_file_acccess_per_process(exp.cio_sets[idx], file):
                 # for each process!
@@ -146,18 +148,17 @@ def get_access_mappings(exp) -> List[SetAccessMap]:
                 kinds = acc['kind'].unique()
                 w_it, r_it = None, None
                 if ' write' in kinds:
-                    # print('processing write')
                     w_it = make_write_intervaltree(acc)
                 if ' read' in kinds:
-                    # print('processing read')
                     r_it = make_read_intervaltree(acc)
                 f_acc = ProcFileAccess(idx, filename, pid, r_it, w_it)
                 acc_list.append(f_acc) # list of accesses for a file of each process
             file_accesses.update({file: acc_list})
-        acc_m = SetAccessMap(idx, file_accesses)
-        set_files.append(acc_m)
+        yield SetAccessMap(idx, file_accesses)
+        # acc_m = 
+        # set_files.append(acc_m)
 
-    return set_files
+    # return set_files
 
 
 # same as above but for a given set instead of the whole experiment

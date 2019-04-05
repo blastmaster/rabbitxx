@@ -88,8 +88,10 @@ def report_experiment_info(experiment) -> None:
 
 
 def main(args) -> None:
+    print("Start read experiment ...")
     exp = experiment.read_experiment(args.experiment_dir)
-    exp.filter(Filter.file_filter)
+    # exp.filter(Filter.file_filter)
+    print("Start analysis ...")
 
     if args.info:
         report_experiment_info(exp)
@@ -100,9 +102,9 @@ def main(args) -> None:
         report_concurrent_creates(creates, exp)
 
     if args.overlap or args.read_modify_write or args.read_after_write:
-        set_files = get_access_mappings(exp)
+        # set_files = get_access_mappings(exp)
 
-        for acc_m in set_files:
+        for acc_m in get_access_mappings(exp):
             print("checking set idx: {}".format(acc_m.set_index))
             for file, acc_l in acc_m.file_accesses.items():
                 if args.overlap:
