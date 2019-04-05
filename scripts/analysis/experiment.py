@@ -2,7 +2,7 @@ import os
 import json
 import pandas as pd
 
-from typing import List, Dict
+from typing import List, Dict, Generator
 
 class ExperimentStats:
     def __init__(self, graph_stats, cio_stats, pio_stats, **kw):
@@ -61,6 +61,12 @@ class Experiment:
             uf = cs['filename'].unique().flatten().tolist()
             files.update({idx: uf})
         return files
+
+    def iter_files(self) -> Generator:
+        ''' Return a Dict mapping the CIO-Set index to the list of unique filenames accessed in that CIO-Set. '''
+        for idx, cs in enumerate(self.cio_sets):
+            uf = cs['filename'].unique().flatten().tolist()
+            yield idx, uf
 
     def files_of_set(self, setidx: int) -> List[str]:
         ''' Return the list of files accessed by CIO-Set given by index. '''
