@@ -89,7 +89,9 @@ def report_experiment_info(experiment) -> None:
 def main(args) -> None:
     print("Start read experiment ...")
     exp = experiment.read_experiment(args.experiment_dir)
-    # exp.filter(Filter.file_filter)
+    if args.filter:
+        exp.filter(Filter.file_filter)
+
     print("Start analysis ...")
 
     if args.info:
@@ -144,6 +146,12 @@ if __name__ == "__main__":
             action='store_true',
             default=False,
             help='Report some basic information about the experiment.',
+    )
+    parser.add_argument(
+            '-f', '--filter',
+            action='store_true',
+            default=False,
+            help='Enable experiment.FileFilter to filter files in /sys or /proc.',
     )
     parser.add_argument(
             '-c', '--concurrent-creates',
