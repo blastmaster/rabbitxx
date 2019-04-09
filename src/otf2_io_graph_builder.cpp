@@ -171,6 +171,12 @@ void io_graph_builder::event(const otf2::definition::location& location,
                         << evt.timestamp();
 
     FILTER_RANK
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
 
     // here we just save the event for later.
     // An I/O operation will be merged into one single vertex if the
@@ -184,6 +190,14 @@ void io_graph_builder::event(const otf2::definition::location& location,
     logging::trace() << "Found io_operation_complete event to location #" << location.ref() << " @"
                         << evt.timestamp();
     FILTER_RANK
+
+
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
     // get corresponding begin_operation
     auto& begin_evt = io_ops_started_.front(location);
     // matching id seems to be always the same, check for equality anyhow.
@@ -257,6 +271,12 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     FILTER_RANK
 
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
     // check for parent! to avoid duplication
     if (evt.handle().has_parent()) {
         //logging::debug() << "handle has a parent! ... discard";
@@ -338,6 +358,12 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     FILTER_RANK
 
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
     //check for parent! avoid duplication
     if (evt.handle().has_parent()) {
         //logging::debug() << "handle has a parent! ... discard!";
@@ -438,6 +464,12 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     FILTER_RANK
 
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
     const auto name = get_handle_name(evt.handle());
     const auto region_name = region_name_queue_.top(location);
     // NOTE: Mapping:
