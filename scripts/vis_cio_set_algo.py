@@ -91,7 +91,7 @@ def plot_algorithm_stats(algo_stats: AlgorithmStats, xticks: List[str], filename
     ax.set_ylim(0, 230000)
     plt.ylabel('Time in ms')
     plt.xlabel('Trace configuration')
-    plt.legend(('Graph construction', 'per-process CIO-Sets', 'Merge'))
+    plt.legend(('Graph construction', 'Phase identification', 'Definition of global CIO-Sets'))
     plt.savefig(filename, dpi=300, format='png', bbox_inches='tight')
 
 
