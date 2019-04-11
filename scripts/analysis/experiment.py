@@ -10,7 +10,11 @@ class ExperimentStats:
         self.tracefile = kw['Tracefile']
         self.clock_properties = kw['Clock Properties']
         self.file_map = kw['File Map']
-        self.num_locations = kw['Number of Locations']
+        try:
+            self.num_locations = kw['Number of Locations']
+        except KeyError:
+            print('Number of locations is not included in summary file.')
+            self.num_locations = "NaN"
         self.graph_stats = graph_stats
         self.cio_stats = cio_stats
         self.pio_stats = pio_stats
