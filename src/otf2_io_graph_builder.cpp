@@ -171,6 +171,12 @@ void io_graph_builder::event(const otf2::definition::location& location,
                         << evt.timestamp();
 
     FILTER_RANK
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
 
     // here we just save the event for later.
     // An I/O operation will be merged into one single vertex if the
@@ -184,6 +190,14 @@ void io_graph_builder::event(const otf2::definition::location& location,
     logging::trace() << "Found io_operation_complete event to location #" << location.ref() << " @"
                         << evt.timestamp();
     FILTER_RANK
+
+
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
     // get corresponding begin_operation
     auto& begin_evt = io_ops_started_.front(location);
     // matching id seems to be always the same, check for equality anyhow.
@@ -196,9 +210,13 @@ void io_graph_builder::event(const otf2::definition::location& location,
     {
         case otf2::common::io_operation_mode_type::read:
             kind = io_event_kind::read;
+            // increment offset for read ops
+            offset_map_.get_value(location, name).inc(evt.bytes_request());
             break;
         case otf2::common::io_operation_mode_type::write:
             kind = io_event_kind::write;
+            // increment offset for write ops
+            offset_map_.get_value(location, name).inc(evt.bytes_request());
             break;
         case otf2::common::io_operation_mode_type::flush:
             kind = io_event_kind::flush;
@@ -213,7 +231,8 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     evt.handle().paradigm().name().str(),
                                     begin_evt.bytes_request(),
                                     evt.bytes_request(),
-                                    0, /* offset */
+                                    offset_map_.get_value(location, name).get(), // offset
+                                    //0, /* offset */
                                     io_operation_option_container(
                                         begin_evt.operation_mode(),
                                         begin_evt.operation_flag()),
@@ -252,6 +271,12 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     FILTER_RANK
 
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
     // check for parent! to avoid duplication
     if (evt.handle().has_parent()) {
         //logging::debug() << "handle has a parent! ... discard";
@@ -262,6 +287,11 @@ void io_graph_builder::event(const otf2::definition::location& location,
     }
 
     const auto name = get_handle_name(evt.handle());
+    // check that there is no existing offset_tracker for this file on this location
+    // create new offset tracker
+
+    offset_map_.get_value(location, name) = offset_tracker();
+
     const auto region_name = region_name_queue_.top(location);
     const auto vt = io_event_property(location.ref(),
                                     name,
@@ -269,7 +299,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     evt.handle().paradigm().name().str(),
                                     0, /* request size */
                                     0, /* response size */
-                                    0, /* offset */
+                                    offset_map_.get_value(location, name).get(), /* offset */
                                     rabbitxx::io_creation_option_container(
                                         evt.status_flags(),
                                         evt.creation_flags(),
@@ -301,6 +331,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
     }
 
     const auto region_name = region_name_queue_.top(location);
+    // delete offset_tracker
+    size_t res = offset_map_[location.ref()].erase(name);
+    assert(res > 0);
     const auto vt = io_event_property(location.ref(),
                                     name,
                                     region_name,
@@ -325,6 +358,12 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     FILTER_RANK
 
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
     //check for parent! avoid duplication
     if (evt.handle().has_parent()) {
         //logging::debug() << "handle has a parent! ... discard!";
@@ -335,6 +374,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
     }
 
     const auto name = get_handle_name(evt.handle());
+    // delete offset_tracker
+    size_t res = offset_map_[location.ref()].erase(name);
+    assert(res > 0);
     const auto region_name = region_name_queue_.top(location);
     const auto vt = io_event_property(location.ref(),
                                     name,
@@ -422,16 +464,27 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     FILTER_RANK
 
+    //Filter MPI-IO - events we just interesseted in POSIX I/O
+    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
     const auto name = get_handle_name(evt.handle());
     const auto region_name = region_name_queue_.top(location);
     // NOTE: Mapping:
     //       request_size = offset_request
     //       response_size = offset_result
     //       offset = offset_result
+
+    // set offset to seek result!
+    offset_map_.get_value(location, name).set(evt.offset_result());
+
     auto vt = io_event_property(location.ref(), name, region_name,
                                     evt.handle().paradigm().name().str(),
                                     evt.offset_request(),
-                                    evt.offset_result(), evt.offset_result(),
+                                    evt.offset_result(),
+                                    offset_map_.get_value(location, name).get(), //offset
                                     evt.seek_option(),
                                     io_event_kind::seek,
                                     boost::none,

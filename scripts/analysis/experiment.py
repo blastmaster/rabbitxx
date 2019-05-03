@@ -2,7 +2,7 @@ import os
 import json
 import pandas as pd
 
-from typing import List, Dict
+from typing import List, Dict, Generator
 
 class ExperimentStats:
     def __init__(self, graph_stats, cio_stats, pio_stats, **kw):
@@ -10,7 +10,11 @@ class ExperimentStats:
         self.tracefile = kw['Tracefile']
         self.clock_properties = kw['Clock Properties']
         self.file_map = kw['File Map']
-        self.num_locations = kw['Number of Locations']
+        try:
+            self.num_locations = kw['Number of Locations']
+        except KeyError:
+            print('Number of locations is not included in summary file.')
+            self.num_locations = "NaN"
         self.graph_stats = graph_stats
         self.cio_stats = cio_stats
         self.pio_stats = pio_stats
@@ -61,6 +65,12 @@ class Experiment:
             uf = cs['filename'].unique().flatten().tolist()
             files.update({idx: uf})
         return files
+
+    def iter_files(self) -> Generator:
+        ''' Return a Dict mapping the CIO-Set index to the list of unique filenames accessed in that CIO-Set. '''
+        for idx, cs in enumerate(self.cio_sets):
+            uf = cs['filename'].unique().flatten().tolist()
+            yield idx, uf
 
     def files_of_set(self, setidx: int) -> List[str]:
         ''' Return the list of files accessed by CIO-Set given by index. '''
@@ -131,7 +141,7 @@ def read_pio_set_csv(pio_set_files):
     return {k: read_set_csv(v) for k, v in pio_set_files.items()}
 
 
-def read_experiment(path):
+def read_experiment(path) -> Experiment:
 
     fd = find_experiment_files(path)
 
@@ -147,3 +157,24 @@ def read_experiment(path):
         return Experiment(cio_sets, pio_sets, exp_st)
     #TODO: else?!? without experiment
 
+
+def read_experiment_stats(path) -> ExperimentStats:
+    ''' Just read the summary and build ExperimentStats instead of reading all
+        CIO-Sets.
+    '''
+    summary_file = os.path.join(path, 'summary.json')
+    summary = read_summary(summary_file)
+    graph_st = GraphStats(**summary['Graph Stats'])
+    cio_st = CIOStats(**summary['CIO Stats'])
+    pio_st = PIOStats(**summary['PIO Stats'])
+    return ExperimentStats(graph_st, cio_st, pio_st, **summary)
+
+
+def read_single_cio_sets(path: str, cio_set_idx: int) -> pd.DataFrame:
+    ''' Function to read a single CIO-Set file into a pandas.DataFrame.
+        param: path to the experiment directory.
+        param: cio_set_idx the index of the CIO-Set.
+    '''
+    set_file = "set-{}.csv".format(cio_set_idx)
+    set_file_abs = os.path.join(path, set_file)
+    return pd.read_set_csv(set_file_abs)

@@ -4,10 +4,10 @@ import pandas as pd
 from intervaltree import Interval, IntervalTree
 
 from analysis import Filter
-from analysis.accessTracking import recalculate_offset_of_set
+from analysis.accessTracking import get_file_acccess_per_process
 from analysis import utils
 
-from typing import List, Dict, Tuple, Iterable
+from typing import List, Dict, Tuple, Iterable, Generator
 
 
 def make_intervaltree(df: pd.DataFrame) -> IntervalTree:
@@ -125,17 +125,19 @@ class SetAccessMap:
 
 
 # NOTE that the sets in experiment should be filtered already.
-def get_access_mappings(exp) -> List[SetAccessMap]:
+# def get_access_mappings(exp) -> List[SetAccessMap]:
+def get_access_mappings(exp) -> Generator:
     ''' Returns an access mapping of each CIO-Set for its file accesses. '''
 
-    set_files = [] # mapping setidx -> file_access dict
-    for idx, file_list in exp.files().items():
+    # set_files = [] # mapping setidx -> file_access dict
+    for idx, file_list in exp.iter_files():
         # for each set!
         file_accesses = dict() # mapping filename -> List[ProcFileAccess]
-        for file in file_list:
+        for file in file_list: # for each file in the cio-set
             # for each file!
+            print("Processing file {} for CIO-Set {}".format(file, idx))
             acc_list = []
-            for acc in recalculate_offset_of_set(exp.cio_sets[idx], file):
+            for acc in get_file_acccess_per_process(exp.cio_sets[idx], file):
                 # for each process!
                 assert len(acc['filename'].unique()) == 1
                 assert len(acc['pid'].unique()) == 1
@@ -146,18 +148,17 @@ def get_access_mappings(exp) -> List[SetAccessMap]:
                 kinds = acc['kind'].unique()
                 w_it, r_it = None, None
                 if ' write' in kinds:
-                    # print('processing write')
                     w_it = make_write_intervaltree(acc)
                 if ' read' in kinds:
-                    # print('processing read')
                     r_it = make_read_intervaltree(acc)
                 f_acc = ProcFileAccess(idx, filename, pid, r_it, w_it)
                 acc_list.append(f_acc) # list of accesses for a file of each process
             file_accesses.update({file: acc_list})
-        acc_m = SetAccessMap(idx, file_accesses)
-        set_files.append(acc_m)
+        yield SetAccessMap(idx, file_accesses)
+        # acc_m = 
+        # set_files.append(acc_m)
 
-    return set_files
+    # return set_files
 
 
 # same as above but for a given set instead of the whole experiment
@@ -167,7 +168,7 @@ def get_set_access_mapping(cio_set: pd.DataFrame, setidx: int) -> SetAccessMap:
     file_accesses = dict()
     for file in utils.get_files_in_set(cio_set):
         acc_list = []
-        for acc in recalculate_offset_of_set(cio_set, file):
+        for acc in get_file_acccess_per_process(cio_set, file):
             assert len(acc['filename'].unique()) == 1
             assert len(acc['pid'].unique()) == 1
             filename = acc['filename'].unique()[0]
@@ -255,17 +256,38 @@ def is_overlapping(head: ProcFileAccess, tail: List[ProcFileAccess]) -> Iterable
                     yield ov
 
 
+def has_overlapping_write(head: ProcFileAccess, tail: List[ProcFileAccess]) -> Iterable:
+
+    for cmp_acc in tail:
+        assert cmp_acc != head # do not compare with yourself!
+        if cmp_acc.has_writes() and head.has_writes():
+            for wiv in cmp_acc.write_intervals:
+                oiv = head.write_intervals[wiv.begin:wiv.end]
+                if oiv:
+                    #print('found overlapping write: {} -> with {}'.format(oiv, wiv))
+                    first = AccInterval(oiv, head.process, head.filename, head.set_idx)
+                    second = AccInterval(wiv, cmp_acc.process, cmp_acc.filename, cmp_acc.set_idx)
+                    yield Overlap(first, second)
+
+
 def overlaps(filename: str, acc_l: List[ProcFileAccess]) -> Iterable:
 
     for i, head in enumerate(acc_l):
         yield from is_overlapping(head, acc_l[i+1:])
 
-def read_modify_write(acc_l: List[ProcFileAccess]) -> Iterable:
+
+def overlapping_writes(filename: str, acc_l: List[ProcFileAccess]) -> Iterable:
 
     for i, head in enumerate(acc_l):
-        tail = acc_l.copy()
-        tail.pop(i)
+        yield from has_overlapping_write(head, acc_l[i+1:])
+
+
+def read_modify_write(acc_l: List[ProcFileAccess]) -> Iterable:
+
+    for idx, head in enumerate(acc_l):
+        tail = acc_l[:idx] + acc_l[(idx + 1):]
         yield from rmw(head, tail)
+
 
 def rmw(acc: ProcFileAccess, tail: List[ProcFileAccess]):
     ''' check if any read interval of acc is written in any write interval in tail. '''
@@ -279,4 +301,24 @@ def rmw(acc: ProcFileAccess, tail: List[ProcFileAccess]):
                         second = AccInterval(oiv, other.process, other.filename, other.set_idx)
                         yield Overlap(first, second)
 
+
+def read_after_write(acc_l: List[ProcFileAccess]) -> Iterable:
+
+    for idx, head in enumerate(acc_l):
+        tail = acc_l[:idx] + acc_l[(idx + 1):]
+        yield from raw(head, tail)
+
+
+def raw(acc: ProcFileAccess, tail: List[ProcFileAccess]):
+    ''' distributed read-after-write '''
+
+    if acc.has_writes():
+        for wiv in acc.write_intervals: # check all write intervals
+            for other in tail:
+                if other.has_reads():
+                    overlapping_interval = other.read_intervals[wiv.begin:wiv.end] # against all read intervals
+                    if overlapping_interval:
+                        first = AccInterval(wiv, acc.process, acc.filename, acc.set_idx)
+                        second = AccInterval(overlapping_interval, other.process, other.filename, other.set_idx)
+                        yield Overlap(first, second)
 
