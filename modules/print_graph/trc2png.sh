@@ -14,7 +14,7 @@ for f in $(find ${startdir} -type f -name traces.otf2 -printf "%h\n"); do
     dotfile="${f##*/}.dot"
     outfile="${f##*/}.png"
 
-    ./print-graph $trcfile $dotfile
+    ./print-graph -o ${dotfile} ${trcfile}
     if [[ $? -eq 0 ]]; then
         dot -Tpng $dotfile > $outfile
     fi
