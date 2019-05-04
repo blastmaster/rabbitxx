@@ -80,15 +80,25 @@ pg_group(const IoGraph& graph, const VertexDescriptor& vd)
     return {};
 }
 
-std::vector<VertexDescriptor>
-do_merge(const IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
-    std::vector<set_t<VertexDescriptor>>& merged_sets)
+std::vector<set_iter_t<VertexDescriptor>>
+make_current_view(const map_view_t<VertexDescriptor>& map_view)
+{
+    std::vector<set_iter_t<VertexDescriptor>> res;
+    for (const auto& kvp : map_view)
+    {
+        res.push_back(kvp.second.first);
+    }
+    return res;
+}
+
+std::tuple<set_t<VertexDescriptor>, std::vector<VertexDescriptor>>
+do_merge(const IoGraph& graph, const std::vector<set_iter_t<VertexDescriptor>>& view)
 {
     std::vector<VertexDescriptor> end_evts;
     set_t<VertexDescriptor> cur_s;
-    for (const auto& mv_kvp : map_view)
+    for (const auto iter : view)
     {
-        const auto& first_set = *mv_kvp.second.first;
+        const auto& first_set = *iter;
         cur_s.merge(first_set);
         end_evts.push_back(first_set.end_event().value());
     }
@@ -106,44 +116,74 @@ do_merge(const IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
         throw -1; //TODO
     }
 
+    // setting the end event for freshly merged set
     //TODO: This is a Hack, why use the back?
     cur_s.set_end_event(e_evts.back());
     cur_s.close();
-    merged_sets.push_back(cur_s);
+    logging::debug() << "Merged Set: " << cur_s;
 
-    return e_evts;
+    return std::tie(cur_s, e_evts);
 }
 
-void
-process_sets(const IoGraph& graph, map_view_t<VertexDescriptor> map_view,
-    std::vector<set_t<VertexDescriptor>>& merged_sets)
+/**
+ * map_view
+ * std::map<std::uint64_t, std::pair<std::vector<CIO_Set>::iterator, std::vector<CIO_Set>::iterator>>
+ */
+std::vector<set_t<VertexDescriptor>>
+process_sets(const IoGraph& graph, map_view_t<VertexDescriptor> map_view)
 {
-    bool on_end = std::all_of(map_view.begin(), map_view.end(),
-        [](const auto& p_iters) { return p_iters.second.first == p_iters.second.second; });
-    if (on_end)
+    std::vector<set_t<VertexDescriptor>> sets;
+    std::vector<map_view_t<VertexDescriptor>> view_stack;
+    std::vector<set_iter_t<VertexDescriptor>> current_view;
+    do
     {
-        return;
-    }
+        if (current_view.empty()) // first iteration
+        {
+            current_view = make_current_view(map_view);
+        }
+        else
+        {
+            if (!view_stack.empty())
+            {
+                auto view = view_stack.back();
+                view_stack.pop_back();
+                current_view = make_current_view(view);
+                map_view = view;
+            }
+        }
 
-    const auto end_events = do_merge(graph, map_view, merged_sets);
+        std::vector<VertexDescriptor> end_events;
+        set_t<VertexDescriptor> set;
 
-    for (const auto& end_evt : end_events)
-    {
-        //logging::debug() << "Choose end-event: " << end_evt << " -> recursive update!";
-        const auto pg = pg_group(graph, end_evt);
-        process_sets(graph, update_view(pg, map_view), merged_sets);
-    }
+        std::tie(set, end_events) = do_merge(graph, current_view);
+        sets.push_back(set);
+
+        logging::debug() << "Number of end-events after merge: " << end_events.size();
+        for (const auto& end_evt : end_events)
+        {
+            logging::debug() << "Choose end-event: " << end_evt << " -> recursive update!";
+            const auto pg = pg_group(graph, end_evt);
+            auto new_view = update_view(pg, map_view);
+            bool on_end = std::all_of(new_view.begin(), new_view.end(),
+                    [](const auto& p_iters) { return p_iters.second.first == p_iters.second.second; });
+            if (on_end)
+            {
+                continue;
+            }
+            view_stack.push_back(new_view); // push all new views for the possible end events onto the stack
+        }
+
+    } while (!view_stack.empty());
+
+    return sets;
 }
 
 inline set_container_t<VertexDescriptor>
 merge_sets_impl(const IoGraph& graph, set_map_t<VertexDescriptor>& set_map)
 {
-    set_container_t<VertexDescriptor> merged_sets;
     auto map_view = make_mapview(set_map);
     assert(map_view.size() == set_map.size());
-    process_sets(graph, map_view, merged_sets);
-
-    return merged_sets;
+    return process_sets(graph, map_view);
 }
 
 set_container_t<VertexDescriptor>
@@ -277,7 +317,7 @@ generate_unique_pairs(const std::vector<VertexDescriptor>& v)
     return res;
 }
 
-bool
+bool // version with pg_group
 can_update_end_event(const process_group_t& pgroup, const std::vector<VertexDescriptor>& end_evts,
     const VertexDescriptor& pivot)
 {
@@ -286,8 +326,9 @@ can_update_end_event(const process_group_t& pgroup, const std::vector<VertexDesc
 }
 
 bool
-can_update_end_event(
-    const IoGraph& graph, const std::vector<VertexDescriptor>& end_evts, const VertexDescriptor& pivot)
+can_update_end_event( // version with graph calls the other version with pg_group
+    const IoGraph& graph, const std::vector<VertexDescriptor>& end_evts,
+    const VertexDescriptor& pivot)
 {
     const auto pgroup = pg_group(graph, pivot);
     return can_update_end_event(pgroup, end_evts, pivot);
@@ -344,12 +385,14 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
     const auto upairs_v = generate_unique_pairs(end_evts);
     assert(upairs_v.size() == num_unique_pairs(end_evts.size()));
     std::set<VertexDescriptor> independent_syncs, dependent_syncs;
-    std::vector<std::uint64_t> overlapping_procs;
+    //std::vector<std::uint64_t> overlapping_procs;
     for (const auto& sync_p : upairs_v)
     {
+        // get process group of each member of sync pair
         const auto pg1 = pg_group(graph, sync_p.first);
         const auto pg2 = pg_group(graph, sync_p.second);
 
+        // build intersection of the process groups
         std::vector<std::uint64_t> intersection_procs;
         std::set_intersection(
             pg1.begin(), pg1.end(), pg2.begin(), pg2.end(), std::back_inserter(intersection_procs));
@@ -367,8 +410,8 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
                              //<< "(" << sync_p.first << ", " << sync_p.second << ")";
             dependent_syncs.insert(sync_p.first);
             dependent_syncs.insert(sync_p.second);
-            std::copy(intersection_procs.begin(), intersection_procs.end(),
-                std::back_inserter(overlapping_procs));
+            //std::copy(intersection_procs.begin(), intersection_procs.end(),
+                //std::back_inserter(overlapping_procs));
         }
     }
 
@@ -383,6 +426,8 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
     if (!dependent_syncs.empty())
     {
         //logging::debug() << "choose from dependent syncs";
+
+        // return the first dependent sync event that can be updated
         update_evt = check_update_func(graph, dependent_syncs);
         assert(update_evt != IoGraph::null_vertex());
     }
@@ -391,6 +436,8 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
     {
         //logging::debug() << "choose from independent syncs";
         // update_evt = check_update_func(graph, independent_syncs);
+
+        // return all independent syncs that can be updated
         std::vector<VertexDescriptor> res;
         for (const auto& isv : independent_syncs)
         {

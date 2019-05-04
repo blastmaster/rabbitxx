@@ -40,9 +40,8 @@ std::vector<VertexDescriptor>
 do_merge(const IoGraph& graph, const map_view_t<VertexDescriptor>& map_view,
     std::vector<set_t<VertexDescriptor>>& merged_sets);
 
-void
-process_sets(const IoGraph& graph, map_view_t<VertexDescriptor> map_view,
-    std::vector<set_t<VertexDescriptor>>& merged_sets);
+std::vector<set_t<VertexDescriptor>>
+process_sets(const IoGraph& graph, map_view_t<VertexDescriptor> map_view);
 
 inline set_container_t<VertexDescriptor>
 merge_sets_impl(const IoGraph& graph, set_map_t<VertexDescriptor>& set_map);
