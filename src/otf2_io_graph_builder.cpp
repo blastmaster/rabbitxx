@@ -333,7 +333,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
     const auto region_name = region_name_queue_.top(location);
     // delete offset_tracker
     size_t res = offset_map_[location.ref()].erase(name);
-    assert(res > 0);
     const auto vt = io_event_property(location.ref(),
                                     name,
                                     region_name,
@@ -376,7 +375,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
     const auto name = get_handle_name(evt.handle());
     // delete offset_tracker
     size_t res = offset_map_[location.ref()].erase(name);
-    assert(res > 0);
     const auto region_name = region_name_queue_.top(location);
     const auto vt = io_event_property(location.ref(),
                                     name,
