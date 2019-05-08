@@ -46,7 +46,8 @@ update_view(const process_group_t& pg, map_view_t<VertexDescriptor> map_view)
 {
     for (const auto& proc : pg)
     {
-        const auto& dbg_cached_value = map_view[proc].first->end_event();
+        //const auto& dbg_cached_value = map_view[proc].first->end_event();
+        assert(map_view[proc].first != map_view[proc].second);
         map_view[proc].first = std::next(map_view[proc].first);
         //logging::debug() << "process: " << proc << " increment iterator from " << dbg_cached_value
                          //<< " to " << map_view[proc].first->end_event();
@@ -161,7 +162,7 @@ process_sets(const IoGraph& graph, map_view_t<VertexDescriptor> map_view)
         logging::debug() << "Number of end-events after merge: " << end_events.size();
         for (const auto& end_evt : end_events)
         {
-            logging::debug() << "Choose end-event: " << end_evt << " -> recursive update!";
+            logging::debug() << "Choose end-event: " << end_evt;
             const auto pg = pg_group(graph, end_evt);
             auto new_view = update_view(pg, map_view);
             bool on_end = std::all_of(new_view.begin(), new_view.end(),
