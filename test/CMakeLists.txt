@@ -7,6 +7,7 @@ add_subdirectory(dump_sets_per_process)
 add_subdirectory(graph_properties_test)
 add_subdirectory(stats_test)
 add_subdirectory(seek_construction_test)
+add_subdirectory(trace_read)
 # catch
 add_subdirectory(sets_per_process_test)
 #add_subdirectory(root_synchronization_test)
