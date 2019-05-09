@@ -1,6 +1,8 @@
 #include<rabbitxx/graph/builder/otf2_io_graph_builder.hpp>
 #include <rabbitxx/log.hpp>
 
+#include <boost/algorithm/string.hpp>
+
 #include <algorithm>
 #include <cassert>
 
@@ -774,7 +776,11 @@ void io_graph_builder::events_done(const otf2::reader::reader& rdr)
 
 void io_graph_builder::definition(const otf2::definition::location& definition)
 {
-    logging::trace() << "Found location defintion";
+    if (boost::starts_with(definition.name().str(), "Orphan thread"))
+    {
+        logging::debug() << "Found orphan thread: " << definition << " return";
+        return;
+    }
     locations_.push_back(definition);
 }
 
@@ -816,8 +822,14 @@ void io_graph_builder::definition(const otf2::definition::unknown& definition)
 
 void io_graph_builder::definitions_done(const otf2::reader::reader& rdr)
 {
-    for(const auto& location : rdr.locations()) {
+    for (const auto& location : rdr.locations())
+    {
         //do rank mapping!
+        if (boost::starts_with(location.name().str(), "Orphan thread"))
+        {
+            logging::debug() << "Found orphan thread: " << location << " do NOT register!";
+            continue;
+        }
         mapping_.register_location(location);
         rdr.register_location(location);
     }
