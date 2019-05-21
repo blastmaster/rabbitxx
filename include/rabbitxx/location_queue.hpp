@@ -65,16 +65,21 @@ namespace rabbitxx {
 
         void dequeue(const otf2::definition::location& location)
         {
+            assert(! map_[location.ref()].empty());
             map_[location.ref()].pop_front();
         }
 
         value_type& front(const otf2::definition::location& location)
         {
+            assert(! map_[location.ref()].empty());
             return map_[location.ref()].front();
         }
 
         const value_type& front(const otf2::definition::location& location) const
         {
+            //TODO throw an exception if container is empty!
+            //front is otherwise undefined behavior.
+            assert(! map_[location.ref()].empty());
             return map_[location.ref()].front();
         }
 
@@ -142,16 +147,19 @@ namespace rabbitxx {
 
         void pop(const otf2::definition::location& location)
         {
+            assert(! map_[location.ref()].empty());
             map_[location.ref()].pop();
         }
 
         value_type& top(const otf2::definition::location& location)
         {
+            assert(! map_[location.ref()].empty());
             return map_[location.ref()].top();
         }
 
         const value_type& top(const otf2::definition::location& location) const
         {
+            assert(! map_[location.ref()].empty());
             return map_[location.ref()].top();
         }
 
