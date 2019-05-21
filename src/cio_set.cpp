@@ -29,6 +29,12 @@ make_mapview(set_map_t<VertexDescriptor>& smap)
     map_view_t<VertexDescriptor> m_v;
     for (auto& setmap_kvp : smap)
     {
+        //FIXME if begin() == end() 
+        if (setmap_kvp.second.begin() == setmap_kvp.second.end())
+        {
+            logging::fatal() << "invalid iterators for : " << setmap_kvp.first;
+            continue;
+        }
         auto iter_p = std::make_pair(setmap_kvp.second.begin(), setmap_kvp.second.end());
         m_v.insert(std::make_pair(setmap_kvp.first, iter_p));
     }
