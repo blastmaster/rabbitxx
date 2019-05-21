@@ -26,7 +26,7 @@ inline std::ostream& operator<<(std::ostream& out, const otf2::definition::locat
     return out;
 }
 
-class FooReader : public otf2::reader::callback
+class TestReader : public otf2::reader::callback
 {
 
     public:
@@ -55,10 +55,10 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    FooReader frdr;
+    TestReader test_rdr;
     otf2::reader::reader rdr(argv[1]);
 
-    rdr.set_callback(frdr);
+    rdr.set_callback(test_rdr);
     rdr.read_definitions();
     rdr.read_events();
 
