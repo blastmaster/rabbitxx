@@ -436,6 +436,17 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
 
         // return the first dependent sync event that can be updated
         update_evt = check_update_func(graph, dependent_syncs);
+        if (update_evt == IoGraph::null_vertex())
+        {
+            logging::fatal() << "assert(update_evt != IoGraph::null_vertex())";
+            std::cerr << "Dependent syncs size: " << dependent_syncs.size() << "\n";
+            std::cerr << "Inependent syncs size: " << independent_syncs.size() << "\n";
+            for (const auto& ds : dependent_syncs)
+            {
+                std::cerr << "Dependent sync event: " << ds << "\n";
+                std::cerr << "Event: " << graph[ds] << "\n";
+            }
+        }
         assert(update_evt != IoGraph::null_vertex());
     }
     // otherwise check for independent events
