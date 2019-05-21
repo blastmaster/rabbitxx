@@ -49,10 +49,9 @@ void io_graph_builder::create_synthetic_end()
     //get last event from each location
     for (const auto& loc : locations_)
     {
-        // FIXME: if thread does not have any events -> fail
         if (edge_points_.empty(loc))
         {
-            //graph_.add_edge(root_, end_descriptor);
+            logging::debug() << "Found empty location: " << loc;
             continue;
         }
         const auto last_proc_event = edge_points_.front(loc);
