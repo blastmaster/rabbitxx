@@ -443,7 +443,14 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
             std::cerr << "Inependent syncs size: " << independent_syncs.size() << "\n";
             for (const auto& ds : dependent_syncs)
             {
+                const auto pg = pg_group(graph, ds);
                 std::cerr << "Dependent sync event: " << ds << "\n";
+                std::cerr << "pg_group: [";
+                for (const auto e : pg)
+                {
+                    std::cerr << e << ", ";
+                }
+                std::cerr << "]\n";
                 std::cerr << "Event: " << graph[ds] << "\n";
             }
         }
