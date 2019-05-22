@@ -352,6 +352,16 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
             {
                 return vd;
             }
+            else
+            {
+                std::cerr << "Update false:\n";
+                std::cerr << "End events [";
+                for (const auto& e : end_evts)
+                {
+                    std::cerr << e << ", ";
+                }
+                std::cerr << "]\n";
+            }
         }
         return IoGraph::null_vertex();
     };
