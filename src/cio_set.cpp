@@ -363,7 +363,14 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
                 std::cerr << "]\n";
                 for (const auto& e : end_evts)
                 {
-                    std::cerr << "End evts:\n";
+                    std::cerr << "End evts: " << e << "\n";
+                    const auto pg = pg_group(graph, ds);
+                    std::cerr << "pg_group: [";
+                    for (const auto& e : pg)
+                    {
+                        std::cerr << e << ", ";
+                    }
+                    std::cerr << "]\n";
                     std::cerr << graph[e] << "\n";
                 }
             }
