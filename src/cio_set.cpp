@@ -127,7 +127,7 @@ do_merge(const IoGraph& graph, const std::vector<set_iter_t<VertexDescriptor>>& 
     //TODO: This is a Hack, why use the back?
     cur_s.set_end_event(e_evts.back());
     cur_s.close();
-    logging::debug() << "Merged Set: " << cur_s;
+    //logging::debug() << "Merged Set: " << cur_s;
 
     return std::tie(cur_s, e_evts);
 }
