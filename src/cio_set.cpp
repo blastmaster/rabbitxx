@@ -111,10 +111,10 @@ do_merge(const IoGraph& graph, const std::vector<set_iter_t<VertexDescriptor>>& 
     }
 
     // JUST FOR DEBUGGING
-    //std::cout << "END-EVENTS:\n";
-    //std::copy(
-        //end_evts.begin(), end_evts.end(), std::ostream_iterator<VertexDescriptor>(std::cout, ", "));
-    //std::cout << "\n";
+    std::cerr << "END-EVENTS: [";
+    std::copy(
+        end_evts.begin(), end_evts.end(), std::ostream_iterator<VertexDescriptor>(std::cerr, ", "));
+    std::cerr << "]\n";
 
     const auto e_evts = detail::find_end_events_to_update(graph, end_evts);
     if (e_evts.empty())
