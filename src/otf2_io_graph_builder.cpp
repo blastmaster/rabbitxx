@@ -326,6 +326,11 @@ void io_graph_builder::event(const otf2::definition::location& location,
                         << evt.timestamp();
 
     FILTER_RANK
+    if (evt.paradigm().name().str() == "MPI-IO")
+    {
+        logging::debug() << "FOUND MPI-IO ... skip!";
+        return;
+    }
 
     // check if we have a file name or a "non-file" handle
     // TODO: here we have no handle, but we can the io_file definition directly
