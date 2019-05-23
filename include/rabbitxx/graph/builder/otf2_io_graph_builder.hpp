@@ -67,14 +67,21 @@ public:
     explicit io_graph_builder(boost::mpi::communicator& comm, int num_locations)
     : base(comm), io_ops_started_(), mapping_(comm.size(), num_locations),
         edge_points_(), region_name_queue_(), synchronizations_(), graph_(),
-        root_(create_synthetic_root())
+        root_(create_synthetic_root()), filter_mpiio_(true)
     {
     }
 
     explicit io_graph_builder(int num_locations)
     : base(), io_ops_started_(), mapping_(num_locations),
         edge_points_(), region_name_queue_(), synchronizations_(), graph_(),
-        root_(create_synthetic_root())
+        root_(create_synthetic_root()), filter_mpiio_(true)
+    {
+    }
+
+    explicit io_graph_builder(int num_locations, bool mpiio_switch)
+    : base(), io_ops_started_(), mapping_(num_locations),
+        edge_points_(), region_name_queue_(), synchronizations_(), graph_(),
+        root_(create_synthetic_root()), filter_mpiio_(!mpiio_switch)
     {
     }
 
@@ -221,6 +228,7 @@ private:
     location_queue<VertexDescriptor> synchronizations_;
     IoGraph graph_;
     VertexDescriptor root_;
+    bool filter_mpiio_;
     std::vector<otf2::definition::location> locations_;
     location_queue<stack_frame> call_stack_;
     otf2::chrono::duration total_time_ = otf2::chrono::duration(0);
@@ -258,6 +266,18 @@ struct OTF2_Io_Graph_Builder
         otf2::reader::reader trc_reader(trace_file);
         auto num_locations = trc_reader.num_locations();
         io_graph_builder builder(num_locations);
+        trc_reader.set_callback(builder);
+        trc_reader.read_definitions();
+        trc_reader.read_events();
+
+        return builder.graph();
+    }
+
+    auto operator()(const std::string& trace_file, bool filter_mpiio) const
+    {
+        otf2::reader::reader trc_reader(trace_file);
+        auto num_locations = trc_reader.num_locations();
+        io_graph_builder builder(num_locations, filter_mpiio);
         trc_reader.set_callback(builder);
         trc_reader.read_definitions();
         trc_reader.read_events();

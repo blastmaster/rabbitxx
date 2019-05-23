@@ -179,9 +179,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     FILTER_RANK
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
-        logging::debug() << "FOUND MPI-IO ... skip!";
+        logging::trace() << "FOUND MPI-IO ... skip!";
         return;
     }
 
@@ -200,9 +200,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
 
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
-        logging::debug() << "FOUND MPI-IO ... skip!";
+        logging::trace() << "FOUND MPI-IO ... skip!";
         return;
     }
     // get corresponding begin_operation
@@ -279,9 +279,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
     FILTER_RANK
 
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
-        logging::debug() << "FOUND MPI-IO ... skip!";
+        logging::trace() << "FOUND MPI-IO ... skip!";
         return;
     }
     // check for parent! to avoid duplication
@@ -326,6 +326,11 @@ void io_graph_builder::event(const otf2::definition::location& location,
                         << evt.timestamp();
 
     FILTER_RANK
+    if (filter_mpiio_ && (evt.paradigm().name().str() == "MPI-IO"))
+    {
+        logging::trace() << "FOUND MPI-IO ... skip!";
+        return;
+    }
 
     // check if we have a file name or a "non-file" handle
     // TODO: here we have no handle, but we can the io_file definition directly
@@ -365,9 +370,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
     FILTER_RANK
 
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
-        logging::debug() << "FOUND MPI-IO ... skip!";
+        logging::trace() << "FOUND MPI-IO ... skip!";
         return;
     }
     //check for parent! avoid duplication
@@ -470,9 +475,9 @@ void io_graph_builder::event(const otf2::definition::location& location,
     FILTER_RANK
 
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
-        logging::debug() << "FOUND MPI-IO ... skip!";
+        logging::trace() << "FOUND MPI-IO ... skip!";
         return;
     }
     const auto name = get_handle_name(evt.handle());

@@ -53,7 +53,7 @@ Experiment_Stats Experiment::run_experiment(experiment_results& results)
 {
     // graph construction
     const auto start_graph_construction = std::chrono::system_clock::now();
-    auto graph = make_graph<graph::OTF2_Io_Graph_Builder>(trace_file_.string());
+    auto graph = make_graph<graph::OTF2_Io_Graph_Builder>(trace_file_.string(), config_.filter_mpiio);
     const auto end_graph_construction = std::chrono::system_clock::now();
     const auto graph_duration = end_graph_construction - start_graph_construction;
     auto graph_stats = Graph_Stats(graph, graph_duration);
