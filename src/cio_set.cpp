@@ -348,6 +348,24 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
         for (const VertexDescriptor& vd : try_s)
         {
             bool update = can_update_end_event(graph, end_evts, vd);
+            std::cerr << "End events [";
+            for (const auto& e : end_evts)
+            {
+                std::cerr << e << ", ";
+            }
+            std::cerr << "]\n";
+            for (const auto& e : end_evts)
+            {
+                std::cerr << "End evts: " << e << "\n";
+                const auto pg = pg_group(graph, e);
+                std::cerr << "pg_group: [";
+                for (const auto e : pg)
+                {
+                    std::cerr << e << ", ";
+                }
+                std::cerr << "]\n";
+                std::cerr << graph[e] << "\n";
+            }
             if (update)
             {
                 return vd;
@@ -355,24 +373,6 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
             else
             {
                 std::cerr << "Update false:\n";
-                std::cerr << "End events [";
-                for (const auto& e : end_evts)
-                {
-                    std::cerr << e << ", ";
-                }
-                std::cerr << "]\n";
-                for (const auto& e : end_evts)
-                {
-                    std::cerr << "End evts: " << e << "\n";
-                    const auto pg = pg_group(graph, e);
-                    std::cerr << "pg_group: [";
-                    for (const auto e : pg)
-                    {
-                        std::cerr << e << ", ";
-                    }
-                    std::cerr << "]\n";
-                    std::cerr << graph[e] << "\n";
-                }
             }
         }
         return IoGraph::null_vertex();
@@ -454,7 +454,7 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
     // first check dependent events
     if (!dependent_syncs.empty())
     {
-        //logging::debug() << "choose from dependent syncs";
+        logging::debug() << "choose from dependent syncs";
 
         // return the first dependent sync event that can be updated
         update_evt = check_update_func(graph, dependent_syncs);
@@ -481,7 +481,7 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
     // otherwise check for independent events
     else if (!independent_syncs.empty())
     {
-        //logging::debug() << "choose from independent syncs";
+        logging::debug() << "choose from independent syncs";
         // update_evt = check_update_func(graph, independent_syncs);
 
         // return all independent syncs that can be updated
