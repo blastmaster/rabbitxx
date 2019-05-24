@@ -179,7 +179,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
     FILTER_RANK
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
         logging::trace() << "FOUND MPI-IO ... skip!";
         return;
@@ -200,7 +200,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
 
 
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
         logging::trace() << "FOUND MPI-IO ... skip!";
         return;
@@ -279,7 +279,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
     FILTER_RANK
 
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
         logging::trace() << "FOUND MPI-IO ... skip!";
         return;
@@ -326,7 +326,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
                         << evt.timestamp();
 
     FILTER_RANK
-    if (evt.paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.paradigm().name().str() == "MPI-IO"))
     {
         logging::trace() << "FOUND MPI-IO ... skip!";
         return;
@@ -370,7 +370,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
     FILTER_RANK
 
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
         logging::trace() << "FOUND MPI-IO ... skip!";
         return;
@@ -475,7 +475,7 @@ void io_graph_builder::event(const otf2::definition::location& location,
     FILTER_RANK
 
     //Filter MPI-IO - events we just interesseted in POSIX I/O
-    if (evt.handle().paradigm().name().str() == "MPI-IO")
+    if (filter_mpiio_ && (evt.handle().paradigm().name().str() == "MPI-IO"))
     {
         logging::trace() << "FOUND MPI-IO ... skip!";
         return;

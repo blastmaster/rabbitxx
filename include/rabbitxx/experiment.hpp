@@ -33,13 +33,15 @@ struct experiment_config
     bool with_summary = true;
     bool pio_sets = false;
     bool cio_sets = true;
+    bool filter_mpiio = true;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const experiment_config& ec)
 {
     os << std::boolalpha << "with_summary: " << ec.with_summary
         << "pio_set: " << ec.pio_sets
-        << "cio_set: " << ec.cio_sets;
+        << "cio_set: " << ec.cio_sets
+        << "with_mpiio: " << ec.filter_mpiio;
     return os;
 }
 

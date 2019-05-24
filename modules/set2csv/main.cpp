@@ -354,6 +354,7 @@ int main(int argc, char** argv)
     bool with_summary = true;
     bool cio_set_out = true;
     bool pio_set_out = false;
+    bool with_mpiio = false;
     bool debug = false;
 
     po::options_description description("set2csv - Output CIO-Sets as csv");
@@ -377,6 +378,9 @@ int main(int argc, char** argv)
         ("pio-sets,p",
             po::bool_switch(&pio_set_out)->default_value(false),
             "Output PIO-Sets, local sets per-process")
+        ("mpiio,m",
+            po::bool_switch(&with_mpiio)->default_value(false),
+            "Enable MPI-IO, otherwise just POSIX is considered")
         ("trace-file",
             po::value<fs::path>(&trc_file),
             "Input trace file *.otf2")
@@ -428,7 +432,7 @@ int main(int argc, char** argv)
         logging::debug() << "enable pio-set output";
     }
 
-    experiment_config e_conf {with_summary, pio_set_out, cio_set_out};
+    experiment_config e_conf {with_summary, pio_set_out, cio_set_out, !with_mpiio};
     logging::debug() << "created config: " << e_conf;
 
     if (vm.count("out-dir"))
