@@ -207,6 +207,18 @@ void io_graph_builder::event(const otf2::definition::location& location,
     }
     // get corresponding begin_operation
     auto& begin_evt = io_ops_started_.front(location);
+    boost::optional<std::int64_t> offset = boost::none;
+    // looking for offset attribute if pwrite/pread is used.
+    if (offset_attribute_.is_valid())
+    {
+        if (begin_evt.attribute_list().has(offset_attribute_))
+        {
+            offset = begin_evt.attribute_list()
+                .get<otf2::definition::attribute::attribute_type::int64>(offset_attribute_);
+            logging::debug() << "getting offset attribute value: " << offset;
+        }
+    }
+
     // matching id seems to be always the same, check for equality anyhow.
     assert(evt.matching_id() == begin_evt.matching_id());
     const auto name = get_handle_name(evt.handle());
@@ -218,11 +230,19 @@ void io_graph_builder::event(const otf2::definition::location& location,
         case otf2::common::io_operation_mode_type::read:
             kind = io_event_kind::read;
             // increment offset for read ops
+            if (offset)
+            {
+                offset_map_.get_value(location, name).set(*offset);
+            }
             offset_map_.get_value(location, name).inc(evt.bytes_request());
             break;
         case otf2::common::io_operation_mode_type::write:
             kind = io_event_kind::write;
             // increment offset for write ops
+            if (offset)
+            {
+                offset_map_.get_value(location, name).set(*offset);
+            }
             offset_map_.get_value(location, name).inc(evt.bytes_request());
             break;
         case otf2::common::io_operation_mode_type::flush:
@@ -239,7 +259,6 @@ void io_graph_builder::event(const otf2::definition::location& location,
                                     begin_evt.bytes_request(),
                                     evt.bytes_request(),
                                     offset_map_.get_value(location, name).get(), // offset
-                                    //0, /* offset */
                                     io_operation_option_container(
                                         begin_evt.operation_mode(),
                                         begin_evt.operation_flag()),
@@ -786,6 +805,16 @@ void io_graph_builder::definition(const otf2::definition::location& definition)
         return;
     }
     locations_.push_back(definition);
+}
+
+void io_graph_builder::definition(const otf2::definition::attribute& definition)
+{
+    if (definition.name().str() == "Offset")
+    {
+        // attributes can not defined twice.
+        assert(!offset_attribute_.is_valid());
+        offset_attribute_ = definition;
+    }
 }
 
 void io_graph_builder::definition(const otf2::definition::region& definition)
