@@ -211,6 +211,7 @@ public:
     // Definitions
 
     void definition(const otf2::definition::location& definition) override;
+    void definition(const otf2::definition::attribute& definition) override;
     void definition(const otf2::definition::region& definition) override;
     void definition(const otf2::definition::comm& definition) override;
     void definition(const otf2::definition::io_paradigm& definition) override;
@@ -239,6 +240,7 @@ private:
     otf2::definition::clock_properties clock_props_;
     std::map<std::string, std::string> file_to_fs_map_ {};
     location_map<std::string, offset_tracker> offset_map_ {};
+    otf2::definition::attribute offset_attribute_;
 };
 
 struct OTF2_Io_Graph_Builder
