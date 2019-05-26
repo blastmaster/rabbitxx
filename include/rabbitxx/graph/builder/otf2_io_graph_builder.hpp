@@ -81,7 +81,7 @@ public:
     explicit io_graph_builder(int num_locations, bool mpiio_switch)
     : base(), io_ops_started_(), mapping_(num_locations),
         edge_points_(), region_name_queue_(), synchronizations_(), graph_(),
-        root_(create_synthetic_root()), filter_mpiio_(!mpiio_switch)
+        root_(create_synthetic_root()), filter_mpiio_(mpiio_switch)
     {
     }
 
