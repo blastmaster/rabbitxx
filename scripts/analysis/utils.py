@@ -3,6 +3,19 @@ import matplotlib.pyplot as plt
 
 from typing import List, Dict
 
+
+def add_hash_column(df: pd.DataFrame) -> pd.DataFrame:
+    ''' Build a hash over (location, type of operation, timestamp) and  add the
+        hash value as new column.
+    '''
+    hash_column = []
+    for row_t in df.itertuples():
+        h = hash((row_t.pid, row_t.kind, row_t.timestamp))
+        hash_column.append(h)
+    df['hash'] =  hash_column
+    return df
+
+
 ''' CIO-Set Helpers '''
 def get_processes(cio_set: pd.DataFrame, filename: str) -> List[int]:
     ''' Return a list of pids accessing the file given by filename. '''

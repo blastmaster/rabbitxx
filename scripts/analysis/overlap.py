@@ -18,9 +18,9 @@ def make_intervaltree(df: pd.DataFrame) -> IntervalTree:
         #if entry.response_size == entry.offset: # first operation
         start = entry['offset'] - entry['response_size']
         if start == entry['offset']:
-            print("Emtpy interval! .. skip!")
+            # print("Emtpy interval! .. skip!")
             continue
-        intervals.append(Interval(start, entry['offset'], (entry['kind'], idx)))
+        intervals.append(Interval(start, entry['offset'], (entry['kind'], idx, entry['hash'])))
     return IntervalTree(intervals)
 
 

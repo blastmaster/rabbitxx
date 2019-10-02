@@ -33,6 +33,7 @@ def get_file_acccess_per_process(setdf, filename: str, pids=None):
     pids = get_processes(setdf, filename) if pids is None else pids
     for pid in pids:
         group = setdf.groupby(['pid', 'filename']).get_group((pid, filename))
+        group = add_hash_column(group)
         yield group
 
 
