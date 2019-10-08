@@ -20,7 +20,7 @@ def make_intervaltree(df: pd.DataFrame) -> IntervalTree:
         if start == entry['offset']:
             # print("Emtpy interval! .. skip!")
             continue
-        intervals.append(Interval(start, entry['offset'], (entry['kind'], idx, entry['hash'])))
+        intervals.append(Interval(start, entry['offset'], (entry['kind'], idx, entry['timestamp'])))
     return IntervalTree(intervals)
 
 
