@@ -104,7 +104,6 @@ def main(args) -> None:
         report_concurrent_creates(creates, exp)
 
     if args.overlap or args.read_modify_write or args.read_after_write:
-        # set_files = get_access_mappings(exp)
 
         for acc_m in get_access_mappings(exp):
             print("checking set idx: {}".format(acc_m.set_index))
@@ -113,25 +112,18 @@ def main(args) -> None:
                     print("Analyze overlapping accesses ...")
                     for ovlp in overlapping_writes(file, acc_l):
                         report_overlap(ovlp)
-                    else:
-                        print("No overlapping access!")
                 if args.read_modify_write:
                     print("Analyze distributed read-modify-write ...")
                     if acc_m.num_processes(file) < 2:
                         continue
                     for rmw in read_modify_write(acc_l):
                         report_distributed_read_modify_write(rmw)
-                    else:
-                        print("No distributed read-modify-write found.")
                 if args.read_after_write:
                     print("Analyze distributed read-after-write ...")
                     if acc_m.num_processes(file) < 2:
                         continue
                     for raw in read_after_write(acc_l):
                         report_distributed_read_after_write(raw)
-                    else:
-                        print("No distributed read-after-write found.")
-
     print("Done")
 
 

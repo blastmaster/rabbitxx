@@ -33,11 +33,10 @@ def make_write_intervaltree(df: pd.DataFrame) -> IntervalTree:
     return make_intervaltree(df[df['kind'] == ' write'])
 
 class ProcFileAccess:
-    ''' Class to represent the file accesses of a process to a file in a CIO-Set. '''
+    ''' Class to represent the file accesses of a single process in a CIO-Set. '''
     set_idx: int
     filename: str
     process: int
-    #file_access_df: pd.DataFrame
     read_intervals: IntervalTree
     write_intervals: IntervalTree
 
@@ -70,7 +69,6 @@ class ProcFileAccess:
     def pid(self) -> int:
         return self.process
 
-    # def overlapping_reads(self, other: ProcFileAccess):
     def overlapping_reads(self, other):
         ''' Check if `self.read_intervals` overlaps with some of the read intervals in `other`. '''
         for riv in other.read_intervals:
@@ -78,7 +76,6 @@ class ProcFileAccess:
             if oiv:
                 print("Found overlapping read {} -> {}".format(oiv, riv))
 
-    # def overlapping_writes(self, other: ProcFileAccess):
     def overlapping_writes(self, other):
         ''' Check if `self.write_intervals` overlaps with some of the write intervals in `other`. '''
         for wiv in other.write_intervals:
@@ -89,9 +86,9 @@ class ProcFileAccess:
 
 class SetAccessMap:
     ''' Access map of a set. Provides a mapping from a filename to a list of
-        ProcFileAccess objects representing the Access of each Process. '''
+        `ProcFileAccess` objects representing the accesses of each Process. '''
 
-    # indice of cio-set
+    # Index of cio-set
     setidx: int
     # mapping filename -> accesses per process
     file_accesses: Dict[str, List[ProcFileAccess]]
@@ -116,11 +113,11 @@ class SetAccessMap:
         return list(self.file_accesses.keys())
 
     def processes(self, filename: str) -> List[int]:
-        ''' Return a list of pids which accessing the given file. '''
+        ''' Return a list of pids that access the given file. '''
         return [pfa.pid for pfa in self.file_accesses[filename]]
 
     def num_processes(self, filename: str) -> int:
-        ''' Return the number of processes which accessing the given file. '''
+        ''' Return the number of processes that access the given file. '''
         return len([pfa.pid for pfa in self.file_accesses[filename]])
 
 
@@ -155,7 +152,7 @@ def get_access_mappings(exp) -> Generator:
                 acc_list.append(f_acc) # list of accesses for a file of each process
             file_accesses.update({file: acc_list})
         yield SetAccessMap(idx, file_accesses)
-        # acc_m = 
+        # acc_m =
         # set_files.append(acc_m)
 
     # return set_files
@@ -226,7 +223,7 @@ class Overlap:
     def filename(self) -> str:
         return self.first.filename
 
-    @property 
+    @property
     def processes(self) -> Tuple[int, int]:
         return (self.first.process, self.second.process)
 
