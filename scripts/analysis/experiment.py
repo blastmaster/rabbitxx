@@ -139,6 +139,9 @@ def read_pio_set_csv(pio_set_files):
 
 def read_experiment(path) -> Experiment:
 
+    if not os.path.isdir(path):
+        raise ValueError("Experiment directory does not exists or is not a directory: {}".format(path))
+
     fd = find_experiment_files(path)
 
     cio_sets = read_set_csv(fd['cio_sets']) if len(fd['cio_sets']) != 0 else []
