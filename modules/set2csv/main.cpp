@@ -25,6 +25,16 @@ using FpMilliseconds = std::chrono::duration<double, std::milli>;
 //using FpSeconds = std::chrono::duration<double, std::ratio<1, 1000000000000>>;
 using FpSeconds = std::chrono::duration<double>;
 
+// Helper function
+// Convert otf2xx timestamp back to OTF2 timestamp of ticks.
+// Add global offset of the trace.
+otf2::chrono::ticks to_otf2_timestamp(const otf2::chrono::time_point& timestamp,
+        const otf2::definition::clock_properties& clock_props)
+{
+    auto time_ticks = otf2::chrono::convert(clock_props.ticks_per_second())(timestamp);
+    return otf2::chrono::ticks(clock_props.start_time().count() + time_ticks.count());
+}
+
 static double calculate_bandwidth(const io_event_property& io_evt)
 {
     if (std::numeric_limits<std::uint64_t>::max() == io_evt.response_size) {
@@ -125,7 +135,8 @@ std::ostream& io_event_2_csv_stream(const IoGraph& graph, const VertexDescriptor
     else {
         out << "None, ";
     }
-    out << io_evt.timestamp;
+    const auto clock_props = graph.graph_properties().clock_props;
+    out << to_otf2_timestamp(io_evt.timestamp, clock_props).count();
 
     return out;
 }

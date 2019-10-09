@@ -10,11 +10,7 @@ class ExperimentStats:
         self.tracefile = kw['Tracefile']
         self.clock_properties = kw['Clock Properties']
         self.file_map = kw['File Map']
-        try:
-            self.num_locations = kw['Number of Locations']
-        except KeyError:
-            print('Number of locations is not included in summary file.')
-            self.num_locations = "NaN"
+        self.num_locations = kw.get('Number of Locations', 'NaN')
         self.graph_stats = graph_stats
         self.cio_stats = cio_stats
         self.pio_stats = pio_stats
@@ -142,6 +138,9 @@ def read_pio_set_csv(pio_set_files):
 
 
 def read_experiment(path) -> Experiment:
+
+    if not os.path.isdir(path):
+        raise ValueError("Experiment directory does not exists or is not a directory: {}".format(path))
 
     fd = find_experiment_files(path)
 

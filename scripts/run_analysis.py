@@ -6,6 +6,7 @@ from analysis import experiment
 from analysis import Filter
 from analysis.metadata import make_creates, Create
 from analysis.overlap import overlapping_writes, get_access_mappings, read_modify_write, read_after_write, SetAccessMap
+from analysis.writemarker import write_marker_for_overlap, write_marker_for_concurrent_creates, write_marker_for_read_modify_write, write_marker_for_read_after_write
 
 import numpy as np
 
@@ -39,21 +40,20 @@ def report_overlap(ovlp) -> None:
     print("\n")
 
 
-def report_concurrent_creates(create_lst: List[Create], experiment) -> None:
+def report_concurrent_create(create: Create, experiment) -> None:
     ''' Print a simple report for concurrent creates in the same subdirectory. '''
 
     def get_data(exp, sidx, ridx):
         return exp.cio_sets[sidx].loc[ridx]
 
-    for create in create_lst:
-        for directory, count in create.creates.items():
-            regions = []
-            for ridx in create.row_indices:
-                data = get_data(experiment, create.set_index, ridx)
-                regions.append(data['region_name'])
-            ops = np.unique(np.array(regions))
-            print("In CIO-Set {}, {} creates in directory: {} operations {}".format(
-                create.set_index, count, directory, ops))
+    for directory, count in create.creates.items():
+        regions = []
+        for ridx in create.row_indices:
+            data = get_data(experiment, create.set_index, ridx)
+            regions.append(data['region_name'])
+        ops = np.unique(np.array(regions))
+        print("In CIO-Set {}, {} creates in directory: {} operations {}".format(
+            create.set_index, count, directory, ops))
 
 
 def report_distributed_read_modify_write(rmw) -> None:
@@ -98,13 +98,14 @@ def main(args) -> None:
     if args.info:
         report_experiment_info(exp)
 
+    #TODO: can we get some performance if we yield creates instead of create a list.
     if args.concurrent_creates:
         print("Analyze concurrent creates ...")
-        creates = [ make_creates(sidx, cio_set) for sidx, cio_set in enumerate(exp.cio_sets) ]
-        report_concurrent_creates(creates, exp)
+        for create in [make_creates(sidx, cio_set) for sidx, cio_set in enumerate(exp.cio_sets)]:
+            write_marker_for_concurrent_creates(create, exp)
+            report_concurrent_create(create, exp)
 
     if args.overlap or args.read_modify_write or args.read_after_write:
-        # set_files = get_access_mappings(exp)
 
         for acc_m in get_access_mappings(exp):
             print("checking set idx: {}".format(acc_m.set_index))
@@ -113,25 +114,21 @@ def main(args) -> None:
                     print("Analyze overlapping accesses ...")
                     for ovlp in overlapping_writes(file, acc_l):
                         report_overlap(ovlp)
-                    else:
-                        print("No overlapping access!")
+                        write_marker_for_overlap(ovlp, exp.tracefile())
                 if args.read_modify_write:
                     print("Analyze distributed read-modify-write ...")
                     if acc_m.num_processes(file) < 2:
                         continue
                     for rmw in read_modify_write(acc_l):
+                        write_marker_for_read_modify_write(rmw, exp)
                         report_distributed_read_modify_write(rmw)
-                    else:
-                        print("No distributed read-modify-write found.")
                 if args.read_after_write:
                     print("Analyze distributed read-after-write ...")
                     if acc_m.num_processes(file) < 2:
                         continue
                     for raw in read_after_write(acc_l):
+                        write_marker_for_read_after_write(raw, exp)
                         report_distributed_read_after_write(raw)
-                    else:
-                        print("No distributed read-after-write found.")
-
     print("Done")
 
 

@@ -454,7 +454,7 @@ find_end_events_to_update(const IoGraph& graph, std::vector<VertexDescriptor> en
     // first check dependent events
     if (!dependent_syncs.empty())
     {
-        logging::debug() << "choose from dependent syncs";
+        //logging::debug() << "choose from dependent syncs";
 
         // return the first dependent sync event that can be updated
         update_evt = check_update_func(graph, dependent_syncs);
