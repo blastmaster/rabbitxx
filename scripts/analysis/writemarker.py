@@ -69,14 +69,13 @@ def write_marker_for_concurrent_creates(create, exp):
     group = 'rabbitxx'
     category = 'concurrent creates'
     cio_set = exp.cio_sets[create.set_index]
-    # import ipdb; ipdb.set_trace()
 
     try:
         add_marker_def(group, category, 'high', exp.tracefile())
     except:
         pass
 
-    for idx, row in cio_set.iloc[create.row_indices].iterrows():
+    for idx, row in cio_set.loc[create.row_indices].iterrows():
         timestamp = row.timestamp
         scope = 'LOCATION:{}'.format(row.pid)
         text = 'concurrent create\n\
