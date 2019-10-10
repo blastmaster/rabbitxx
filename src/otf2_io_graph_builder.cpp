@@ -855,7 +855,7 @@ void io_graph_builder::definition(const otf2::definition::unknown& definition)
 
 void io_graph_builder::definitions_done(const otf2::reader::reader& rdr)
 {
-    for (const auto& location : rdr.locations())
+    for (const auto& location : rdr.registry().all<otf2::definition::location>())
     {
         //do rank mapping!
         if (boost::starts_with(location.name().str(), "Orphan thread"))
@@ -867,8 +867,8 @@ void io_graph_builder::definitions_done(const otf2::reader::reader& rdr)
         rdr.register_location(location);
     }
 
-    const auto& str_refs = rdr.strings();
-    for (const auto& fp : rdr.io_file_properties())
+    const auto& str_refs = rdr.registry().all<otf2::definition::string>();
+    for (const auto& fp : rdr.registry().all<otf2::definition::io_file_property>())
     {
         if (fp.name().str() == "File system")
         {
