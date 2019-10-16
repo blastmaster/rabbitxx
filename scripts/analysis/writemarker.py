@@ -9,6 +9,35 @@ from typing import List
 --add <GROUP> <CATEGORY> <TIME> <SCOPE> <TEXT> Add a marker to an existing definition.
 '''
 
+class Marker:
+    group: str
+    category: str
+    time: str
+    scope: str
+    text: str
+    trcfile: str
+
+    def __init__(self, group, category, time, scope, text, trcfile):
+        self.group = group
+        self.category = category
+        self.time = time
+        self.scope = scope
+        self.text = text
+        self.trcfile = trcfile
+
+    def __hash__(self):
+        return hash((self.group, self.category, self.category,
+            self.time, self.scope, self.text, self.trcfile))
+
+    def __eq__(self, other):
+        return (self.group == other.group 
+                and self.category == other.category
+                and self.time == other.time
+                and self.scope == other.scope
+                and self.text == other.text
+                and self.trcfile == other.trcfile)
+
+
 def run_marker_tool(args: List[str]):
     ''' execute the otf2-marker tool with corresponding arguments. '''
     cmd = ['otf2-marker'] + args
@@ -26,7 +55,13 @@ def add_marker_def(group: str, category: str, severity: str, trcfile: str):
     run_marker_tool(args)
 
 
-def add_marker(group: str, category: str, time, scope, text, trcfile):
+def add_markers(marker_list: set) -> None:
+    ''' Get a set of marker objects and add them all. '''
+    for marker in marker_list:
+        add_marker(marker)
+
+
+def add_marker(marker: Marker):
     ''' add the marker
         --add <GROUP> <CATEGORY> <TIME> <SCOPE> <TEXT> Add a marker to an existing definition.
 	Scope:
@@ -37,8 +72,9 @@ def add_marker(group: str, category: str, time, scope, text, trcfile):
 	GROUP:<GROUP-REF>
 	COMM:<COMMUNICATOR-REF>
     '''
-    args = ['--add', group, category, time, scope, text, trcfile]
+    args = ['--add', marker.group, marker.category, marker.time, marker.scope, marker.text, marker.trcfile]
     run_marker_tool(args)
+
 
 #TODO add tracefile as argument to marker tool
 #def write_marker_for_overlap(ovlp: Overlap, tracefile: str):
@@ -62,13 +98,16 @@ def write_marker_for_overlap(ovlp, tracefile: str):
         add_marker_def(group, category, 'high', tracefile)
     except:
         pass
-    add_marker(group, category, str(timestamp), scope, text, tracefile)
+
+    return Marker(group, category, str(timestamp), scope, text, tracefile)
+
 
 def write_marker_for_concurrent_creates(create, exp):
 
     group = 'rabbitxx'
     category = 'concurrent creates'
     cio_set = exp.cio_sets[create.set_index]
+    marker_set = set()
 
     try:
         add_marker_def(group, category, 'high', exp.tracefile())
@@ -81,13 +120,15 @@ def write_marker_for_concurrent_creates(create, exp):
         text = 'concurrent create\n\
                 filename: {}\n'.format(row.filename)
 
-        add_marker(group, category, str(timestamp), scope, text, exp.tracefile())
+        marker_set.add(Marker(group, category, str(timestamp), scope, text, exp.tracefile()))
+    return marker_set
+
 
 def write_marker_for_read_modify_write(rmw, exp):
 
     group = 'rabbitxx'
     category = 'read-modify-write'
-    timestamp = next(iter(rmw.first.process)).data[-1]
+    timestamp = next(iter(rmw.first.iv)).data[-1]
     scope = 'LOCATION:{}'.format(rmw.first.process)
     text = 'read-modify-write:\n\
             {} {}\n\
@@ -100,7 +141,7 @@ def write_marker_for_read_modify_write(rmw, exp):
     except:
         pass
 
-    add_marker(group, category, str(timestamp), scope, text, exp.tracefile())
+    return Marker(group, category, str(timestamp), scope, text, exp.tracefile())
 
 
 def write_marker_for_read_after_write(raw, exp):
@@ -120,4 +161,4 @@ def write_marker_for_read_after_write(raw, exp):
     except:
         pass
 
-    add_marker(group, category, str(timestamp), scope, text, exp.tracefile())
+    return Marker(group, category, str(timestamp), scope, text, exp.tracefile())
