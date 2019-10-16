@@ -124,7 +124,7 @@ def main(args) -> None:
                     print("Analyze overlapping accesses ...")
                     for idx, ovlp in enumerate(overlapping_writes(file, acc_l)):
                         report_overlap(ovlp)
-                        overlap_markers.add(write_marker_for_overlap(ovlp, exp.tracefile()))
+                        overlap_markers.update(write_marker_for_overlap(ovlp, exp.tracefile()))
                         overlapping_count = idx + 1
                 if args.read_modify_write:
                     print("Analyze distributed read-modify-write ...")
