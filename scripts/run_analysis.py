@@ -6,7 +6,7 @@ from analysis import experiment
 from analysis import Filter
 from analysis.metadata import make_creates, Create
 from analysis.overlap import overlapping_writes, get_access_mappings, read_modify_write, read_after_write, SetAccessMap
-from analysis.writemarker import write_marker_for_overlap, write_marker_for_concurrent_creates, write_marker_for_read_modify_write, write_marker_for_read_after_write
+from analysis.writemarker import write_marker_for_overlap, write_marker_for_concurrent_creates, write_marker_for_read_modify_write, write_marker_for_read_after_write, add_markers
 
 import numpy as np
 
@@ -98,12 +98,22 @@ def main(args) -> None:
     if args.info:
         report_experiment_info(exp)
 
+    create_count = 0
+    overlapping_count = 0
+    rmw_count = 0
+    raw_count = 0
+    overlap_markers = set()
+    rmw_markers = set()
+    raw_markers = set()
+    create_markers = set()
+
     #TODO: can we get some performance if we yield creates instead of create a list.
     if args.concurrent_creates:
         print("Analyze concurrent creates ...")
-        for create in [make_creates(sidx, cio_set) for sidx, cio_set in enumerate(exp.cio_sets)]:
-            write_marker_for_concurrent_creates(create, exp)
+        for idx, create in enumerate([make_creates(sidx, cio_set) for sidx, cio_set in enumerate(exp.cio_sets)]):
+            create_markers.update(write_marker_for_concurrent_creates(create, exp))
             report_concurrent_create(create, exp)
+            create_count = idx + 1
 
     if args.overlap or args.read_modify_write or args.read_after_write:
 
@@ -112,23 +122,43 @@ def main(args) -> None:
             for file, acc_l in acc_m.file_accesses.items():
                 if args.overlap:
                     print("Analyze overlapping accesses ...")
-                    for ovlp in overlapping_writes(file, acc_l):
+                    for idx, ovlp in enumerate(overlapping_writes(file, acc_l)):
                         report_overlap(ovlp)
-                        write_marker_for_overlap(ovlp, exp.tracefile())
+                        overlap_markers.add(write_marker_for_overlap(ovlp, exp.tracefile()))
+                        overlapping_count = idx + 1
                 if args.read_modify_write:
                     print("Analyze distributed read-modify-write ...")
                     if acc_m.num_processes(file) < 2:
                         continue
-                    for rmw in read_modify_write(acc_l):
-                        write_marker_for_read_modify_write(rmw, exp)
+                    for idx, rmw in enumerate(read_modify_write(acc_l)):
+                        rmw_markers.add(write_marker_for_read_modify_write(rmw, exp))
                         report_distributed_read_modify_write(rmw)
+                        rmw_count = idx + 1
                 if args.read_after_write:
                     print("Analyze distributed read-after-write ...")
                     if acc_m.num_processes(file) < 2:
                         continue
-                    for raw in read_after_write(acc_l):
-                        write_marker_for_read_after_write(raw, exp)
+                    for idx, raw in enumerate(read_after_write(acc_l)):
+                        raw_markers.add(write_marker_for_read_after_write(raw, exp))
                         report_distributed_read_after_write(raw)
+                        raw_count = idx + 1
+
+        print("{} markers for concurrent creates added.".format(create_count))
+        print("{} markers for overlapping access added.".format(overlapping_count))
+        print("{} markers for read modify write added.".format(rmw_count))
+        print("{} markers for read after write added.".format(raw_count))
+
+        print("{} markers for concurrent creates in set.".format(len(create_markers)))
+        print("{} markers for overlapping access in set.".format(len(overlap_markers)))
+        print("{} markers for read modify write in set.".format(len(rmw_markers)))
+        print("{} markers for read after write in set.".format(len(raw_markers)))
+
+        add_markers(create_markers)
+        add_markers(overlap_markers)
+        add_markers(rmw_markers)
+        add_markers(raw_markers)
+
+        print("Sum markers added {}".format(create_count + overlapping_count + rmw_count + raw_count))
     print("Done")
 
 
