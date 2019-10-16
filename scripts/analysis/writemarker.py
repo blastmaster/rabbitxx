@@ -76,7 +76,6 @@ def add_marker(marker: Marker):
     run_marker_tool(args)
 
 
-#TODO add tracefile as argument to marker tool
 #def write_marker_for_overlap(ovlp: Overlap, tracefile: str):
 def write_marker_for_overlap(ovlp, tracefile: str):
 
@@ -85,7 +84,11 @@ def write_marker_for_overlap(ovlp, tracefile: str):
     #scope location:0
     # TODO why is `iv` a set??? not just interval?
     timestamp = next(iter(ovlp.first.iv)).data[-1]
+    timestamp2 = ovlp.second.iv.data[-1]
+
     scope = 'LOCATION:{}'.format(ovlp.first.process)
+    scope2 = 'LOCATION:{}'.format(ovlp.second.process)
+
     text = "overlapping access:\n\
             {} {}\n\
             Filename: {}\n\
@@ -99,7 +102,8 @@ def write_marker_for_overlap(ovlp, tracefile: str):
     except:
         pass
 
-    return Marker(group, category, str(timestamp), scope, text, tracefile)
+    return set((Marker(group, category, str(timestamp), scope, text, tracefile),
+        Marker(group, category, str(timestamp2), scope2, text, tracefile)))
 
 
 def write_marker_for_concurrent_creates(create, exp):
@@ -148,7 +152,7 @@ def write_marker_for_read_after_write(raw, exp):
 
     group = 'rabbitxx'
     category = 'read-modify-write'
-    timestamp = next(iter(raw.first.process)).data[-1]
+    timestamp = next(iter(raw.first.iv)).data[-1]
     scope = 'LOCATION:{}'.format(raw.first.process)
     text = 'read-modify-write:\n\
             {} {}\n\
