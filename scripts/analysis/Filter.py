@@ -61,6 +61,10 @@ def sw_filter(df):
     ''' Filter access to `/sw`. NOTE This is Taurus specific. '''
     return df[~(df['filename'].str.startswith(' /sw') | df['filename'].str.startswith(' /software'))]
 
+def usr_share_filter(df):
+    ''' Filter access to `/usr/share` '''
+    return df[~(df['filename'].str.startswith(' /usr/share/'))]
+
 
 ''' EXACT FILTER
     The path/filename to filter for must match the exactly filename.
